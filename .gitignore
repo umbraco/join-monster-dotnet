@@ -1,0 +1,15 @@
+*.bak
+*.exe
+*.log
+*.orig
+*.suo
+*.swp
+*.user
+*.zip
+
+.idea/
+.vs/
+.vscode/
+
+[Bb]in/
+[Oo]bj/

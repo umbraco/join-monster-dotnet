@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <RootNamespace>JoinMonster</RootNamespace>
+        <LangVersion>latestmajor</LangVersion>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="GraphQL" Version="3.0.0-preview-1490" />
+      <PackageReference Include="GraphQL-Parser" Version="5.1.0" />
+    </ItemGroup>
+
+</Project>

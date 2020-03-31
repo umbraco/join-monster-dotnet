@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JoinMonster.Tests.Unit", "test\JoinMonster.Tests.Unit\JoinMonster.Tests.Unit.csproj", "{11A68B22-12FA-4E42-9141-10C954D016AF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JoinMonster", "src\JoinMonster\JoinMonster.csproj", "{11887567-92E4-4091-B7CD-542375198BD5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{11A68B22-12FA-4E42-9141-10C954D016AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{11A68B22-12FA-4E42-9141-10C954D016AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{11A68B22-12FA-4E42-9141-10C954D016AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{11A68B22-12FA-4E42-9141-10C954D016AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{11887567-92E4-4091-B7CD-542375198BD5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{11887567-92E4-4091-B7CD-542375198BD5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{11887567-92E4-4091-B7CD-542375198BD5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{11887567-92E4-4091-B7CD-542375198BD5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
