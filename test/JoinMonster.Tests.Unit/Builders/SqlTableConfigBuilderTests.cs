@@ -30,7 +30,7 @@ namespace JoinMonster.Tests.Unit.Builders
 
             var builder = SqlTableConfigBuilder.Create(tableName, new[] {"id"});
 
-            builder.SqlTableConfig.Table.Should().BeEquivalentTo(tableName);
+            builder.SqlTableConfig.Table.Should().Be(tableName);
         }
 
         [Fact]

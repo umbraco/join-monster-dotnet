@@ -43,7 +43,7 @@ namespace JoinMonster.Builders
         /// </summary>
         /// <param name="ignored"><c>true</c> if the column should be ignored, otherwise <c>false</c>.</param>
         /// <returns>The <see cref="SqlColumnConfigBuilder"/>.</returns>
-        public SqlColumnConfigBuilder Ignore(bool ignored)
+        public SqlColumnConfigBuilder Ignore(bool ignored = true)
         {
             SqlColumnConfig.Ignored = ignored;
             return this;

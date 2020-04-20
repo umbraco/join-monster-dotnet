@@ -21,7 +21,7 @@ namespace JoinMonster.Tests.Unit.Builders
             var columnName = "myColumn";
             var builder = SqlColumnConfigBuilder.Create(columnName);
 
-            builder.SqlColumnConfig.Column.Should().BeEquivalentTo(columnName);
+            builder.SqlColumnConfig.Column.Should().Be(columnName);
         }
 
         [Fact]
@@ -31,7 +31,7 @@ namespace JoinMonster.Tests.Unit.Builders
             var builder = SqlColumnConfigBuilder.Create()
                 .Name(columnName);
 
-            builder.SqlColumnConfig.Column.Should().BeEquivalentTo(columnName);
+            builder.SqlColumnConfig.Column.Should().Be(columnName);
         }
 
         [Fact]
