@@ -38,7 +38,11 @@ namespace JoinMonster.Language
             var tableName = config.Table;
             var tableAs = fieldAst.Name;
 
-            var columns = config.UniqueKey.ToDictionary(x => x, column => new SqlColumn(column, null, column));
+            var columns = config.UniqueKey.Union(config.AlwaysFetch ?? Enumerable.Empty<string>())
+                .ToDictionary(
+                    x => x,
+                    column => new SqlColumn(column, null, column)
+                );
 
             HandleSelections(columns, graphType, fieldAst.SelectionSet.Selections);
 

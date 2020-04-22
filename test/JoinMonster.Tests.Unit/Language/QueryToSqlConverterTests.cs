@@ -197,6 +197,30 @@ namespace JoinMonster.Tests.Unit.Language
                 .And.ContainEquivalentOf(new SqlColumn("key", null, "key"));
         }
 
+        [Fact]
+        public void Convert_WithAlwaysFetchColumns_ColumnsDoesContainFields()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Product")
+                    .SqlTable("products", new [] { "id" })
+                    .AlwaysFetch("key", "type");
+            });
+
+            var query = "{ product { name } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var node = converter.Convert(context);
+
+            node.Should()
+                .BeOfType<SqlTable>()
+                .Which.Columns.Should()
+                .ContainEquivalentOf(new SqlColumn("key", null, "key"))
+                .And.ContainEquivalentOf(new SqlColumn("type", null, "type"));
+        }
+
+
         private static ISchema CreateSimpleSchema(Action<SchemaBuilder> configure = null)
         {
             return Schema.For(@"
