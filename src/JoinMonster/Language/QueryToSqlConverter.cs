@@ -46,7 +46,9 @@ namespace JoinMonster.Language
 
             HandleSelections(columns, graphType, fieldAst.SelectionSet.Selections);
 
-            return new SqlTable(tableName, tableAs, new SqlColumns(columns.Values)).WithLocation(fieldAst.SourceLocation);
+            var sqlTable = new SqlTable(tableName, tableAs, new SqlColumns(columns.Values)).WithLocation(fieldAst.SourceLocation);
+            sqlTable.Where = field.GetSqlWhere();
+            return sqlTable;
         }
 
         private void HandleSelections(IDictionary<string, SqlColumn> sqlColumns, IComplexGraphType graphType, IEnumerable<ISelection> selections)

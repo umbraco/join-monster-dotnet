@@ -1,15 +1,5 @@
-using System.Collections.Generic;
-
 namespace JoinMonster
 {
-    /// <summary>
-    /// Generates a raw SQL expression.
-    /// </summary>
-    /// <param name="tableAlias">An auto-generated table alias.</param>
-    /// <param name="userContext">The user context.</param>
-    /// <returns>A SQL expression.</returns>
-    public delegate string ExpressionDelegate(string tableAlias, IDictionary<string, object> userContext);
-
     public class SqlColumnConfig
     {
         /// <summary>

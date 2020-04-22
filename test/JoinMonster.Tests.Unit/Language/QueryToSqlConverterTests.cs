@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using GraphQL.Execution;
@@ -220,6 +221,34 @@ namespace JoinMonster.Tests.Unit.Language
                 .And.ContainEquivalentOf(new SqlColumn("type", null, "type"));
         }
 
+        [Fact]
+        public void Convert_WhenFieldHasWhereExpression_SetsWhereOnSqlTable()
+        {
+            string Where(string tableAlias, IDictionary<string, object> arguments,
+                IDictionary<string, object> userContext) => $"{tableAlias}.id = 3";
+
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Query")
+                    .FieldFor("product", null)
+                    .SqlWhere(Where);
+
+                builder.Types.For("Product")
+                    .SqlTable("products", new [] { "id" })
+                    .AlwaysFetch("key", "type");
+            });
+
+            var query = "{ product { name } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var node = converter.Convert(context);
+
+            node.Should()
+                .BeOfType<SqlTable>()
+                .Which.Where.Should()
+                .BeEquivalentTo((WhereDelegate) Where);
+        }
 
         private static ISchema CreateSimpleSchema(Action<SchemaBuilder> configure = null)
         {

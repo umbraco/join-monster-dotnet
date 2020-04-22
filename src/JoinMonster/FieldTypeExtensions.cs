@@ -15,5 +15,13 @@ namespace JoinMonster
 
         public static SqlColumnConfig? GetSqlColumnConfig(this FieldType fieldType) =>
             fieldType.GetMetadata<SqlColumnConfig>(nameof(SqlColumnConfig));
+
+        /// <summary>
+        /// Get the SQL Where expression.
+        /// </summary>
+        /// <param name="fieldType">The field type.</param>
+        /// <returns>A <see cref="WhereDelegate"/> if one is set, otherwise null.</returns>
+        public static WhereDelegate? GetSqlWhere(this FieldType fieldType) =>
+            fieldType.GetMetadata<WhereDelegate>(nameof(WhereDelegate));
     }
 }

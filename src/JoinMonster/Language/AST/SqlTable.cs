@@ -15,6 +15,7 @@ namespace JoinMonster.Language.AST
         public string As { get; }
         public string Name { get; }
         public SqlColumns Columns { get; }
+        public WhereDelegate? Where { get; set; }
 
         public override IEnumerable<Node> Children
         {
