@@ -9,6 +9,15 @@ namespace JoinMonster.Language.AST
     {
         private List<SqlColumn>? _columns;
 
+        public SqlColumns()
+        {
+        }
+
+        public SqlColumns(IEnumerable<SqlColumn> columns)
+        {
+            _columns = new List<SqlColumn>(columns);
+        }
+
         public void Add(SqlColumn column)
         {
             if (column == null) throw new ArgumentNullException(nameof(column));

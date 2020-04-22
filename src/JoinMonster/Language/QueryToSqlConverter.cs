@@ -13,36 +13,39 @@ namespace JoinMonster.Language
         public Node Convert(IResolveFieldContext context)
         {
             var fieldAst = context.FieldAst;
-            var parentType = context.ReturnType;
+            var field = context.FieldDefinition;
+            var parentType = context.ReturnType.GetNamedType();
 
-            return Convert(fieldAst, parentType, context.UserContext);
+            return Convert(fieldAst, field, parentType, context.UserContext);
         }
 
-        private Node Convert(Field fieldAst, IGraphType parentType, IDictionary<string, object> userContext)
+        private Node Convert(Field fieldAst, FieldType field, IGraphType parentType,
+            IDictionary<string, object> userContext)
         {
-            if (parentType is IObjectGraphType objectGraphType)
+            if (parentType is IComplexGraphType complexGraphType)
             {
                 var config = parentType.GetSqlTableConfig();
                 if (config != null)
-                    return HandleTable(fieldAst, objectGraphType, config, userContext);
+                    return HandleTable(fieldAst, field, complexGraphType, config, userContext);
             }
 
             return new SqlNoop();
         }
 
-        private Node HandleTable(Field fieldAst, IObjectGraphType graphType, SqlTableConfig config, IDictionary<string, object> userContext)
+        private Node HandleTable(Field fieldAst, FieldType field, IComplexGraphType graphType,
+            SqlTableConfig config, IDictionary<string, object> userContext)
         {
             var tableName = config.Table;
             var tableAs = fieldAst.Name;
 
-            var sqlColumns = new SqlColumns();
+            var columns = config.UniqueKey.ToDictionary(x => x, column => new SqlColumn(column, null, column));
 
-            HandleSelections(sqlColumns, graphType, fieldAst.SelectionSet.Selections);
+            HandleSelections(columns, graphType, fieldAst.SelectionSet.Selections);
 
-            return new SqlTable(tableName, tableAs, sqlColumns).WithLocation(fieldAst.SourceLocation);
+            return new SqlTable(tableName, tableAs, new SqlColumns(columns.Values)).WithLocation(fieldAst.SourceLocation);
         }
 
-        private void HandleSelections(SqlColumns sqlColumns, IComplexGraphType graphType, IEnumerable<ISelection> selections)
+        private void HandleSelections(IDictionary<string, SqlColumn> sqlColumns, IComplexGraphType graphType, IEnumerable<ISelection> selections)
         {
             foreach (var selection in selections)
             {
@@ -63,7 +66,7 @@ namespace JoinMonster.Language
                         var sqlColumn = new SqlColumn(columnName, fieldName, columnAs)
                             .WithLocation(field.SourceLocation);
 
-                        sqlColumns.Add(sqlColumn);
+                        sqlColumns[sqlColumn.As] = sqlColumn;
                         break;
                     case InlineFragment _:
                         break;

@@ -125,12 +125,8 @@ namespace JoinMonster.Tests.Unit.Language
             node.Should()
                 .BeOfType<SqlTable>()
                 .Which.Columns.Should()
-                .SatisfyRespectively(column =>
-                {
-                    column.Name.Should().Be("productName");
-                    column.FieldName.Should().Be("name");
-                    column.As.Should().Be("name");
-                });
+                .ContainEquivalentOf(new SqlColumn("productName", "name", "name"),
+                    config => config.Excluding(x => x.SourceLocation));
         }
 
         [Fact]
@@ -156,6 +152,49 @@ namespace JoinMonster.Tests.Unit.Language
                 .BeOfType<SqlTable>()
                 .Which.Columns.Should()
                 .NotContain(column => column.FieldName == "name");
+        }
+
+        [Fact]
+        public void Convert_WithUniqueKeyColumn_ColumnsDoesContainsField()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Product")
+                    .SqlTable("products", "id");
+            });
+
+            var query = "{ product { name } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var node = converter.Convert(context);
+
+            node.Should()
+                .BeOfType<SqlTable>()
+                .Which.Columns.Should()
+                .ContainEquivalentOf(new SqlColumn("id", null, "id"));
+        }
+
+        [Fact]
+        public void Convert_WithMultipleUniqueKeyColumns_ColumnsDoesContainsFields()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Product")
+                    .SqlTable("products", new [] { "id", "key" });
+            });
+
+            var query = "{ product { name } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var node = converter.Convert(context);
+
+            node.Should()
+                .BeOfType<SqlTable>()
+                .Which.Columns.Should()
+                .ContainEquivalentOf(new SqlColumn("id", null, "id"))
+                .And.ContainEquivalentOf(new SqlColumn("key", null, "key"));
         }
 
         private static ISchema CreateSimpleSchema(Action<SchemaBuilder> configure = null)

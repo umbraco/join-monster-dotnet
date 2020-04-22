@@ -2,7 +2,6 @@ using System.Collections.Generic;
 
 namespace JoinMonster
 {
-
     /// <summary>
     /// Generates a raw SQL expression.
     /// </summary>
