@@ -7,12 +7,8 @@ namespace JoinMonster
 {
     public static class GraphTypeExtensions
     {
-        public static SqlTableConfigBuilder SqlTable(this IGraphType graphType, string tableName, string uniqueKey)
-        {
-            if (graphType == null) throw new ArgumentNullException(nameof(graphType));
-
-            return SqlTable(graphType, tableName, new[] {uniqueKey});
-        }
+        public static SqlTableConfigBuilder SqlTable(this IGraphType graphType, string tableName, string uniqueKey) =>
+            SqlTable(graphType, tableName, new[] {uniqueKey});
 
         public static SqlTableConfigBuilder SqlTable(this IGraphType graphType, string tableName, string[] uniqueKey)
         {
@@ -23,8 +19,12 @@ namespace JoinMonster
             return builder;
         }
 
-        public static SqlTableConfig? GetSqlTableConfig(this IGraphType graphType) =>
-            graphType?.GetMetadata<SqlTableConfig>(nameof(SqlTableConfig));
+        public static SqlTableConfig? GetSqlTableConfig(this IGraphType graphType)
+        {
+            if (graphType == null) throw new ArgumentNullException(nameof(graphType));
+
+            return graphType.GetMetadata<SqlTableConfig>(nameof(SqlTableConfig));
+        }
 
         public static bool IsListType(this IGraphType graphType)
         {

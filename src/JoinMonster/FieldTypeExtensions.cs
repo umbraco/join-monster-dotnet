@@ -16,15 +16,38 @@ namespace JoinMonster
             return builder;
         }
 
-        public static SqlColumnConfig? GetSqlColumnConfig(this FieldType fieldType) =>
-            fieldType?.GetMetadata<SqlColumnConfig>(nameof(SqlColumnConfig));
+        public static SqlColumnConfig? GetSqlColumnConfig(this FieldType fieldType)
+        {
+            if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
+
+            return fieldType.GetMetadata<SqlColumnConfig>(nameof(SqlColumnConfig));
+        }
+
+
+        /// <summary>
+        /// Set a method that resolves the where clause.
+        /// </summary>
+        /// <param name="fieldType">The field type.</param>
+        /// <param name="where">The where clause resolver.</param>
+        /// <returns>The <see cref="FieldType"/>.</returns>
+        public static FieldType SqlWhere(this FieldType fieldType, WhereDelegate where)
+        {
+            if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
+            if (@where == null) throw new ArgumentNullException(nameof(where));
+
+            return fieldType.WithMetadata(nameof(WhereDelegate), where);
+        }
 
         /// <summary>
         /// Get the SQL Where expression.
         /// </summary>
         /// <param name="fieldType">The field type.</param>
         /// <returns>A <see cref="WhereDelegate"/> if one is set, otherwise null.</returns>
-        public static WhereDelegate? GetSqlWhere(this FieldType fieldType) =>
-            fieldType?.GetMetadata<WhereDelegate>(nameof(WhereDelegate));
+        public static WhereDelegate? GetSqlWhere(this FieldType fieldType)
+        {
+            if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
+
+            return fieldType.GetMetadata<WhereDelegate>(nameof(WhereDelegate));
+        }
     }
 }
