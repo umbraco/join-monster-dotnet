@@ -29,7 +29,7 @@ namespace JoinMonster.Language.AST
         public override IEnumerable<Node> Children => _columns ?? Enumerable.Empty<Node>();
 
         public IEnumerator<SqlColumn> GetEnumerator() =>
-            _columns?.GetEnumerator() ?? Enumerable.Empty<SqlColumn>().GetEnumerator();
+            (_columns ?? Enumerable.Empty<SqlColumn>()).GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() =>
             GetEnumerator();

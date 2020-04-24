@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using GraphQL.Execution;
 using GraphQL.Types;
@@ -204,7 +205,7 @@ namespace JoinMonster.Tests.Unit.Language
             var schema = CreateSimpleSchema(builder =>
             {
                 builder.Types.For("Product")
-                    .SqlTable("products", new [] { "id" })
+                    .SqlTable("products", "id")
                     .AlwaysFetch("key", "type");
             });
 
@@ -224,8 +225,8 @@ namespace JoinMonster.Tests.Unit.Language
         [Fact]
         public void Convert_WhenFieldHasWhereExpression_SetsWhereOnSqlTable()
         {
-            string Where(string tableAlias, IDictionary<string, object> arguments,
-                IDictionary<string, object> userContext) => $"{tableAlias}.id = 3";
+            Task<string> Where(string tableAlias, IDictionary<string, object> arguments,
+                IDictionary<string, object> userContext) => Task.FromResult($"{tableAlias}.\"id\" = 3");
 
             var schema = CreateSimpleSchema(builder =>
             {
@@ -234,8 +235,7 @@ namespace JoinMonster.Tests.Unit.Language
                     .SqlWhere(Where);
 
                 builder.Types.For("Product")
-                    .SqlTable("products", new [] { "id" })
-                    .AlwaysFetch("key", "type");
+                    .SqlTable("products", "id");
             });
 
             var query = "{ product { name } }";
@@ -250,6 +250,59 @@ namespace JoinMonster.Tests.Unit.Language
                 .BeEquivalentTo((WhereDelegate) Where);
         }
 
+        [Fact]
+        public void Convert_WhenQueryHasArguments_AddsArgumentsToSqlTable()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+               builder.Types.For("Product")
+                    .SqlTable("products", "id");
+            });
+
+            var query = "{ product(id: \"1\") { name } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var node = converter.Convert(context);
+
+            node.Should()
+                .BeOfType<SqlTable>()
+                .Which.Arguments.Should()
+                .SatisfyRespectively(argument =>
+                {
+                    argument.Name.Should().Be("id");
+                    argument.Value.Value.Should().Be("1");
+                });
+        }
+
+        [Fact]
+        public void Convert_WithNoContext_ThrowsArgumentNullException()
+        {
+            var converter = new QueryToSqlConverter();
+
+            Action action = () => converter.Convert(null);
+
+            action.Should()
+                .Throw<ArgumentNullException>()
+                .Which.ParamName.Should()
+                .Be("context");
+        }
+
+        [Fact]
+        public void Convert_WhenTypeDoesNotHaveSqlConfig_ReturnsSqlNoop()
+        {
+            var schema = CreateSimpleSchema();
+
+            var query = "{ product { name } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var node = converter.Convert(context);
+
+            node.Should()
+                .BeOfType<SqlNoop>();
+        }
+
         private static ISchema CreateSimpleSchema(Action<SchemaBuilder> configure = null)
         {
             return Schema.For(@"
@@ -258,7 +311,7 @@ type Product {
   name: String
 }
 type Query {
-  product: Product
+  product(id: ID): Product
 }
 ", builder => { configure?.Invoke(builder); });
         }

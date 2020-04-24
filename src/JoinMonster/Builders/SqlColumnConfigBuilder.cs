@@ -1,3 +1,5 @@
+using System;
+
 namespace JoinMonster.Builders
 {
     public class SqlColumnConfigBuilder
@@ -10,14 +12,13 @@ namespace JoinMonster.Builders
         /// <summary>
         /// Create a new instance of the <see cref="SqlColumnConfigBuilder"/>
         /// </summary>
-        /// <param name="columnName">A column name, if <c>null</c> the fields name is used instead.</param>
+        /// <param name="columnName">A column name.</param>
         /// <returns>The <see cref="SqlColumnConfigBuilder"/>.</returns>
-        public static SqlColumnConfigBuilder Create(string? columnName = null)
+        public static SqlColumnConfigBuilder Create(string columnName)
         {
-            var config = new SqlColumnConfig
-            {
-                Column = columnName
-            };
+            if (columnName == null) throw new ArgumentNullException(nameof(columnName));
+
+            var config = new SqlColumnConfig(columnName);
 
             return new SqlColumnConfigBuilder(config);
         }
@@ -26,17 +27,6 @@ namespace JoinMonster.Builders
         /// The SQL column configuration.
         /// </summary>
         public SqlColumnConfig SqlColumnConfig { get; }
-
-        /// <summary>
-        /// Set the column name.
-        /// </summary>
-        /// <param name="columnName">The column name</param>
-        /// <returns>The <see cref="SqlColumnConfigBuilder"/>.</returns>
-        public SqlColumnConfigBuilder Name(string columnName)
-        {
-            SqlColumnConfig.Column = columnName;
-            return this;
-        }
 
         /// <summary>
         /// Set whether the column should be ignored from the generated SQL query.
@@ -61,7 +51,7 @@ namespace JoinMonster.Builders
         }
 
         /// <summary>
-        /// Set a method that resolves to a raw SQL expression.
+        /// Set a method that resolves to a RAW SQL expression.
         /// </summary>
         /// <param name="expressionResolver">The expression resolver.</param>
         /// <returns>The <see cref="SqlColumnConfigBuilder"/>.</returns>

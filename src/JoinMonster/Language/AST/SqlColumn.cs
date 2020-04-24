@@ -2,7 +2,7 @@ namespace JoinMonster.Language.AST
 {
     public class SqlColumn : Node
     {
-        public SqlColumn(string name, string fieldName, string @as)
+        public SqlColumn(string name, string? fieldName, string @as)
         {
             Name = name;
             FieldName = fieldName;
@@ -10,7 +10,7 @@ namespace JoinMonster.Language.AST
         }
 
         public string As { get; }
-        public string FieldName { get; }
+        public string? FieldName { get; }
         public string Name { get; }
     }
 }

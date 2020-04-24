@@ -8,7 +8,7 @@ namespace JoinMonster
     {
         public static SqlColumnConfigBuilder SqlColumn(this FieldConfig fieldConfig, string? columnName = null)
         {
-            var builder = SqlColumnConfigBuilder.Create(columnName);
+            var builder = SqlColumnConfigBuilder.Create(columnName ?? fieldConfig.Name);
             fieldConfig.WithMetadata(nameof(SqlColumnConfig), builder.SqlColumnConfig);
             return builder;
         }
@@ -20,6 +20,6 @@ namespace JoinMonster
         /// <param name="where">The where clause resolver.</param>
         /// <returns><see cref="FieldConfig"/>.</returns>
         public static FieldConfig SqlWhere(this FieldConfig fieldConfig, WhereDelegate where) =>
-            fieldConfig.WithMetadata(nameof(WhereDelegate), @where);
+            fieldConfig.WithMetadata(nameof(WhereDelegate), where);
     }
 }

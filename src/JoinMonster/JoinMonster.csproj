@@ -5,6 +5,7 @@
         <RootNamespace>JoinMonster</RootNamespace>
         <LangVersion>latestmajor</LangVersion>
         <Nullable>enable</Nullable>
+        <DocumentationFile>bin\$(Configuration)\JoinMonster.xml</DocumentationFile>
     </PropertyGroup>
 
     <ItemGroup>
