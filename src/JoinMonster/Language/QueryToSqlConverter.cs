@@ -4,6 +4,7 @@ using System.Linq;
 using GraphQL;
 using GraphQL.Language.AST;
 using GraphQL.Types;
+using JoinMonster.Configs;
 using JoinMonster.Language.AST;
 using Argument = JoinMonster.Language.AST.Argument;
 using Arguments = JoinMonster.Language.AST.Arguments;
@@ -20,50 +21,93 @@ namespace JoinMonster.Language
         /// </summary>
         /// <param name="context">The <see cref="IResolveFieldContext"/>.</param>
         /// <returns>A <see cref="Node"/> representing the SQL Ast.</returns>
-        /// <exception cref="ArgumentNullException">If <see cref="context"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">If <c>context</c> is null.</exception>
         public virtual Node Convert(IResolveFieldContext context)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
 
             var fieldAst = context.FieldAst;
             var field = context.FieldDefinition;
-            var parentType = context.ReturnType.GetNamedType();
+            var parentType = context.ParentType.GetNamedType();
 
-            return Convert(fieldAst, field, parentType, context.UserContext);
+            return Convert(fieldAst, field, parentType, 0, context.UserContext);
         }
 
-        private Node Convert(Field fieldAst, FieldType field, IGraphType parentType,
+        private Node Convert(Field fieldAst, FieldType field, IGraphType parentType, int depth,
             IDictionary<string, object> userContext)
         {
-            if (parentType is IComplexGraphType complexGraphType)
+            var sqlColumnConfig = field.GetSqlColumnConfig();
+            if (sqlColumnConfig?.Ignored == true)
+                return new SqlNoop();
+
+            var gqlType = field.ResolvedType.GetNamedType();
+
+            var sqlTableConfig = gqlType.GetSqlTableConfig();
+
+            if (gqlType is IComplexGraphType complexGraphType)
             {
-                var config = parentType.GetSqlTableConfig();
-                if (config != null)
-                    return HandleTable(fieldAst, field, complexGraphType, config, userContext);
+                if(sqlTableConfig == null)
+                    return new SqlNoop();
+
+                if (depth >= 1)
+                {
+                    //TODO: Validate that either join, batch or junction is set on the field
+                }
+
+                return HandleTable(fieldAst, field, complexGraphType, sqlTableConfig, depth, userContext);
             }
+
+            if (sqlColumnConfig != null || field.Resolver == null)
+                return HandleColumn(fieldAst, field, gqlType, sqlColumnConfig, depth, userContext);
 
             return new SqlNoop();
         }
 
         private Node HandleTable(Field fieldAst, FieldType field, IComplexGraphType graphType,
-            SqlTableConfig config, IDictionary<string, object> userContext)
+            SqlTableConfig config, int depth, IDictionary<string, object> userContext)
         {
             var tableName = config.Table;
             var tableAs = fieldAst.Name;
 
-            var columns = config.UniqueKey.Union(config.AlwaysFetch ?? Enumerable.Empty<string>())
-                .ToDictionary(
-                    x => x,
-                    column => new SqlColumn(column, null, column)
-                );
+            var columns = new SqlColumns();
 
-            HandleSelections(columns, graphType, fieldAst.SelectionSet.Selections);
+            if (config.UniqueKey.Length == 1)
+            {
+                columns.Add(new SqlColumn(config.UniqueKey[0], config.UniqueKey[0], config.UniqueKey[0]));
+            }
+            else
+            {
+                var clumsyName = string.Join("#", config.UniqueKey);
+                columns.Add(new SqlComposite(config.UniqueKey, clumsyName, clumsyName));
+            }
+
+            if (config.AlwaysFetch != null)
+            {
+                foreach (var column in config.AlwaysFetch)
+                    columns.Add(new SqlColumn(column, column, column));
+            }
+
+            var tables = new SqlTables();
+
+            HandleSelections(columns, tables, graphType, fieldAst.SelectionSet.Selections, depth, userContext);
 
             var arguments = HandleArguments(fieldAst);
+            var grabMany = field.ResolvedType.IsListType();
+            var where = field.GetSqlWhere();
+            var join = field.GetSqlJoin();
 
-            var sqlTable = new SqlTable(tableName, tableAs, new SqlColumns(columns.Values), arguments).WithLocation(fieldAst.SourceLocation);
-            sqlTable.Where = field.GetSqlWhere();
-            return sqlTable;
+            return new SqlTable(tableName, tableAs, columns, tables, arguments, grabMany, where, join)
+                .WithLocation(fieldAst.SourceLocation);
+        }
+
+        private Node HandleColumn(Field fieldAst, FieldType field, IGraphType graphType,
+            SqlColumnConfig? config, int depth, IDictionary<string, object> userContext)
+        {
+            var fieldName = fieldAst.Name;
+            var columnName = config?.Column ?? fieldName;
+            var columnAs = fieldName;
+
+            return new SqlColumn(columnName, fieldName, columnAs).WithLocation(fieldAst.SourceLocation);
         }
 
         private Arguments HandleArguments(Field fieldAst)
@@ -81,35 +125,42 @@ namespace JoinMonster.Language
             return arguments;
         }
 
-        private void HandleSelections(IDictionary<string, SqlColumn> sqlColumns, IComplexGraphType graphType, IEnumerable<ISelection> selections)
+        private void HandleSelections(SqlColumns sqlColumns, SqlTables tables,
+            IComplexGraphType graphType, IEnumerable<ISelection> selections, int depth, IDictionary<string, object> userContext)
         {
             foreach (var selection in selections)
             {
                 switch (selection)
                 {
-                    case Field field:
+                    case Field fieldAst:
+                        var field = graphType.GetField(fieldAst.Name);
+                        var node = Convert(fieldAst, field, graphType, ++depth, userContext);
 
-                        var fieldType = graphType.GetField(field.Name);
-                        var columnConfig = fieldType.GetSqlColumnConfig();
+                        switch (node)
+                        {
+                            case SqlColumn sqlColumn:
+                                var existing = sqlColumns.FirstOrDefault(x => x.FieldName == fieldAst.Name);
+                                if (existing != null)
+                                    continue;
 
-                        if (columnConfig?.Ignored == true)
-                            continue;
+                                sqlColumns.Add(sqlColumn);
+                                break;
+                            case SqlTable sqlTable:
+                                tables.Add(sqlTable);
+                                break;
+                            case SqlNoop _:
+                                continue;
+                            default:
+                                throw new ArgumentOutOfRangeException(nameof(node), $"Unknown node type ${node.GetType()}");
+                        }
 
-                        var fieldName = field.Name;
-                        var columnName = columnConfig?.Column ?? fieldName;
-                        var columnAs = fieldName;
-
-                        var sqlColumn = new SqlColumn(columnName, fieldName, columnAs)
-                            .WithLocation(field.SourceLocation);
-
-                        sqlColumns[sqlColumn.As] = sqlColumn;
                         break;
                     case InlineFragment _:
                         break;
                     case FragmentSpread _:
                         break;
                     default:
-                        throw new ArgumentOutOfRangeException($"Unknown selection kind: {selection.GetType()}");
+                        throw new ArgumentOutOfRangeException(nameof(selection), $"Unknown selection kind: {selection.GetType()}");
                 }
             }
         }

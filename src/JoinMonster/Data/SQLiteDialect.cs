@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Linq;
+
 namespace JoinMonster.Data
 {
     /// <summary>
@@ -7,5 +10,12 @@ namespace JoinMonster.Data
     {
         /// <inheritdoc />
         public virtual string Quote(string value) => $@"""{value}""";
+
+        /// <inheritdoc />
+        public string CompositeKey(string parentTable, IEnumerable<string> keys)
+        {
+            var result = keys.Select(key => $"{Quote(parentTable)}.{Quote(key)}");
+            return string.Join(" || ", result);
+        }
     }
 }

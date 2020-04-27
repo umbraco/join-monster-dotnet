@@ -1,6 +1,6 @@
 using System;
 
-namespace JoinMonster
+namespace JoinMonster.Configs
 {
     public class SqlColumnConfig
     {

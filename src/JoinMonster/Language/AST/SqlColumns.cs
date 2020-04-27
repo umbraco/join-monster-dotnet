@@ -5,31 +5,22 @@ using System.Linq;
 
 namespace JoinMonster.Language.AST
 {
-    public class SqlColumns : Node, IEnumerable<SqlColumn>
+    public class SqlColumns : Node, IEnumerable<SqlColumnBase>
     {
-        private List<SqlColumn>? _columns;
+        private List<SqlColumnBase>? _columns;
 
-        public SqlColumns()
-        {
-        }
-
-        public SqlColumns(IEnumerable<SqlColumn> columns)
-        {
-            _columns = new List<SqlColumn>(columns);
-        }
-
-        public void Add(SqlColumn column)
+        public void Add(SqlColumnBase column)
         {
             if (column == null) throw new ArgumentNullException(nameof(column));
             if(_columns == null)
-                _columns = new List<SqlColumn>();
+                _columns = new List<SqlColumnBase>();
             _columns.Add(column);
         }
 
         public override IEnumerable<Node> Children => _columns ?? Enumerable.Empty<Node>();
 
-        public IEnumerator<SqlColumn> GetEnumerator() =>
-            (_columns ?? Enumerable.Empty<SqlColumn>()).GetEnumerator();
+        public IEnumerator<SqlColumnBase> GetEnumerator() =>
+            (_columns ?? Enumerable.Empty<SqlColumnBase>()).GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() =>
             GetEnumerator();

@@ -4,8 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using GraphQL.Execution;
+using GraphQL.Resolvers;
 using GraphQL.Types;
 using GraphQL.Utilities;
+using JoinMonster.Configs;
 using JoinMonster.Language;
 using JoinMonster.Language.AST;
 using Xunit;
@@ -93,19 +95,10 @@ namespace JoinMonster.Tests.Unit.Language
             node.Should()
                 .BeOfType<SqlTable>()
                 .Which.Columns.Should()
-                .SatisfyRespectively(column =>
-                {
-                    column.Name.Should().Be("id");
-                    column.FieldName.Should().Be("id");
-                    column.As.Should().Be("id");
-                    column.SourceLocation.Should().NotBeNull();
-                }, column =>
-                {
-                    column.Name.Should().Be("name");
-                    column.FieldName.Should().Be("name");
-                    column.As.Should().Be("name");
-                    column.SourceLocation.Should().NotBeNull();
-                });
+                .ContainEquivalentOf(new SqlColumn("id", "id", "id"),
+                    config => config.Excluding(x => x.SourceLocation))
+                .And.ContainEquivalentOf(new SqlColumn("name", "name", "name"),
+                    config => config.Excluding(x => x.SourceLocation));
         }
 
         [Fact]
@@ -174,11 +167,11 @@ namespace JoinMonster.Tests.Unit.Language
             node.Should()
                 .BeOfType<SqlTable>()
                 .Which.Columns.Should()
-                .ContainEquivalentOf(new SqlColumn("id", null, "id"));
+                .ContainEquivalentOf(new SqlColumn("id", "id", "id"));
         }
 
         [Fact]
-        public void Convert_WithMultipleUniqueKeyColumns_ColumnsDoesContainsFields()
+        public void Convert_WithMultipleUniqueKeyColumns_ColumnsDoesContainFields()
         {
             var schema = CreateSimpleSchema(builder =>
             {
@@ -195,8 +188,28 @@ namespace JoinMonster.Tests.Unit.Language
             node.Should()
                 .BeOfType<SqlTable>()
                 .Which.Columns.Should()
-                .ContainEquivalentOf(new SqlColumn("id", null, "id"))
-                .And.ContainEquivalentOf(new SqlColumn("key", null, "key"));
+                .ContainEquivalentOf(new SqlComposite(new[] {"id", "key"}, "id#key", "id#key"));
+        }
+
+        [Fact]
+        public void Convert_WhenQueryContainsUniqueKeyColumn_ColumnsOnlyContainsFieldOnce()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Product")
+                    .SqlTable("products", "id");
+            });
+
+            var query = "{ product { id, name } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var node = converter.Convert(context);
+
+            node.Should()
+                .BeOfType<SqlTable>()
+                .Which.Columns.Should()
+                .ContainSingle(x => x.FieldName == "id");
         }
 
         [Fact]
@@ -218,8 +231,8 @@ namespace JoinMonster.Tests.Unit.Language
             node.Should()
                 .BeOfType<SqlTable>()
                 .Which.Columns.Should()
-                .ContainEquivalentOf(new SqlColumn("key", null, "key"))
-                .And.ContainEquivalentOf(new SqlColumn("type", null, "type"));
+                .ContainEquivalentOf(new SqlColumn("key", "key", "key"))
+                .And.ContainEquivalentOf(new SqlColumn("type", "type", "type"));
         }
 
         [Fact]
@@ -289,7 +302,7 @@ namespace JoinMonster.Tests.Unit.Language
         }
 
         [Fact]
-        public void Convert_WhenTypeDoesNotHaveSqlConfig_ReturnsSqlNoop()
+        public void Convert_WhenTypeDoesNotHaveSqlTableConfig_ReturnsSqlNoop()
         {
             var schema = CreateSimpleSchema();
 
@@ -303,12 +316,82 @@ namespace JoinMonster.Tests.Unit.Language
                 .BeOfType<SqlNoop>();
         }
 
+        [Fact]
+        public void Convert_WhenFieldHasJoinExpression_SetsJoinOnSqlTable()
+        {
+            Task<string> Join(string parentTable, string childTable, IDictionary<string, object> arguments,
+                IDictionary<string, object> userContext) => Task.FromResult($"{parentTable}.\"id\" = ${childTable}.\"productId\"");
+
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Query")
+                    .FieldFor("product", null);
+
+                builder.Types.For("Product")
+                    .SqlTable("products", "id");
+
+                builder.Types.For("ProductVariant")
+                    .SqlTable("productVariants", "id");
+
+                builder.Types.For("Product")
+                    .FieldFor("variants", null)
+                    .SqlJoin(Join);
+            });
+
+            var query = "{ product { name, variants { name } } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var node = converter.Convert(context);
+
+            node.Should()
+                .BeOfType<SqlTable>()
+                .Which.Tables
+                .Should()
+                .ContainSingle(x => x.Name == "productVariants")
+                .Which.Should()
+                .BeOfType<SqlTable>()
+                .Which.Join.Should()
+                .Be((JoinDelegate) Join);
+        }
+
+        [Fact]
+        public void Convert_WhenFieldHasAResolver_ColumnsDoesNotContainField()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+               builder.Types.For("Product")
+                    .SqlTable("products", "id");
+
+               builder.Types.For("Product")
+                   .FieldFor("name", null)
+                   .Resolver = new FuncFieldResolver<object>(x => null);
+            });
+
+            var query = "{ product { name } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var node = converter.Convert(context);
+
+            node.Should()
+                .BeOfType<SqlTable>()
+                .Which.Columns.OfType<SqlColumn>().Should()
+                .NotContain(x => x.Name == "name");
+        }
+
         private static ISchema CreateSimpleSchema(Action<SchemaBuilder> configure = null)
         {
             return Schema.For(@"
+type ProductVariant {
+  id: ID!
+  name: String
+}
+
 type Product {
   id: ID!
   name: String
+  variants: [ProductVariant]
 }
 type Query {
   product(id: ID): Product

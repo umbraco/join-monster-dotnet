@@ -16,7 +16,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void Ctor_WhenConverterIsNull_ThrowsException()
         {
-            Action action = () => new JoinMonsterExecuter(null, null);
+            Action action = () => new JoinMonsterExecutor(null, null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
@@ -27,7 +27,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void Ctor_WhenCompilerIsNull_ThrowsException()
         {
-            Action action = () => new JoinMonsterExecuter(new QueryToSqlConverterStub(), null);
+            Action action = () => new JoinMonsterExecutor(new QueryToSqlConverterStub(), null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
@@ -38,7 +38,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void Execute_WhenContextIsNull_ThrowsException()
         {
-            var sut = new JoinMonsterExecuter(new QueryToSqlConverterStub(), new SqlCompilerStub());
+            var sut = new JoinMonsterExecutor(new QueryToSqlConverterStub(), new SqlCompilerStub());
 
             Func<Task> action = () => sut.Execute(null, null);
 
@@ -51,7 +51,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void Execute_WhenDatabaseCallIsNull_ThrowsException()
         {
-            var sut = new JoinMonsterExecuter(new QueryToSqlConverterStub(), new SqlCompilerStub());
+            var sut = new JoinMonsterExecutor(new QueryToSqlConverterStub(), new SqlCompilerStub());
 
             Func<Task> action = () => sut.Execute(new ResolveFieldContext(), null);
 
@@ -65,7 +65,7 @@ namespace JoinMonster.Tests.Unit
         public async Task Execute_WithContextAndDatabaseCall_CallsDatabaseCallDelegateWithGeneratedSql()
         {
             var sqlValue = "SELECT \"id\", \"name\" FROM \"products\"";
-            var sut = new JoinMonsterExecuter(new QueryToSqlConverterStub(), new SqlCompilerStub(sqlValue));
+            var sut = new JoinMonsterExecutor(new QueryToSqlConverterStub(), new SqlCompilerStub(sqlValue));
 
             string sqlFromCallDatabase = null;
 
@@ -83,7 +83,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public async Task Execute_WithContextAndDatabaseCall_ReturnsObjectFromDatabaseCall()
         {
-            var sut = new JoinMonsterExecuter(new QueryToSqlConverterStub(), new SqlCompilerStub());
+            var sut = new JoinMonsterExecutor(new QueryToSqlConverterStub(), new SqlCompilerStub());
             var product = new ProductStub {Id = "1", Name = "Jacket"};
 
             Task<object> CallDatabase(string sql) =>

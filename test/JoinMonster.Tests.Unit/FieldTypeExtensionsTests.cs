@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using GraphQL.Types;
+using JoinMonster.Configs;
 using Xunit;
 
 namespace JoinMonster.Tests.Unit
@@ -132,6 +133,62 @@ namespace JoinMonster.Tests.Unit
             var whereDelegate = fieldType.GetSqlWhere();
 
             whereDelegate.Should().Be((WhereDelegate) Where);
+        }
+
+        [Fact]
+        public void SqlJoin_WhenFieldTypeIsNull_ThrowsException()
+        {
+            Action action = () => FieldTypeExtensions.SqlJoin(null, null);
+
+            action.Should()
+                .Throw<ArgumentNullException>()
+                .Which.ParamName.Should()
+                .Be("fieldType");
+        }
+
+        [Fact]
+        public void SqlJoin_WhenJoinDelegateIsNull_ThrowsException()
+        {
+            var fieldType = new FieldType();
+            Action action = () => fieldType.SqlJoin(null);
+
+            action.Should()
+                .Throw<ArgumentNullException>()
+                .Which.ParamName.Should()
+                .Be("join");
+        }
+
+        [Fact]
+        public void GetSqlJoin_WhenFieldTypeIsNull_ThrowsException()
+        {
+            Action action = () => FieldTypeExtensions.GetSqlJoin(null);
+
+            action.Should().Throw<ArgumentNullException>()
+                .Which.ParamName.Should().Be("fieldType");
+        }
+
+        [Fact]
+        public void GetSqlJoin_WhenJoinDelegateHasNotBeenSet_ReturnsNull()
+        {
+            var fieldType = new FieldType();
+
+            var joinDelegate = fieldType.GetSqlJoin();
+
+            joinDelegate.Should().BeNull();
+        }
+
+        [Fact]
+        public void GetSqlJoin_WhenJoinDelegateHasBeenSet_ReturnsJoinDelegate()
+        {
+            Task<string> Join(string parentTable, string childTable, IDictionary<string, object> arguments,
+                IDictionary<string, object> userContext) => Task.FromResult($"{parentTable}.\"id\" = ${childTable}.\"parentId\"");
+
+            var fieldType = new FieldType();
+            fieldType.SqlJoin(Join);
+
+            var joinDelegate = fieldType.GetSqlJoin();
+
+            joinDelegate.Should().Be((JoinDelegate) Join);
         }
     }
 }

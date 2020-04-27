@@ -1,4 +1,5 @@
 using System;
+using JoinMonster.Configs;
 
 namespace JoinMonster.Builders
 {

@@ -30,7 +30,7 @@ namespace JoinMonster.Data
         /// <param name="node">The <see cref="Node"/>.</param>
         /// <param name="context">The <see cref="IResolveFieldContext"/>.</param>
         /// <returns>The compiled SQL.</returns>
-        /// <exception cref="ArgumentNullException">If <see cref="node"/> or <see cref="context"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">If <c>node</c> or <c>context</c> is null.</exception>
         public virtual async Task<string> Compile(Node node, IResolveFieldContext context)
         {
             if (node == null) throw new ArgumentNullException(nameof(node));
@@ -64,6 +64,10 @@ namespace JoinMonster.Data
         {
             switch (node)
             {
+                case SqlTables sqlTables:
+                    foreach (var child in sqlTables)
+                        await StringifySqlAst(parent, child, prefix, context, selections, tables, wheres).ConfigureAwait(false);
+                    break;
                 case SqlTable sqlTable:
                     await HandleTable(parent, sqlTable, prefix, context, selections, tables, wheres).ConfigureAwait(false);
                     foreach (var child in sqlTable.Children)
@@ -74,12 +78,23 @@ namespace JoinMonster.Data
                         await StringifySqlAst(parent, child, prefix, context, selections, tables, wheres).ConfigureAwait(false);
                     break;
                 case SqlColumn sqlColumn:
+                {
                     if (!(parent is SqlTable table))
                         throw new ArgumentException($"'{nameof(parent)}' must be of type {typeof(SqlTable)}", nameof(parent));
 
                     var parentTable = table.As;
                     selections.Add($"{_dialect.Quote(parentTable)}.{_dialect.Quote(sqlColumn.Name)} AS {_dialect.Quote(JoinPrefix(prefix) + sqlColumn.As)}");
                     break;
+                }
+                case SqlComposite sqlComposite:
+                {
+                    if (!(parent is SqlTable table))
+                        throw new ArgumentException($"'{nameof(parent)}' must be of type {typeof(SqlTable)}", nameof(parent));
+
+                    var parentTable = table.As;
+                    selections.Add($"{_dialect.CompositeKey(parentTable, sqlComposite.Name)} AS {_dialect.Quote(JoinPrefix(prefix) + sqlComposite.As)}");
+                    break;
+                }
                 case Arguments _:
                 case SqlNoop _:
                     break;
@@ -92,16 +107,28 @@ namespace JoinMonster.Data
             IResolveFieldContext context, ICollection<string> selections, ICollection<string> tables,
             ICollection<string> wheres)
         {
-            tables.Add($"FROM {_dialect.Quote(node.Name)} AS {_dialect.Quote(node.As)}");
-
             var arguments = node.Arguments.ToDictionary(x => x.Name, x => x.Value.Value);
 
-            var whereTask = node.Where?.Invoke(_dialect.Quote(node.As), arguments, context.UserContext);
-            if (whereTask != null)
+
+            if (node.Where != null)
             {
-                var where = await whereTask.ConfigureAwait(false);
+                var where = await node.Where(_dialect.Quote(node.As), arguments, context.UserContext)
+                    .ConfigureAwait(false);
+
                 if (where != null)
                     wheres.Add(where);
+            }
+
+            if (parent is SqlTable parentTable && node.Join != null)
+            {
+                var join = await node.Join(_dialect.Quote(parentTable.As), _dialect.Quote(node.As), arguments, context.UserContext)
+                    .ConfigureAwait(false);
+
+                tables.Add($"LEFT JOIN {_dialect.Quote(node.Name)} {_dialect.Quote(node.As)} ON {join}");
+            }
+            else
+            {
+                tables.Add($"FROM {_dialect.Quote(node.Name)} AS {_dialect.Quote(node.As)}");
             }
         }
 

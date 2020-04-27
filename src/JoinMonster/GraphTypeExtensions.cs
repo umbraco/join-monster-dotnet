@@ -2,6 +2,7 @@ using System;
 using GraphQL;
 using GraphQL.Types;
 using JoinMonster.Builders;
+using JoinMonster.Configs;
 
 namespace JoinMonster
 {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using JoinMonster.Builders;
+using JoinMonster.Configs;
 using Xunit;
 
 namespace JoinMonster.Tests.Unit.Builders
