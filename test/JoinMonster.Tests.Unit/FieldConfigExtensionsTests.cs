@@ -67,8 +67,8 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void SqlWhere_WithWhereDelegate_AddsWhereDelegateToMetadata()
         {
-            Task<string> Where(string tableAlias, IDictionary<string, object> arguments,
-                IDictionary<string, object> userContext) => Task.FromResult($"{tableAlias}.\"id\" = 3");
+            string Where(string tableAlias, IDictionary<string, object> arguments,
+                IDictionary<string, object> userContext) => $"{tableAlias}.\"id\" = 3";
 
             var fieldConfig = new FieldConfig("name");
 
@@ -105,8 +105,8 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void SqlJoin_WithJoinDelegate_AddsJoinDelegateToMetadata()
         {
-            Task<string> Join(string parentTable, string childTable, IDictionary<string, object> arguments,
-                IDictionary<string, object> userContext) => Task.FromResult($"{parentTable}.\"id\" = ${childTable}.\"parentId\"");
+            string Join(string parentTable, string childTable, IDictionary<string, object> arguments,
+                IDictionary<string, object> userContext) => $"{parentTable}.\"id\" = ${childTable}.\"parentId\"";
 
             var fieldConfig = new FieldConfig("name");
 

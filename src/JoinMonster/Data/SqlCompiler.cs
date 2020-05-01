@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using GraphQL.Types;
+using JoinMonster.Configs;
 using JoinMonster.Language.AST;
 
 namespace JoinMonster.Data
@@ -31,7 +32,7 @@ namespace JoinMonster.Data
         /// <param name="context">The <see cref="IResolveFieldContext"/>.</param>
         /// <returns>The compiled SQL.</returns>
         /// <exception cref="ArgumentNullException">If <c>node</c> or <c>context</c> is null.</exception>
-        public virtual async Task<string> Compile(Node node, IResolveFieldContext context)
+        public virtual string Compile(Node node, IResolveFieldContext context)
         {
             if (node == null) throw new ArgumentNullException(nameof(node));
             if (context == null) throw new ArgumentNullException(nameof(context));
@@ -42,7 +43,7 @@ namespace JoinMonster.Data
             var tables = new List<string>();
             var wheres = new List<string>();
 
-            await StringifySqlAst(null, node, new string[0], context, selections, tables, wheres).ConfigureAwait(false);
+            StringifySqlAst(null, node, Array.Empty<string>(), context, selections, tables, wheres);
 
             var sb = new StringBuilder();
             sb.AppendLine("SELECT");
@@ -58,24 +59,16 @@ namespace JoinMonster.Data
             return sb.ToString().Trim();
         }
 
-        private async Task StringifySqlAst(Node? parent, Node node, IReadOnlyCollection<string> prefix,
+        private void StringifySqlAst(Node? parent, Node node, IReadOnlyCollection<string> prefix,
             IResolveFieldContext context, ICollection<string> selections, ICollection<string> tables,
             ICollection<string> wheres)
         {
             switch (node)
             {
-                case SqlTables sqlTables:
-                    foreach (var child in sqlTables)
-                        await StringifySqlAst(parent, child, prefix, context, selections, tables, wheres).ConfigureAwait(false);
-                    break;
                 case SqlTable sqlTable:
-                    await HandleTable(parent, sqlTable, prefix, context, selections, tables, wheres).ConfigureAwait(false);
+                    HandleTable(parent, sqlTable, prefix, context, selections, tables, wheres);
                     foreach (var child in sqlTable.Children)
-                        await StringifySqlAst(node, child, new List<string>(prefix) {sqlTable.As}, context, selections, tables, wheres).ConfigureAwait(false);
-                    break;
-                case SqlColumns sqlColumns:
-                    foreach (var child in sqlColumns)
-                        await StringifySqlAst(parent, child, prefix, context, selections, tables, wheres).ConfigureAwait(false);
+                        StringifySqlAst(node, child, new List<string>(prefix) {sqlTable.As}, context, selections, tables, wheres);
                     break;
                 case SqlColumn sqlColumn:
                 {
@@ -95,7 +88,8 @@ namespace JoinMonster.Data
                     selections.Add($"{_dialect.CompositeKey(parentTable, sqlComposite.Name)} AS {_dialect.Quote(JoinPrefix(prefix) + sqlComposite.As)}");
                     break;
                 }
-                case Arguments _:
+                case SqlJunction _:
+                case Argument _:
                 case SqlNoop _:
                     break;
                 default:
@@ -103,33 +97,51 @@ namespace JoinMonster.Data
             }
         }
 
-        private async Task HandleTable(Node? parent, SqlTable node, IReadOnlyCollection<string> prefix,
+        private void HandleTable(Node? parent, SqlTable node, IReadOnlyCollection<string> prefix,
             IResolveFieldContext context, ICollection<string> selections, ICollection<string> tables,
             ICollection<string> wheres)
         {
             var arguments = node.Arguments.ToDictionary(x => x.Name, x => x.Value.Value);
 
+            var junctionWhere = node.Junction?.Where?.Invoke(_dialect.Quote(node.Junction.As), arguments, context.UserContext);
+            if(junctionWhere != null)
+                wheres.Add(junctionWhere);
 
-            if (node.Where != null)
+            var where = node.Where?.Invoke(_dialect.Quote(node.As), arguments, context.UserContext);
+            if (where != null)
+                wheres.Add(where);
+
+            if (parent is SqlTable parentTable)
             {
-                var where = await node.Where(_dialect.Quote(node.As), arguments, context.UserContext)
-                    .ConfigureAwait(false);
+                if (node.Join != null)
+                {
+                    var join = node.Join(_dialect.Quote(parentTable.As), _dialect.Quote(node.As), arguments,
+                        context.UserContext);
 
-                if (where != null)
-                    wheres.Add(where);
+                    tables.Add($"LEFT JOIN {_dialect.Quote(node.Name)} {_dialect.Quote(node.As)} ON {join}");
+                    return;
+                }
+
+                if (node.Junction != null)
+                {
+                    // TODO: Handle batching and paging
+                    var joinCondition1 = node.Junction.FromParent(
+                        _dialect.Quote(parentTable.As),
+                        _dialect.Quote(node.Junction.As),
+                        arguments, context.UserContext);
+                    var joinCondition2 = node.Junction.ToChild(
+                        _dialect.Quote(node.Junction.As),
+                        _dialect.Quote(node.As),
+                        arguments, context.UserContext);
+
+                    tables.Add($"LEFT JOIN {_dialect.Quote(node.Junction.Table)} {_dialect.Quote(node.Junction.As)} ON {joinCondition1}");
+                    tables.Add($"LEFT JOIN {_dialect.Quote(node.Name)} {_dialect.Quote(node.As)} ON {joinCondition2}");
+
+                    return;
+                }
             }
 
-            if (parent is SqlTable parentTable && node.Join != null)
-            {
-                var join = await node.Join(_dialect.Quote(parentTable.As), _dialect.Quote(node.As), arguments, context.UserContext)
-                    .ConfigureAwait(false);
-
-                tables.Add($"LEFT JOIN {_dialect.Quote(node.Name)} {_dialect.Quote(node.As)} ON {join}");
-            }
-            else
-            {
-                tables.Add($"FROM {_dialect.Quote(node.Name)} AS {_dialect.Quote(node.As)}");
-            }
+            tables.Add($"FROM {_dialect.Quote(node.Name)} AS {_dialect.Quote(node.As)}");
         }
 
         private static string JoinPrefix(IEnumerable<string> prefix) =>

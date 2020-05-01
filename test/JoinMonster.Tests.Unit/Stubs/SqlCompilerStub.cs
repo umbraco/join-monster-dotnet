@@ -14,9 +14,9 @@ namespace JoinMonster.Tests.Unit.Stubs
             _sql = sql;
         }
 
-        public override Task<string> Compile(Node node, IResolveFieldContext context)
+        public override string Compile(Node node, IResolveFieldContext context)
         {
-            return Task.FromResult(_sql);
+            return _sql;
         }
     }
 }

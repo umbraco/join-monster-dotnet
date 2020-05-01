@@ -124,8 +124,8 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void GetSqlWhere_WhenWhereDelegateHasBeenSet_ReturnsWhereDelegate()
         {
-            Task<string> Where(string tableAlias, IDictionary<string, object> arguments,
-                IDictionary<string, object> userContext) => Task.FromResult<string>(null);
+            string Where(string tableAlias, IDictionary<string, object> arguments,
+                IDictionary<string, object> userContext) => null;
 
             var fieldType = new FieldType();
             fieldType.SqlWhere(Where);
@@ -180,8 +180,8 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void GetSqlJoin_WhenJoinDelegateHasBeenSet_ReturnsJoinDelegate()
         {
-            Task<string> Join(string parentTable, string childTable, IDictionary<string, object> arguments,
-                IDictionary<string, object> userContext) => Task.FromResult($"{parentTable}.\"id\" = ${childTable}.\"parentId\"");
+            string Join(string parentTable, string childTable, IDictionary<string, object> arguments,
+                IDictionary<string, object> userContext) => $"{parentTable}.\"id\" = ${childTable}.\"parentId\"";
 
             var fieldType = new FieldType();
             fieldType.SqlJoin(Join);

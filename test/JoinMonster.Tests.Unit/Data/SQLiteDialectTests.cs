@@ -15,5 +15,15 @@ namespace JoinMonster.Tests.Unit.Data
 
             quoted.Should().Be("\"product\"");
         }
+
+        [Fact]
+        public void CompositeKey_WithParentTableAndKeys_ReturnsCombinedString()
+        {
+            var dialect = new SQLiteDialect();
+
+            var sql = dialect.CompositeKey("people", new[] {"id", "firstName", "lastName"});
+
+            sql.Should().Be("\"people\".\"id\" || \"people\".\"firstName\" || \"people\".\"lastName\"");
+        }
     }
 }

@@ -9,7 +9,7 @@ namespace JoinMonster.Data
     public class SQLiteDialect : ISqlDialect
     {
         /// <inheritdoc />
-        public virtual string Quote(string value) => $@"""{value}""";
+        public virtual string Quote(string str) => $@"""{str}""";
 
         /// <inheritdoc />
         public string CompositeKey(string parentTable, IEnumerable<string> keys)

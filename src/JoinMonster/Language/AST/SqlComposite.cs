@@ -2,7 +2,7 @@ namespace JoinMonster.Language.AST
 {
     public class SqlComposite : SqlColumnBase
     {
-        public SqlComposite(string[] name, string fieldName, string @as) : base(fieldName, @as)
+        public SqlComposite(string[] name, string fieldName, string @as, bool isId = false) : base(fieldName, @as, isId)
         {
             Name = name;
         }

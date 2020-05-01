@@ -95,7 +95,7 @@ namespace JoinMonster.Tests.Unit.Language
             node.Should()
                 .BeOfType<SqlTable>()
                 .Which.Columns.Should()
-                .ContainEquivalentOf(new SqlColumn("id", "id", "id"),
+                .ContainEquivalentOf(new SqlColumn("id", "id", "id", true),
                     config => config.Excluding(x => x.SourceLocation))
                 .And.ContainEquivalentOf(new SqlColumn("name", "name", "name"),
                     config => config.Excluding(x => x.SourceLocation));
@@ -167,7 +167,7 @@ namespace JoinMonster.Tests.Unit.Language
             node.Should()
                 .BeOfType<SqlTable>()
                 .Which.Columns.Should()
-                .ContainEquivalentOf(new SqlColumn("id", "id", "id"));
+                .ContainEquivalentOf(new SqlColumn("id", "id", "id", true));
         }
 
         [Fact]
@@ -188,7 +188,7 @@ namespace JoinMonster.Tests.Unit.Language
             node.Should()
                 .BeOfType<SqlTable>()
                 .Which.Columns.Should()
-                .ContainEquivalentOf(new SqlComposite(new[] {"id", "key"}, "id#key", "id#key"));
+                .ContainEquivalentOf(new SqlComposite(new[] {"id", "key"}, "id#key", "id#key", true));
         }
 
         [Fact]
@@ -238,8 +238,8 @@ namespace JoinMonster.Tests.Unit.Language
         [Fact]
         public void Convert_WhenFieldHasWhereExpression_SetsWhereOnSqlTable()
         {
-            Task<string> Where(string tableAlias, IDictionary<string, object> arguments,
-                IDictionary<string, object> userContext) => Task.FromResult($"{tableAlias}.\"id\" = 3");
+            string Where(string tableAlias, IDictionary<string, object> arguments,
+                IDictionary<string, object> userContext) => $"{tableAlias}.\"id\" = 3";
 
             var schema = CreateSimpleSchema(builder =>
             {
@@ -319,8 +319,8 @@ namespace JoinMonster.Tests.Unit.Language
         [Fact]
         public void Convert_WhenFieldHasJoinExpression_SetsJoinOnSqlTable()
         {
-            Task<string> Join(string parentTable, string childTable, IDictionary<string, object> arguments,
-                IDictionary<string, object> userContext) => Task.FromResult($"{parentTable}.\"id\" = ${childTable}.\"productId\"");
+            string Join(string parentTable, string childTable, IDictionary<string, object> arguments,
+                IDictionary<string, object> userContext) => $"{parentTable}.\"id\" = ${childTable}.\"productId\"";
 
             var schema = CreateSimpleSchema(builder =>
             {
@@ -355,7 +355,7 @@ namespace JoinMonster.Tests.Unit.Language
                 .Be((JoinDelegate) Join);
         }
 
-        [Fact]
+        [Fact(Skip = "We cannot rely on field resolver is set or not since FieldMiddleware is a resolver.")]
         public void Convert_WhenFieldHasAResolver_ColumnsDoesNotContainField()
         {
             var schema = CreateSimpleSchema(builder =>

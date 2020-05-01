@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 using GraphQL.Types;
 using JoinMonster.Configs;
@@ -30,19 +33,35 @@ namespace JoinMonster
         /// Takes a <see cref="IResolveFieldContext"/> and returns a hydrated object with the data.
         /// </summary>
         /// <param name="context">The <see cref="IResolveFieldContext"/>.</param>
-        /// <param name="databaseCall">A <see cref="DatabaseCallDelegate"/> that is passed the compiled SQL and calls the database and returns the data.</param>
+        /// <param name="databaseCall">A <see cref="DatabaseCallDelegate"/> that is passed the compiled SQL and calls the database and returns a <see cref="IDataReader"/>.</param>
         /// <returns>The correctly nested data from the database.</returns>
         /// <exception cref="ArgumentNullException">If <c>context</c> or <c>databaseCall</c> is null.</exception>
-        public async Task<object?> Execute(IResolveFieldContext context, DatabaseCallDelegate databaseCall)
+        public async Task<object?> ExecuteAsync(IResolveFieldContext context, DatabaseCallDelegate databaseCall)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
             if (databaseCall == null) throw new ArgumentNullException(nameof(databaseCall));
 
             var sqlAst = _converter.Convert(context);
-            var sql = await _compiler.Compile(sqlAst, context).ConfigureAwait(false);
+            var sql = _compiler.Compile(sqlAst, context);
 
             // TODO: Run batches and map result
-            return await databaseCall(sql).ConfigureAwait(false);
+            using var reader =  await databaseCall(sql, new Dictionary<string, object>()).ConfigureAwait(false);
+
+            var data = new List<IDictionary<string, object?>>();
+            while (reader.Read())
+            {
+                var item = new Dictionary<string, object?>();
+                for (var i = 0; i < reader.FieldCount; ++i)
+                {
+                    item[reader.GetName(i)] = reader.IsDBNull(i) ? null : reader.GetValue(i);
+                }
+                data.Add(item);
+            }
+
+            if (context.ReturnType.IsListType())
+                return data.AsEnumerable();
+
+            return data.FirstOrDefault();
         }
     }
 }

@@ -1,13 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using GraphQL;
 using GraphQL.Language.AST;
 using GraphQL.Types;
 using JoinMonster.Configs;
 using JoinMonster.Language.AST;
 using Argument = JoinMonster.Language.AST.Argument;
-using Arguments = JoinMonster.Language.AST.Arguments;
 
 namespace JoinMonster.Language
 {
@@ -57,28 +55,30 @@ namespace JoinMonster.Language
                 return HandleTable(fieldAst, field, complexGraphType, sqlTableConfig, depth, userContext);
             }
 
-            if (sqlColumnConfig != null || field.Resolver == null)
+            // TODO: Looks like we can't check if field.Resolver is null because FieldMiddleware is registered as a resolver
+            // if (sqlColumnConfig != null || field.Resolver == null)
                 return HandleColumn(fieldAst, field, gqlType, sqlColumnConfig, depth, userContext);
 
-            return new SqlNoop();
+            // return new SqlNoop();
         }
 
         private Node HandleTable(Field fieldAst, FieldType field, IComplexGraphType graphType,
             SqlTableConfig config, int depth, IDictionary<string, object> userContext)
         {
+            var fieldName = fieldAst.Name;
             var tableName = config.Table;
             var tableAs = fieldAst.Name;
 
-            var columns = new SqlColumns();
+            var columns = new List<SqlColumnBase>();
 
             if (config.UniqueKey.Length == 1)
             {
-                columns.Add(new SqlColumn(config.UniqueKey[0], config.UniqueKey[0], config.UniqueKey[0]));
+                columns.Add(new SqlColumn(config.UniqueKey[0], config.UniqueKey[0], config.UniqueKey[0], true));
             }
             else
             {
                 var clumsyName = string.Join("#", config.UniqueKey);
-                columns.Add(new SqlComposite(config.UniqueKey, clumsyName, clumsyName));
+                columns.Add(new SqlComposite(config.UniqueKey, clumsyName, clumsyName, true));
             }
 
             if (config.AlwaysFetch != null)
@@ -87,7 +87,7 @@ namespace JoinMonster.Language
                     columns.Add(new SqlColumn(column, column, column));
             }
 
-            var tables = new SqlTables();
+            var tables = new List<SqlTable>();
 
             HandleSelections(columns, tables, graphType, fieldAst.SelectionSet.Selections, depth, userContext);
 
@@ -95,9 +95,21 @@ namespace JoinMonster.Language
             var grabMany = field.ResolvedType.IsListType();
             var where = field.GetSqlWhere();
             var join = field.GetSqlJoin();
+            var junction = field.GetSqlJunction();
 
-            return new SqlTable(tableName, tableAs, columns, tables, arguments, grabMany, where, join)
-                .WithLocation(fieldAst.SourceLocation);
+            var sqlTable = new SqlTable(tableName, fieldName, tableAs, columns.AsReadOnly(), tables.AsReadOnly(),
+                    arguments.AsReadOnly(), grabMany, where).WithLocation(fieldAst.SourceLocation);
+
+            if (join != null)
+            {
+                sqlTable.Join = join;
+            }
+            else if(junction != null)
+            {
+                sqlTable.Junction = new SqlJunction(junction.Table, junction.Table, junction.FromParent, junction.ToChild, junction.Where);
+            }
+
+            return sqlTable;
         }
 
         private Node HandleColumn(Field fieldAst, FieldType field, IGraphType graphType,
@@ -110,9 +122,9 @@ namespace JoinMonster.Language
             return new SqlColumn(columnName, fieldName, columnAs).WithLocation(fieldAst.SourceLocation);
         }
 
-        private Arguments HandleArguments(Field fieldAst)
+        private List<Argument> HandleArguments(Field fieldAst)
         {
-            var arguments = new Arguments();
+            var arguments = new List<Argument>();
             if (fieldAst.Arguments != null)
             {
                 foreach (var arg in fieldAst.Arguments)
@@ -125,7 +137,7 @@ namespace JoinMonster.Language
             return arguments;
         }
 
-        private void HandleSelections(SqlColumns sqlColumns, SqlTables tables,
+        private void HandleSelections(List<SqlColumnBase> sqlColumns, List<SqlTable> tables,
             IComplexGraphType graphType, IEnumerable<ISelection> selections, int depth, IDictionary<string, object> userContext)
         {
             foreach (var selection in selections)
@@ -138,8 +150,8 @@ namespace JoinMonster.Language
 
                         switch (node)
                         {
-                            case SqlColumn sqlColumn:
-                                var existing = sqlColumns.FirstOrDefault(x => x.FieldName == fieldAst.Name);
+                            case SqlColumnBase sqlColumn:
+                                var existing = sqlColumns.Find(x => x.FieldName == fieldAst.Name);
                                 if (existing != null)
                                     continue;
 

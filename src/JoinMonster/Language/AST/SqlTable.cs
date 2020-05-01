@@ -5,8 +5,10 @@ namespace JoinMonster.Language.AST
 {
     public class SqlTable : Node
     {
-        public SqlTable(string name, string @as, SqlColumns columns, SqlTables tables, Arguments arguments, bool grabMany, WhereDelegate? where, JoinDelegate? join)
+        public SqlTable(string name, string fieldName, string @as, IEnumerable<SqlColumnBase> columns,
+            IEnumerable<SqlTable> tables, IEnumerable<Argument> arguments, bool grabMany, WhereDelegate? where)
         {
+            FieldName = fieldName;
             Name = name;
             As = @as;
             Columns = columns;
@@ -14,28 +16,31 @@ namespace JoinMonster.Language.AST
             Arguments = arguments;
             GrabMany = grabMany;
             Where = where;
-            Join = join;
         }
 
         public string As { get; }
         public string Name { get; }
+        public string FieldName { get; }
         public bool GrabMany { get; }
-        public Arguments Arguments { get; }
-        public SqlColumns Columns { get; }
-        public SqlTables Tables { get; }
+        public IEnumerable<Argument> Arguments { get; }
+        public IEnumerable<SqlColumnBase> Columns { get; }
+        public IEnumerable<SqlTable> Tables { get; }
+        public SqlJunction? Junction { get; set; }
         public WhereDelegate? Where { get; }
-        public JoinDelegate? Join { get; }
+        public JoinDelegate? Join { get; set; }
 
         public override IEnumerable<Node> Children
         {
             get
             {
-                if (Arguments != null)
-                    yield return Arguments;
-                if (Columns != null)
-                    yield return Columns;
-                if (Tables != null)
-                    yield return Tables;
+                foreach (var argument in Arguments)
+                    yield return argument;
+                foreach (var column in Columns)
+                    yield return column;
+                foreach (var table in Tables)
+                    yield return table;
+                if (Junction != null)
+                    yield return Junction;
             }
         }
     }

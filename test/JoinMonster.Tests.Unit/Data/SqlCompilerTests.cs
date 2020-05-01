@@ -31,7 +31,7 @@ namespace JoinMonster.Tests.Unit.Data
         {
             var compiler = new SqlCompiler(new SqlDialectStub());
 
-            Func<Task> action = async () => await compiler.Compile(null, null);
+            Func<string> action = () => compiler.Compile(null, null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
@@ -44,7 +44,7 @@ namespace JoinMonster.Tests.Unit.Data
         {
             var compiler = new SqlCompiler(new SqlDialectStub());
 
-            Func<Task> action = async () => await compiler.Compile(new SqlNoop(), null);
+            Func<string> action = () => compiler.Compile(new SqlNoop(), null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
@@ -53,7 +53,7 @@ namespace JoinMonster.Tests.Unit.Data
         }
 
         [Fact]
-        public async Task Compile_WithSimpleQuery_ReturnsSql()
+        public void Compile_WithSimpleQuery_ReturnsSql()
         {
             var schema = CreateSimpleSchema(builder =>
             {
@@ -68,13 +68,13 @@ namespace JoinMonster.Tests.Unit.Data
             var compiler = new SqlCompiler(new SqlDialectStub());
 
             var node = converter.Convert(context);
-            var sql = await compiler.Compile(node, context);
+            var sql = compiler.Compile(node, context);
 
             sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\"\nFROM \"products\" AS \"product\"");
         }
 
         [Fact]
-        public async Task Compile_WhenQueryIncludesUniqueKey_ColumnIsOnlySelectedOnce()
+        public void Compile_WhenQueryIncludesUniqueKey_ColumnIsOnlySelectedOnce()
         {
             var schema = CreateSimpleSchema(builder =>
             {
@@ -89,13 +89,13 @@ namespace JoinMonster.Tests.Unit.Data
             var compiler = new SqlCompiler(new SqlDialectStub());
 
             var node = converter.Convert(context);
-            var sql = await compiler.Compile(node, context);
+            var sql = compiler.Compile(node, context);
 
             sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\"\nFROM \"products\" AS \"product\"");
         }
 
         [Fact]
-        public async Task Compile_WhenTableConfigHasCompositeUniqueKey_KeysAreIncludedInGeneratedSql()
+        public void Compile_WhenTableConfigHasCompositeUniqueKey_KeysAreIncludedInGeneratedSql()
         {
             var schema = CreateSimpleSchema(builder =>
             {
@@ -110,13 +110,13 @@ namespace JoinMonster.Tests.Unit.Data
             var compiler = new SqlCompiler(new SqlDialectStub());
 
             var node = converter.Convert(context);
-            var sql = await compiler.Compile(node, context);
+            var sql = compiler.Compile(node, context);
 
             sql.Should().Be("SELECT\n  CONCAT(\"product\".\"id\", \"product\".\"firstName\", \"product\".\"lastName\") AS \"id#firstName#lastName\",\n  \"product\".\"name\" AS \"name\"\nFROM \"products\" AS \"product\"");
         }
 
         [Fact]
-        public async Task Compile_WithWhereQuery_ReturnsSqlIncludingWhereCondition()
+        public void Compile_WithWhereQuery_ReturnsSqlIncludingWhereCondition()
         {
             var schema = CreateSimpleSchema(builder =>
             {
@@ -125,7 +125,7 @@ namespace JoinMonster.Tests.Unit.Data
 
                 builder.Types.For("Query")
                     .FieldFor("product", null)
-                    .SqlWhere((tableAlias, _, __) => Task.FromResult($"{tableAlias}.\"id\" = 1"));
+                    .SqlWhere((tableAlias, _, __) => $"{tableAlias}.\"id\" = 1");
             });
 
             var query = "{ product { name } }";
@@ -135,13 +135,13 @@ namespace JoinMonster.Tests.Unit.Data
             var compiler = new SqlCompiler(new SqlDialectStub());
 
             var node = converter.Convert(context);
-            var sql = await compiler.Compile(node, context);
+            var sql = compiler.Compile(node, context);
 
             sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\"\nFROM \"products\" AS \"product\"\nWHERE \"product\".\"id\" = 1");
         }
 
         [Fact]
-        public async Task Compile_WithWhereQueryAndArguments_PassesArgumentsToWhereDelegate()
+        public void Compile_WithWhereQueryAndArguments_PassesArgumentsToWhereDelegate()
         {
             var schema = CreateSimpleSchema(builder =>
             {
@@ -151,7 +151,7 @@ namespace JoinMonster.Tests.Unit.Data
                 builder.Types.For("Query")
                     .FieldFor("product", null)
                     .SqlWhere((tableAlias, arguments, __) =>
-                        Task.FromResult($"{tableAlias}.\"id\" = \"{arguments["id"]}\""));
+                        $"{tableAlias}.\"id\" = \"{arguments["id"]}\"");
             });
 
             var query = "{ product(id: \"3\") { name } }";
@@ -161,14 +161,14 @@ namespace JoinMonster.Tests.Unit.Data
             var compiler = new SqlCompiler(new SqlDialectStub());
 
             var node = converter.Convert(context);
-            var sql = await compiler.Compile(node, context);
+            var sql = compiler.Compile(node, context);
 
             sql.Should()
                 .Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\"\nFROM \"products\" AS \"product\"\nWHERE \"product\".\"id\" = \"3\"");
         }
 
         [Fact]
-        public async Task Compile_WithJoinCondition_SqlIncludingJoinCondition()
+        public void Compile_WithJoinCondition_SqlIncludingJoinCondition()
         {
             var schema = CreateSimpleSchema(builder =>
             {
@@ -181,7 +181,7 @@ namespace JoinMonster.Tests.Unit.Data
                 builder.Types.For("Product")
                     .FieldFor("variants", null)
                     .SqlJoin((parentTable, childTable, _, __) =>
-                        Task.FromResult($"{parentTable}.\"id\" = {childTable}.\"productId\""));
+                        $"{parentTable}.\"id\" = {childTable}.\"productId\"");
 
                 builder.Types.For("ProductVariant")
                     .SqlTable("productVariants", "id");
@@ -194,11 +194,65 @@ namespace JoinMonster.Tests.Unit.Data
             var compiler = new SqlCompiler(new SqlDialectStub());
 
             var node = converter.Convert(context);
-            var sql = await compiler.Compile(node, context);
+            var sql = compiler.Compile(node, context);
 
             sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"variants\".\"id\" AS \"variants__id\",\n  \"variants\".\"name\" AS \"variants__name\"\nFROM \"products\" AS \"product\"\nLEFT JOIN \"productVariants\" \"variants\" ON \"product\".\"id\" = \"variants\".\"productId\"");
         }
 
+        [Fact]
+        public void Compile_WithJunction_SqlIncludingJoinCondition()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Product")
+                    .SqlTable("products", "id");
+
+                builder.Types.For("Product")
+                    .FieldFor("relatedProducts", null)
+                    .SqlJunction("productRelations",
+                        (products, productRelations, _, __) => $"{products}.\"id\" = {productRelations}.\"productId\"",
+                        (productRelations, products, _, __) => $"{productRelations}.\"relatedProductId\" = {products}.\"id\"");
+            });
+
+            var query = "{ product { name, relatedProducts { name } } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var compiler = new SqlCompiler(new SqlDialectStub());
+
+            var node = converter.Convert(context);
+            var sql = compiler.Compile(node, context);
+
+            sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"relatedProducts\".\"id\" AS \"relatedProducts__id\",\n  \"relatedProducts\".\"name\" AS \"relatedProducts__name\"\nFROM \"products\" AS \"product\"\nLEFT JOIN \"productRelations\" \"productRelations\" ON \"product\".\"id\" = \"productRelations\".\"productId\"\nLEFT JOIN \"products\" \"relatedProducts\" ON \"productRelations\".\"relatedProductId\" = \"relatedProducts\".\"id\"");
+        }
+
+        [Fact]
+        public void Compile_WithJunctionAndWhere_SqlIncludingJoinCondition()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Product")
+                    .SqlTable("products", "id");
+
+                builder.Types.For("Product")
+                    .FieldFor("relatedProducts", null)
+                    .SqlJunction("productRelations",
+                        (products, productRelations, _, __) => $"{products}.\"id\" = {productRelations}.\"productId\"",
+                        (productRelations, products, _, __) => $"{productRelations}.\"relatedProductId\" = {products}.\"id\"")
+                    .Where((productRelations, _, __) => $"{productRelations}.\"productId\" <> {productRelations}.\"relatedProductId\"");
+            });
+
+            var query = "{ product { name, relatedProducts { name } } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var compiler = new SqlCompiler(new SqlDialectStub());
+
+            var node = converter.Convert(context);
+            var sql = compiler.Compile(node, context);
+
+            sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"relatedProducts\".\"id\" AS \"relatedProducts__id\",\n  \"relatedProducts\".\"name\" AS \"relatedProducts__name\"\nFROM \"products\" AS \"product\"\nLEFT JOIN \"productRelations\" \"productRelations\" ON \"product\".\"id\" = \"productRelations\".\"productId\"\nLEFT JOIN \"products\" \"relatedProducts\" ON \"productRelations\".\"relatedProductId\" = \"relatedProducts\".\"id\"\nWHERE \"productRelations\".\"productId\" <> \"productRelations\".\"relatedProductId\"");
+        }
 
         private static ISchema CreateSimpleSchema(Action<SchemaBuilder> configure = null)
         {
@@ -212,6 +266,7 @@ type Product {
   id: ID!
   name: String
   variants: [ProductVariant]
+  relatedProducts: [Product]
 }
 type Query {
   product(id: ID): Product
