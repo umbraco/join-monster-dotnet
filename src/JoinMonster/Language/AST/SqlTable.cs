@@ -28,6 +28,7 @@ namespace JoinMonster.Language.AST
         public SqlJunction? Junction { get; set; }
         public WhereDelegate? Where { get; }
         public JoinDelegate? Join { get; set; }
+        public OrderByDelegate? OrderBy { get; set; }
 
         public override IEnumerable<Node> Children
         {

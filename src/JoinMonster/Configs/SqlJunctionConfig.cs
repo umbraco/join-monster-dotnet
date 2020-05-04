@@ -43,6 +43,11 @@ namespace JoinMonster.Configs
         /// </summary>
         public WhereDelegate? Where { get; set; }
 
+        /// <summary>
+        /// the ORDER condition.
+        /// </summary>
+        public OrderByDelegate? OrderBy { get; set; }
+
         // TODO: Add Include (Dictionary/Expression?)
     }
 }

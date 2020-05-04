@@ -1,12 +1,7 @@
 using System;
-using System.Collections.Generic;
-using System.Data;
 using System.Threading.Tasks;
 using FluentAssertions;
 using GraphQL.Types;
-using JoinMonster.Data;
-using JoinMonster.Language;
-using JoinMonster.Tests.Unit.Data;
 using JoinMonster.Tests.Unit.Stubs;
 using Xunit;
 

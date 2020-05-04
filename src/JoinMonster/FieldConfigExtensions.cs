@@ -25,7 +25,7 @@ namespace JoinMonster
         }
 
         /// <summary>
-        /// Set a method that resolves the WHERE condition.
+        /// Set a method that resolves the <c>WHERE</c> condition.
         /// </summary>
         /// <param name="fieldConfig">The field config.</param>
         /// <param name="where">The WHERE condition resolver.</param>
@@ -40,7 +40,7 @@ namespace JoinMonster
         }
 
         /// <summary>
-        /// Set a method that resolves the LEFT JOIN condition.
+        /// Set a method that resolves the <c>LEFT JOIN</c> condition.
         /// </summary>
         /// <param name="fieldConfig">The field config.</param>
         /// <param name="join">The JOIN condition resolver.</param>
@@ -55,7 +55,7 @@ namespace JoinMonster
         }
 
         /// <summary>
-        /// Create a new instance of the <see cref="SqlJunctionConfig"/>
+        /// Configure a SQL Junction.
         /// </summary>
         /// <param name="fieldConfig">The field config.</param>
         /// <param name="tableName">The table name.</param>
@@ -70,6 +70,21 @@ namespace JoinMonster
             var builder = SqlJunctionConfigBuilder.Create(tableName, fromParent, toChild);
             fieldConfig.WithMetadata(nameof(SqlJunctionConfig), builder.SqlJunctionConfig);
             return builder;
+        }
+
+        /// <summary>
+        /// Set a method that resolves the <c>ORDER BY</c> clause.
+        /// </summary>
+        /// <param name="fieldConfig">The field config.</param>
+        /// <param name="orderBy">The <c>ORDER BY</c> builder.</param>
+        /// <returns>The <see cref="FieldConfig"/>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="fieldConfig"/> or <paramref name="orderBy"/> is <c>NULL</c>.</exception>
+        public static FieldConfig SqlOrder(this FieldConfig fieldConfig, OrderByDelegate orderBy)
+        {
+            if (fieldConfig == null) throw new ArgumentNullException(nameof(fieldConfig));
+            if (orderBy == null) throw new ArgumentNullException(nameof(orderBy));
+
+            return fieldConfig.WithMetadata(nameof(OrderByDelegate), orderBy);
         }
     }
 }

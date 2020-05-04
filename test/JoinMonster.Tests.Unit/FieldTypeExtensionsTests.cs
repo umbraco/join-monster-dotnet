@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using GraphQL.Types;
+using JoinMonster.Builders;
 using JoinMonster.Configs;
 using Xunit;
 
@@ -189,6 +190,33 @@ namespace JoinMonster.Tests.Unit
             var joinDelegate = fieldType.GetSqlJoin();
 
             joinDelegate.Should().Be((JoinDelegate) Join);
+        }
+
+        [Fact]
+        public void SqlOrder_WhenOrderByDelegateIsNull_ThrowsException()
+        {
+            var fieldType = new FieldType();
+            Action action = () => fieldType.SqlOrder(null);
+
+            action.Should()
+                .Throw<ArgumentNullException>()
+                .Which.ParamName.Should()
+                .Be("orderBy");
+        }
+
+        [Fact]
+        public void SqlOrder_WithOrderByDelegate_AddsOrderByDelegateToMetadata()
+        {
+            void OrderBy(OrderByBuilder order, IDictionary<string, object> arguments,
+                IDictionary<string, object> userContext) => order.By("name");
+
+            var fieldType = new FieldType();
+            fieldType.SqlOrder(OrderBy);
+
+            var orderBy = fieldType.GetSqlOrder();
+
+            orderBy.Should()
+                .Be((OrderByDelegate) OrderBy);
         }
     }
 }

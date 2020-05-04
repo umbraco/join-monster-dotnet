@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using GraphQL.Types;
+using JoinMonster.Builders;
+using JoinMonster.Configs;
 using JoinMonster.Language.AST;
 
 namespace JoinMonster.Data
@@ -40,18 +42,26 @@ namespace JoinMonster.Data
             var selections = new List<string>();
             var tables = new List<string>();
             var wheres = new List<string>();
+            var orders = new List<string>();
 
-            StringifySqlAst(null, node, Array.Empty<string>(), context, selections, tables, wheres);
+            StringifySqlAst(null, node, Array.Empty<string>(), context, selections, tables, wheres, orders);
 
             var sb = new StringBuilder();
             sb.AppendLine("SELECT");
             sb.Append("  ");
             sb.AppendLine(string.Join(",\n  ", selections));
             sb.AppendLine(string.Join("\n", tables));
+
             if (wheres.Count > 0)
             {
                 sb.Append("WHERE ");
                 sb.AppendLine(string.Join(" AND ", wheres));
+            }
+
+            if (orders.Count > 0)
+            {
+                sb.Append("ORDER BY ");
+                sb.AppendLine(string.Join(", ", orders));
             }
 
             return sb.ToString().Trim();
@@ -59,14 +69,14 @@ namespace JoinMonster.Data
 
         private void StringifySqlAst(Node? parent, Node node, IReadOnlyCollection<string> prefix,
             IResolveFieldContext context, ICollection<string> selections, ICollection<string> tables,
-            ICollection<string> wheres)
+            ICollection<string> wheres, ICollection<string> orders)
         {
             switch (node)
             {
                 case SqlTable sqlTable:
-                    HandleTable(parent, sqlTable, prefix, context, selections, tables, wheres);
+                    HandleTable(parent, sqlTable, prefix, context, selections, tables, wheres, orders);
                     foreach (var child in sqlTable.Children)
-                        StringifySqlAst(node, child, new List<string>(prefix) {sqlTable.As}, context, selections, tables, wheres);
+                        StringifySqlAst(node, child, new List<string>(prefix) {sqlTable.As}, context, selections, tables, wheres, orders);
                     break;
                 case SqlColumn sqlColumn:
                 {
@@ -97,7 +107,7 @@ namespace JoinMonster.Data
 
         private void HandleTable(Node? parent, SqlTable node, IReadOnlyCollection<string> prefix,
             IResolveFieldContext context, ICollection<string> selections, ICollection<string> tables,
-            ICollection<string> wheres)
+            ICollection<string> wheres, ICollection<string> orders)
         {
             var arguments = node.Arguments.ToDictionary(x => x.Name, x => x.Value.Value);
 
@@ -108,6 +118,12 @@ namespace JoinMonster.Data
             var where = node.Where?.Invoke(_dialect.Quote(node.As), arguments, context.UserContext);
             if (where != null)
                 wheres.Add(where);
+
+            if (node.Junction?.OrderBy != null)
+                HandleOrderBy(node.Junction.OrderBy, node.As, arguments, context, orders);
+
+            if (node.OrderBy != null)
+                HandleOrderBy(node.OrderBy, node.As, arguments, context, orders);
 
             if (parent is SqlTable parentTable)
             {
@@ -140,6 +156,21 @@ namespace JoinMonster.Data
             }
 
             tables.Add($"FROM {_dialect.Quote(node.Name)} AS {_dialect.Quote(node.As)}");
+        }
+
+        private void HandleOrderBy(OrderByDelegate order, string tableAlias, IDictionary<string, object> arguments,
+            IResolveFieldContext context, ICollection<string> orders)
+        {
+            var orderByBuilder = new OrderByBuilder();
+            order(orderByBuilder, arguments, context.UserContext);
+            var orderBy = orderByBuilder.OrderBy;
+
+            if (orderBy == null) return;
+
+            do
+            {
+                orders.Add($"{_dialect.Quote(tableAlias)}.{_dialect.Quote(orderBy.Column)} {(orderBy.Direction == SortDirection.Ascending ? "ASC" : "DESC")}");
+            } while ((orderBy = orderBy.ThenBy) != null);
         }
 
         private static string JoinPrefix(IEnumerable<string> prefix) =>

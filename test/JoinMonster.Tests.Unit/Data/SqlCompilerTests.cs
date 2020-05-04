@@ -168,7 +168,7 @@ namespace JoinMonster.Tests.Unit.Data
         }
 
         [Fact]
-        public void Compile_WithJoinCondition_SqlIncludingJoinCondition()
+        public void Compile_WithJoinCondition_SqlShouldIncludeJoinCondition()
         {
             var schema = CreateSimpleSchema(builder =>
             {
@@ -200,7 +200,7 @@ namespace JoinMonster.Tests.Unit.Data
         }
 
         [Fact]
-        public void Compile_WithJunction_SqlIncludingJoinCondition()
+        public void Compile_WithJunction_SqlShouldIncludeJoinCondition()
         {
             var schema = CreateSimpleSchema(builder =>
             {
@@ -227,7 +227,7 @@ namespace JoinMonster.Tests.Unit.Data
         }
 
         [Fact]
-        public void Compile_WithJunctionAndWhere_SqlIncludingJoinCondition()
+        public void Compile_WithJunctionAndWhere_SqlShouldIncludeJoinAndWhereCondition()
         {
             var schema = CreateSimpleSchema(builder =>
             {
@@ -254,6 +254,85 @@ namespace JoinMonster.Tests.Unit.Data
             sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"relatedProducts\".\"id\" AS \"relatedProducts__id\",\n  \"relatedProducts\".\"name\" AS \"relatedProducts__name\"\nFROM \"products\" AS \"product\"\nLEFT JOIN \"productRelations\" \"productRelations\" ON \"product\".\"id\" = \"productRelations\".\"productId\"\nLEFT JOIN \"products\" \"relatedProducts\" ON \"productRelations\".\"relatedProductId\" = \"relatedProducts\".\"id\"\nWHERE \"productRelations\".\"productId\" <> \"productRelations\".\"relatedProductId\"");
         }
 
+        [Fact]
+        public void Compile_WithOrderBy_SqlShouldIncludeOrderByClause()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Product")
+                    .SqlTable("products", "id");
+
+                builder.Types.For("Query")
+                    .FieldFor("products", null)
+                    .SqlOrder((order, _, __) => order.By("name").ThenByDescending("price"));
+            });
+
+            var query = "{ products { name } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var compiler = new SqlCompiler(new SqlDialectStub());
+
+            var node = converter.Convert(context);
+            var sql = compiler.Compile(node, context);
+
+            sql.Should().Be("SELECT\n  \"products\".\"id\" AS \"id\",\n  \"products\".\"name\" AS \"name\"\nFROM \"products\" AS \"products\"\nORDER BY \"products\".\"name\" ASC, \"products\".\"price\" DESC");
+        }
+
+        [Fact]
+        public void Compile_WithWhereAndOrderBy_GeneratesValidSQL()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Product")
+                    .SqlTable("products", "id");
+
+                builder.Types.For("Query")
+                    .FieldFor("products", null)
+                    .SqlWhere((products, _, __) => $"{products}.\"id\" <> 0")
+                    .SqlOrder((order, _, __) => order.By("name").ThenByDescending("price"));
+            });
+
+            var query = "{ products { name } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var compiler = new SqlCompiler(new SqlDialectStub());
+
+            var node = converter.Convert(context);
+            var sql = compiler.Compile(node, context);
+
+            sql.Should().Be("SELECT\n  \"products\".\"id\" AS \"id\",\n  \"products\".\"name\" AS \"name\"\nFROM \"products\" AS \"products\"\nWHERE \"products\".\"id\" <> 0\nORDER BY \"products\".\"name\" ASC, \"products\".\"price\" DESC");
+        }
+
+        [Fact]
+        public void Compile_WithJunctionOrderBy_SqlShouldIncludeJoinAndOrderByClause()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Product")
+                    .SqlTable("products", "id");
+
+                builder.Types.For("Product")
+                    .FieldFor("relatedProducts", null)
+                    .SqlJunction("productRelations",
+                        (products, productRelations, _, __) => $"{products}.\"id\" = {productRelations}.\"productId\"",
+                        (productRelations, products, _, __) => $"{productRelations}.\"relatedProductId\" = {products}.\"id\"")
+                    .OrderBy((order, _, __) => order.By("productId"));
+            });
+
+            var query = "{ product { name, relatedProducts { name } } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var compiler = new SqlCompiler(new SqlDialectStub());
+
+            var node = converter.Convert(context);
+            var sql = compiler.Compile(node, context);
+
+            sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"relatedProducts\".\"id\" AS \"relatedProducts__id\",\n  \"relatedProducts\".\"name\" AS \"relatedProducts__name\"\nFROM \"products\" AS \"product\"\nLEFT JOIN \"productRelations\" \"productRelations\" ON \"product\".\"id\" = \"productRelations\".\"productId\"\nLEFT JOIN \"products\" \"relatedProducts\" ON \"productRelations\".\"relatedProductId\" = \"relatedProducts\".\"id\"\nORDER BY \"relatedProducts\".\"productId\" ASC");
+        }
+
         private static ISchema CreateSimpleSchema(Action<SchemaBuilder> configure = null)
         {
             return Schema.For(@"
@@ -270,6 +349,7 @@ type Product {
 }
 type Query {
   product(id: ID): Product
+  products: [Product]
 }
 ", builder => { configure?.Invoke(builder); });
         }

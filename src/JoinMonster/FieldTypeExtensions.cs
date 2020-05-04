@@ -122,5 +122,33 @@ namespace JoinMonster
 
             return fieldType.GetMetadata<SqlJunctionConfig>(nameof(SqlJunctionConfig));
         }
+
+        /// <summary>
+        /// Set a method that resolves the <c>ORDER BY</c> clause.
+        /// </summary>
+        /// <param name="fieldType">The field type.</param>
+        /// <param name="orderBy">The <c>ORDER BY</c> builder.</param>
+        /// <returns>The <see cref="FieldType"/>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="fieldType"/> or <paramref name="orderBy"/> is <c>NULL</c>.</exception>
+        public static FieldType SqlOrder(this FieldType fieldType, OrderByDelegate orderBy)
+        {
+            if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
+            if (orderBy == null) throw new ArgumentNullException(nameof(orderBy));
+
+            return fieldType.WithMetadata(nameof(OrderByDelegate), orderBy);
+        }
+
+        /// <summary>
+        /// Get the SQL <c>ORDER BY</c> resolver.
+        /// </summary>
+        /// <param name="fieldType">The field type.</param>
+        /// <returns>A <see cref="OrderByDelegate"/> if one is set, otherwise <c>null</c>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="fieldType"/> is <c>null</c>.</exception>
+        public static OrderByDelegate GetSqlOrder(this FieldType fieldType)
+        {
+            if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
+
+            return fieldType.GetMetadata<OrderByDelegate>(nameof(OrderByDelegate));
+        }
     }
 }

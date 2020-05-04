@@ -48,5 +48,11 @@ namespace JoinMonster.Builders
             SqlJunctionConfig.Where = where;
             return this;
         }
+
+        public SqlJunctionConfigBuilder OrderBy(OrderByDelegate orderBy)
+        {
+            SqlJunctionConfig.OrderBy = orderBy;
+            return this;
+        }
     }
 }

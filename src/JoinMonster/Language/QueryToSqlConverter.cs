@@ -96,9 +96,15 @@ namespace JoinMonster.Language
             var where = field.GetSqlWhere();
             var join = field.GetSqlJoin();
             var junction = field.GetSqlJunction();
+            var orderBy = field.GetSqlOrder();
 
             var sqlTable = new SqlTable(tableName, fieldName, tableAs, columns.AsReadOnly(), tables.AsReadOnly(),
                     arguments.AsReadOnly(), grabMany, where).WithLocation(fieldAst.SourceLocation);
+
+            if (orderBy != null)
+            {
+                sqlTable.OrderBy = orderBy;
+            }
 
             if (join != null)
             {
@@ -106,7 +112,8 @@ namespace JoinMonster.Language
             }
             else if(junction != null)
             {
-                sqlTable.Junction = new SqlJunction(junction.Table, junction.Table, junction.FromParent, junction.ToChild, junction.Where);
+                sqlTable.Junction = new SqlJunction(junction.Table, junction.Table, junction.FromParent,
+                    junction.ToChild, junction.Where, junction.OrderBy);
             }
 
             return sqlTable;

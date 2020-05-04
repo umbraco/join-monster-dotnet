@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
+using JoinMonster.Builders;
 
 namespace JoinMonster.Configs
 {
@@ -33,6 +34,14 @@ namespace JoinMonster.Configs
     /// <param name="userContext">The user context.</param>
     /// <returns>The RAW SQL condition for the LEFT JOIN.</returns>
     public delegate string JoinDelegate(string parentTable, string childTable, IDictionary<string, object> arguments, IDictionary<string, object> userContext);
+
+    /// <summary>
+    /// Generates a <c>ORDER BY</c> clause.
+    /// </summary>
+    /// <param name="order">The <see cref="OrderByBuilder"/>.</param>
+    /// <param name="arguments">The arguments.</param>
+    /// <param name="userContext">The user context.</param>
+    public delegate void OrderByDelegate(OrderByBuilder order, IDictionary<string, object> arguments, IDictionary<string, object> userContext);
 
     /// <summary>
     /// Takes the SQL string and the parameters and sends them to a database.
