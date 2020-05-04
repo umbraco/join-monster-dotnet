@@ -2,8 +2,16 @@ using System;
 
 namespace JoinMonster.Configs
 {
+    /// <summary>
+    /// SQL table configuration.
+    /// </summary>
     public class SqlTableConfig
     {
+        /// <summary>
+        /// Creates a new instance of <see cref="SqlTableConfig"/>.
+        /// </summary>
+        /// <param name="table">The table name.</param>
+        /// <param name="uniqueKey">The unique key columns.</param>
         public SqlTableConfig(string table, string[] uniqueKey)
         {
             Table = table ?? throw new ArgumentNullException(nameof(table));
@@ -16,7 +24,7 @@ namespace JoinMonster.Configs
         public string Table { get; }
 
         /// <summary>
-        /// The unique keys.
+        /// The unique key columns.
         /// </summary>
         public string[] UniqueKey { get; }
 

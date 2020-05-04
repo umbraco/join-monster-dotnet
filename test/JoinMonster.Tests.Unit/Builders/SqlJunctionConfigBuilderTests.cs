@@ -10,14 +10,14 @@ namespace JoinMonster.Tests.Unit.Builders
     public class SqlJunctionConfigBuilderTests
     {
         [Fact]
-        public void Create_WhenTableIsNull_ThrowsException()
+        public void Create_WhenTableNameIsNull_ThrowsException()
         {
             Action action = () => SqlJunctionConfigBuilder.Create(null, null, null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
                 .Which.ParamName.Should()
-                .Be("table");
+                .Be("tableName");
         }
 
         [Fact]
@@ -74,6 +74,19 @@ namespace JoinMonster.Tests.Unit.Builders
                 SqlJunctionConfigBuilder.Create("friends", (_, __, ___, ____) => "", ToChild);
 
             builder.SqlJunctionConfig.ToChild.Should().Be((JoinDelegate) ToChild);
+        }
+
+        [Fact]
+        public void Where_WithWhereCondition_SetsWhere()
+        {
+            string? Where(string tableAlias, IDictionary<string, object> arguments,
+                IDictionary<string, object> userContext) => "";
+
+            var builder = SqlJunctionConfigBuilder.Create("friends", (_, __, ___, ____) => "", (_, __, ___, ____) => "");
+
+            builder.Where(Where);
+
+            builder.SqlJunctionConfig.Where.Should().Be((WhereDelegate) Where);
         }
     }
 }

@@ -2,8 +2,15 @@ using System;
 
 namespace JoinMonster.Configs
 {
+    /// <summary>
+    /// SQL column configuration.
+    /// </summary>
     public class SqlColumnConfig
     {
+        /// <summary>
+        /// Creates a new instance of <see cref="SqlColumnConfig"/>.
+        /// </summary>
+        /// <param name="column">The column name.</param>
         public SqlColumnConfig(string column)
         {
             Column = column ?? throw new ArgumentNullException(nameof(column));
