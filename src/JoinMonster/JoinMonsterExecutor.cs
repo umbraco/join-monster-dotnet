@@ -7,6 +7,7 @@ using GraphQL.Types;
 using JoinMonster.Configs;
 using JoinMonster.Data;
 using JoinMonster.Language;
+using NestHydration;
 
 namespace JoinMonster
 {
@@ -17,16 +18,22 @@ namespace JoinMonster
     {
         private readonly QueryToSqlConverter _converter;
         private readonly SqlCompiler _compiler;
+        private readonly Hydrator _hydrator;
+        private readonly ObjectShaper _objectShaper;
 
         /// <summary>
         /// Creates a new instance of <see cref="JoinMonsterExecutor"/>.
         /// </summary>
         /// <param name="converter">The <see cref="QueryToSqlConverter"/>.</param>
         /// <param name="compiler">The <see cref="SqlCompiler"/>.</param>
-        public JoinMonsterExecutor(QueryToSqlConverter converter, SqlCompiler compiler)
+        /// <param name="hydrator">The <see cref="Hydrator"/>.</param>
+        public JoinMonsterExecutor(QueryToSqlConverter converter, SqlCompiler compiler, Hydrator hydrator)
         {
             _converter = converter ?? throw new ArgumentNullException(nameof(converter));
             _compiler = compiler ?? throw new ArgumentNullException(nameof(compiler));
+            _hydrator = hydrator ?? throw new ArgumentNullException(nameof(hydrator));
+
+            _objectShaper = new ObjectShaper(new SqlAstValidator());
         }
 
         /// <summary>
@@ -47,7 +54,7 @@ namespace JoinMonster
             // TODO: Run batches and map result
             using var reader =  await databaseCall(sql, new Dictionary<string, object>()).ConfigureAwait(false);
 
-            var data = new List<IDictionary<string, object?>>();
+            var data = new List<Dictionary<string, object?>>();
             while (reader.Read())
             {
                 var item = new Dictionary<string, object?>();
@@ -58,10 +65,14 @@ namespace JoinMonster
                 data.Add(item);
             }
 
-            if (context.ReturnType.IsListType())
-                return data.AsEnumerable();
+            var objectShape = _objectShaper.DefineObjectShape(sqlAst);
 
-            return data.FirstOrDefault();
+            var result = _hydrator.Nest(data, objectShape);
+
+            if (sqlAst.GrabMany)
+                return result.AsEnumerable();
+
+            return result.FirstOrDefault();
         }
     }
 }

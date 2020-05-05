@@ -2,7 +2,9 @@ using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using GraphQL.Types;
+using JoinMonster.Data;
 using JoinMonster.Tests.Unit.Stubs;
+using NestHydration;
 using Xunit;
 
 namespace JoinMonster.Tests.Unit
@@ -12,7 +14,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void Ctor_WhenConverterIsNull_ThrowsException()
         {
-            Action action = () => new JoinMonsterExecutor(null, null);
+            Action action = () => new JoinMonsterExecutor(null, null, null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
@@ -23,7 +25,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void Ctor_WhenCompilerIsNull_ThrowsException()
         {
-            Action action = () => new JoinMonsterExecutor(new QueryToSqlConverterStub(), null);
+            Action action = () => new JoinMonsterExecutor(new QueryToSqlConverterStub(), null, null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
@@ -32,9 +34,20 @@ namespace JoinMonster.Tests.Unit
         }
 
         [Fact]
+        public void Ctor_WhenHydratorIsNull_ThrowsException()
+        {
+            Action action = () => new JoinMonsterExecutor(new QueryToSqlConverterStub(), new SqlCompilerStub(), null);
+
+            action.Should()
+                .Throw<ArgumentNullException>()
+                .Which.ParamName.Should()
+                .Be("hydrator");
+        }
+
+        [Fact]
         public void Execute_WhenContextIsNull_ThrowsException()
         {
-            var sut = new JoinMonsterExecutor(new QueryToSqlConverterStub(), new SqlCompilerStub());
+            var sut = new JoinMonsterExecutor(new QueryToSqlConverterStub(), new SqlCompilerStub(), new Hydrator());
 
             Func<Task> action = () => sut.ExecuteAsync(null, null);
 
@@ -47,7 +60,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void Execute_WhenDatabaseCallIsNull_ThrowsException()
         {
-            var sut = new JoinMonsterExecutor(new QueryToSqlConverterStub(), new SqlCompilerStub());
+            var sut = new JoinMonsterExecutor(new QueryToSqlConverterStub(), new SqlCompilerStub(), new Hydrator());
 
             Func<Task> action = () => sut.ExecuteAsync(new ResolveFieldContext(), null);
 

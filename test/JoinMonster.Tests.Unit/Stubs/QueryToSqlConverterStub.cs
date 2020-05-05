@@ -6,13 +6,13 @@ namespace JoinMonster.Tests.Unit.Stubs
 {
     public class QueryToSqlConverterStub : QueryToSqlConverter
     {
-        private readonly Node _node;
+        private readonly SqlTable _node;
 
-        public QueryToSqlConverterStub(Node node = null)
+        public QueryToSqlConverterStub(SqlTable node = null)
         {
             _node = node;
         }
 
-        public override Node Convert(IResolveFieldContext context) => _node;
+        public override SqlTable Convert(IResolveFieldContext context) => _node;
     }
 }

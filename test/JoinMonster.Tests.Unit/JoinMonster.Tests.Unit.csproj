@@ -3,7 +3,6 @@
     <PropertyGroup>
         <TargetFramework>netcoreapp2.2</TargetFramework>
         <LangVersion>latestmajor</LangVersion>
-        <Nullable>annotations</Nullable>
     </PropertyGroup>
 
     <ItemGroup>

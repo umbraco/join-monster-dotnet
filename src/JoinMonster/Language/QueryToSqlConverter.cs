@@ -20,7 +20,7 @@ namespace JoinMonster.Language
         /// <param name="context">The <see cref="IResolveFieldContext"/>.</param>
         /// <returns>A <see cref="Node"/> representing the SQL Ast.</returns>
         /// <exception cref="ArgumentNullException">If <c>context</c> is null.</exception>
-        public virtual Node Convert(IResolveFieldContext context)
+        public virtual SqlTable Convert(IResolveFieldContext context)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
 
@@ -28,7 +28,11 @@ namespace JoinMonster.Language
             var field = context.FieldDefinition;
             var parentType = context.ParentType.GetNamedType();
 
-            return Convert(fieldAst, field, parentType, 0, context.UserContext);
+            var node = Convert(fieldAst, field, parentType, 0, context.UserContext);
+            if (node is SqlTable sqlTable)
+                return sqlTable;
+
+            throw new JoinMonsterException($"Expected node to be of type '{typeof(SqlTable)}' but was '{node.GetType()}'.");
         }
 
         private Node Convert(Field fieldAst, FieldType field, IGraphType parentType, int depth,

@@ -302,7 +302,7 @@ namespace JoinMonster.Tests.Unit.Language
         }
 
         [Fact]
-        public void Convert_WhenTypeDoesNotHaveSqlTableConfig_ReturnsSqlNoop()
+        public void Convert_WhenTypeDoesNotHaveSqlTableConfig_ThrowsException()
         {
             var schema = CreateSimpleSchema();
 
@@ -310,10 +310,12 @@ namespace JoinMonster.Tests.Unit.Language
             var context = CreateResolveFieldContext(schema, query);
 
             var converter = new QueryToSqlConverter();
-            var node = converter.Convert(context);
+            Action action = () => converter.Convert(context);
 
-            node.Should()
-                .BeOfType<SqlNoop>();
+            action.Should()
+                .Throw<JoinMonsterException>()
+                .Which.Message.Should()
+                .Be($"Expected node to be of type '{typeof(SqlTable)}' but was '{typeof(SqlNoop)}'.");
         }
 
         [Fact]
