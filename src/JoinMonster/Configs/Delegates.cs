@@ -22,7 +22,7 @@ namespace JoinMonster.Configs
     /// <returns>A WHERE condition or null if there's no condition.</returns>
     // TODO: Maybe pass in a "ParameterNameGenerator" and return an object containing the WHERE condition and a Dictionary of parameters.
     // TODO: This would make it more safe instead of relying on the implementer to correctly escape the values.
-    public delegate string? WhereDelegate(string tableAlias, IDictionary<string, object> arguments, IDictionary<string, object> userContext);
+    public delegate string? WhereDelegate(string tableAlias, IReadOnlyDictionary<string, object> arguments, IDictionary<string, object> userContext);
 
 
     /// <summary>
@@ -33,7 +33,7 @@ namespace JoinMonster.Configs
     /// <param name="arguments">The arguments.</param>
     /// <param name="userContext">The user context.</param>
     /// <returns>The RAW SQL condition for the LEFT JOIN.</returns>
-    public delegate string JoinDelegate(string parentTable, string childTable, IDictionary<string, object> arguments, IDictionary<string, object> userContext);
+    public delegate string JoinDelegate(string parentTable, string childTable, IReadOnlyDictionary<string, object> arguments, IDictionary<string, object> userContext);
 
     /// <summary>
     /// Generates a <c>ORDER BY</c> clause.
@@ -41,7 +41,15 @@ namespace JoinMonster.Configs
     /// <param name="order">The <see cref="OrderByBuilder"/>.</param>
     /// <param name="arguments">The arguments.</param>
     /// <param name="userContext">The user context.</param>
-    public delegate void OrderByDelegate(OrderByBuilder order, IDictionary<string, object> arguments, IDictionary<string, object> userContext);
+    public delegate void OrderByDelegate(OrderByBuilder order, IReadOnlyDictionary<string, object> arguments, IDictionary<string, object> userContext);
+
+    /// <summary>
+    /// Defines a sort key that is used when doing keyset pagination.
+    /// </summary>
+    /// <param name="sort">The <see cref="SortKeyBuilder"/>.</param>
+    /// <param name="arguments">The arguments.</param>
+    /// <param name="userContext">The user context.</param>
+    public delegate void SortKeyDelegate(SortKeyBuilder sort, IReadOnlyDictionary<string, object> arguments, IDictionary<string, object> userContext);
 
     /// <summary>
     /// Takes the SQL string and the parameters and sends them to a database.
@@ -50,5 +58,5 @@ namespace JoinMonster.Configs
     /// <param name="parameters">The SQL parameters.</param>
     /// <returns>A <see cref="IDataReader"/> that is used to fetch the data from the database.</returns>
     /// <remarks>JoinMonster is responsible for closing the <see cref="IDataReader"/>.</remarks>
-    public delegate Task<IDataReader> DatabaseCallDelegate(string sql, IDictionary<string, object> parameters);
+    public delegate Task<IDataReader> DatabaseCallDelegate(string sql, IReadOnlyDictionary<string, object> parameters);
 }

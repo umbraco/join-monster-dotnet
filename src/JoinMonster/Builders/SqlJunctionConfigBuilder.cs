@@ -59,5 +59,16 @@ namespace JoinMonster.Builders
             SqlJunctionConfig.OrderBy = orderBy;
             return this;
         }
+
+        /// <summary>
+        /// Sets the <c>Sort Key</c> for the junction configuration.
+        /// </summary>
+        /// <param name="sortKey">The Sort Key.</param>
+        /// <returns>The <see cref="SqlJunctionConfig"/>.</returns>
+        public SqlJunctionConfigBuilder SortKey(SortKeyDelegate sortKey)
+        {
+            SqlJunctionConfig.SortKey = sortKey;
+            return this;
+        }
     }
 }

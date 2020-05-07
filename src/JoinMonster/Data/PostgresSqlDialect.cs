@@ -38,7 +38,7 @@ namespace JoinMonster.Data
 
         /// <inheritdoc />
         public override void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
-            IDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
+            IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
             string? joinCondition)
         {
             if (parent == null) throw new ArgumentNullException(nameof(parent));
@@ -59,7 +59,14 @@ namespace JoinMonster.Data
             if (where != null)
                 pagingWhereConditions.Add(where);
 
-            if (node.OrderBy != null)
+            if (node.SortKey != null)
+            {
+                var (limit, order, whereCondition) = InterpretForKeysetPaging(node, arguments, context);
+                if (whereCondition != null)
+                    pagingWhereConditions.Add(whereCondition);
+                tables.Add(KeysetPagingSelect(node.Name, pagingWhereConditions, order, limit, node.As, joinCondition, "LEFT"));
+            }
+            else if (node.OrderBy != null)
             {
                 var (limit, offset, order) = InterpretForOffsetPaging(node, arguments, context);
                 tables.Add(OffsetPagingSelect(node.Name, pagingWhereConditions, order, limit, offset,
@@ -67,7 +74,7 @@ namespace JoinMonster.Data
             }
             else
             {
-                throw new JoinMonsterException("Cannot paginate without an OrderBy clause.");
+                throw new JoinMonsterException("Cannot paginate without an SortKey or OrderBy clause.");
             }
         }
     }

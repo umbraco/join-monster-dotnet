@@ -21,8 +21,9 @@ namespace JoinMonster.Tests.Unit.Stubs
             return $"CONCAT({string.Join(", ", result)})";
         }
 
-        public override void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node, IDictionary<string, object> arguments, IResolveFieldContext context,
-            ICollection<string> tables, string joinCondition)
+        public override void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
+            IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
+            string joinCondition)
         {
             tables.Add(_joinedOneToManyPaginatedSql);
         }

@@ -363,7 +363,7 @@ namespace JoinMonster.Tests.Unit.Data
             var node = converter.Convert(context);
             var sql = compiler.Compile(node, context);
 
-            sql.Should().Be($"SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"variants\".\"$total\" AS \"variants__$total\",\n  \"variants\".\"id\" AS \"variants__id\",\n  \"variants\".\"name\" AS \"variants__name\"\nFROM \"products\" AS \"product\"\n{joinedOneToManyPaginatedSql}\nORDER BY \"variants\".\"id\" ASC");
+            sql.Should().Be($"SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"variants\".\"id\" AS \"variants__id\",\n  \"variants\".\"name\" AS \"variants__name\",\n  \"variants\".\"$total\" AS \"variants__$total\"\nFROM \"products\" AS \"product\"\n{joinedOneToManyPaginatedSql}\nORDER BY \"variants\".\"id\" ASC");
         }
 
         private static ISchema CreateSimpleSchema(Action<SchemaBuilder> configure = null)

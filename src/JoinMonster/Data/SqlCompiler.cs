@@ -97,7 +97,6 @@ namespace JoinMonster.Data
                     break;
                 }
                 case SqlJunction _:
-                case Argument _:
                 case SqlNoop _:
                     break;
                 default:
@@ -109,21 +108,21 @@ namespace JoinMonster.Data
             IResolveFieldContext context, ICollection<string> selections, ICollection<string> tables,
             ICollection<string> wheres, ICollection<string> orders)
         {
-            var arguments = node.Arguments.ToDictionary(x => x.Name, x => x.Value.Value);
+            var arguments = node.Arguments;
 
-            var junctionWhere = node.Junction?.Where?.Invoke(_dialect.Quote(node.Junction.As), arguments, context.UserContext);
-            if(junctionWhere != null)
-                wheres.Add(junctionWhere);
+            var where = node.Junction?.Where?.Invoke(_dialect.Quote(node.Junction.As), arguments, context.UserContext);
+            if (where != null)
+                wheres.Add(where);
 
-            var where = node.Where?.Invoke(_dialect.Quote(node.As), arguments, context.UserContext);
+            where = node.Where?.Invoke(_dialect.Quote(node.As), arguments, context.UserContext);
             if (where != null)
                 wheres.Add(where);
 
             if (node.Junction?.OrderBy != null)
-                HandleOrderBy(node.Junction.OrderBy, node.As, arguments, context, orders);
+                HandleOrderBy(node.Junction.OrderBy, node.As, orders);
 
             if (node.OrderBy != null)
-                HandleOrderBy(node.OrderBy, node.As, arguments, context, orders);
+                HandleOrderBy(node.OrderBy, node.As, orders);
 
             if (parent is SqlTable parentTable)
             {
@@ -135,8 +134,6 @@ namespace JoinMonster.Data
                     if (node.Paginate)
                     {
                         _dialect.HandleJoinedOneToManyPaginated(parentTable, node, arguments, context, tables, join);
-                        selections.Add(
-                            $"{_dialect.Quote(node.As)}.{_dialect.Quote("$total")} AS {_dialect.Quote(JoinPrefix(prefix) + node.As  + "__$total")}");
                     }
                     else
                     {
@@ -168,13 +165,8 @@ namespace JoinMonster.Data
             tables.Add($"FROM {_dialect.Quote(node.Name)} AS {_dialect.Quote(node.As)}");
         }
 
-        private void HandleOrderBy(OrderByDelegate order, string tableAlias, IDictionary<string, object> arguments,
-            IResolveFieldContext context, ICollection<string> orders)
+        private void HandleOrderBy(OrderBy? orderBy, string tableAlias, ICollection<string> orders)
         {
-            var orderByBuilder = new OrderByBuilder();
-            order(orderByBuilder, arguments, context.UserContext);
-            var orderBy = orderByBuilder.OrderBy;
-
             if (orderBy == null) return;
 
             do

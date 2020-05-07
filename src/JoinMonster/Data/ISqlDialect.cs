@@ -34,7 +34,7 @@ namespace JoinMonster.Data
         /// <param name="tables">The tables builder.</param>
         /// <param name="joinCondition">The join condition if any.</param>
         void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
-            IDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
+            IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
             string? joinCondition);
     }
 }

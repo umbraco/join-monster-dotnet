@@ -48,6 +48,11 @@ namespace JoinMonster.Configs
         /// </summary>
         public OrderByDelegate? OrderBy { get; set; }
 
+        /// <summary>
+        /// The Sort Key,
+        /// </summary>
+        public SortKeyDelegate? SortKey { get; set; }
+
         // TODO: Add Include (Dictionary/Expression?)
     }
 }

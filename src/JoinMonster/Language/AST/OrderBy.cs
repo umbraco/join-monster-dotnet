@@ -1,8 +1,8 @@
 using System;
 
-namespace JoinMonster.Configs
+namespace JoinMonster.Language.AST
 {
-    internal class OrderBy
+    public class OrderBy
     {
         public OrderBy(string column, SortDirection direction)
         {
@@ -14,11 +14,5 @@ namespace JoinMonster.Configs
         public SortDirection Direction { get; }
 
         public OrderBy? ThenBy { get; set; }
-    }
-
-    internal enum SortDirection
-    {
-        Ascending,
-        Descending
     }
 }

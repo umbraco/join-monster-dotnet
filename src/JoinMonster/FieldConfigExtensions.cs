@@ -91,6 +91,21 @@ namespace JoinMonster
         }
 
         /// <summary>
+        /// Set a method that resolves the sort key used for keyset based pagination.
+        /// </summary>
+        /// <param name="fieldConfig">The field config.</param>
+        /// <param name="sort">The <c>Sort Key</c> builder.</param>
+        /// <returns>The <see cref="FieldConfig"/>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="fieldConfig"/> or <paramref name="sort"/> is <c>NULL</c>.</exception>
+        public static FieldConfig SqlSortKey(FieldConfig fieldConfig, SortKeyDelegate sort)
+        {
+            if (fieldConfig == null) throw new ArgumentNullException(nameof(fieldConfig));
+            if (sort == null) throw new ArgumentNullException(nameof(sort));
+
+            return fieldConfig.WithMetadata(nameof(SortKeyDelegate), sort);
+        }
+
+        /// <summary>
         /// Sets whether the result set should be paginated.
         /// </summary>
         /// <param name="fieldConfig">The field config.</param>

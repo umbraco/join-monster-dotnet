@@ -55,7 +55,7 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void Create_WithFromParent_SetsFromParent()
         {
-            string FromParent(string table, string childTable, IDictionary<string, object> arguments,
+            string FromParent(string table, string childTable, IReadOnlyDictionary<string, object> arguments,
                 IDictionary<string, object> context) => "";
 
             var builder =
@@ -67,7 +67,7 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void Create_WithToChild_SetsToChild()
         {
-            string ToChild(string table, string childTable, IDictionary<string, object> arguments,
+            string ToChild(string table, string childTable, IReadOnlyDictionary<string, object> arguments,
                 IDictionary<string, object> context) => "";
 
             var builder =
@@ -79,7 +79,7 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void Where_WithWhereCondition_SetsWhere()
         {
-            string Where(string tableAlias, IDictionary<string, object> arguments,
+            string Where(string tableAlias, IReadOnlyDictionary<string, object> arguments,
                 IDictionary<string, object> userContext) => "";
 
             var builder = SqlJunctionConfigBuilder.Create("friends", (_, __, ___, ____) => "", (_, __, ___, ____) => "");

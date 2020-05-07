@@ -68,7 +68,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void SqlWhere_WithWhereDelegate_AddsWhereDelegateToMetadata()
         {
-            string Where(string tableAlias, IDictionary<string, object> arguments,
+            string Where(string tableAlias, IReadOnlyDictionary<string, object> arguments,
                 IDictionary<string, object> userContext) => $"{tableAlias}.\"id\" = 3";
 
             var fieldConfig = new FieldConfig("name");
@@ -106,7 +106,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void SqlJoin_WithJoinDelegate_AddsJoinDelegateToMetadata()
         {
-            string Join(string parentTable, string childTable, IDictionary<string, object> arguments,
+            string Join(string parentTable, string childTable, IReadOnlyDictionary<string, object> arguments,
                 IDictionary<string, object> userContext) => $"{parentTable}.\"id\" = ${childTable}.\"parentId\"";
 
             var fieldConfig = new FieldConfig("name");
@@ -133,7 +133,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void SqlOrder_WithOrderByDelegate_AddsOrderByDelegateToMetadata()
         {
-            void OrderBy(OrderByBuilder order, IDictionary<string, object> arguments,
+            void OrderBy(OrderByBuilder order, IReadOnlyDictionary<string, object> arguments,
                 IDictionary<string, object> userContext) => order.By("name");
 
             var fieldConfig = new FieldConfig("name");

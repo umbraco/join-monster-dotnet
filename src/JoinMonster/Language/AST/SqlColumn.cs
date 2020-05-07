@@ -8,5 +8,6 @@ namespace JoinMonster.Language.AST
         }
 
         public string Name { get; }
+        public string? FromOtherTable { get; set; }
     }
 }

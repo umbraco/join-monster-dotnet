@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using JoinMonster.Language.AST;
@@ -22,9 +23,9 @@ namespace JoinMonster.Tests.Unit
                         {
                             new SqlTable("colors", "color", "color",
                                 new[] {new SqlColumn("id", "id", "id", true), new SqlColumn("color", "color", "color")},
-                                Enumerable.Empty<SqlTable>(), Enumerable.Empty<Argument>(), false),
-                        }, Enumerable.Empty<Argument>(), true)
-                }, Enumerable.Empty<Argument>(), true);
+                                Enumerable.Empty<SqlTable>(), new Dictionary<string, object>(), false),
+                        }, new Dictionary<string, object>(), true)
+                }, new Dictionary<string, object>(), true);
 
             var objectShaper = new ObjectShaper(new SqlAstValidator());
 

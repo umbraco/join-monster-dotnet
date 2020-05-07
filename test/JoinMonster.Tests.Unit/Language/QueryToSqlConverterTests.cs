@@ -238,7 +238,7 @@ namespace JoinMonster.Tests.Unit.Language
         [Fact]
         public void Convert_WhenFieldHasWhereExpression_SetsWhereOnSqlTable()
         {
-            string Where(string tableAlias, IDictionary<string, object> arguments,
+            string Where(string tableAlias, IReadOnlyDictionary<string, object> arguments,
                 IDictionary<string, object> userContext) => $"{tableAlias}.\"id\" = 3";
 
             var schema = CreateSimpleSchema(builder =>
@@ -260,7 +260,7 @@ namespace JoinMonster.Tests.Unit.Language
             node.Should()
                 .BeOfType<SqlTable>()
                 .Which.Where.Should()
-                .BeEquivalentTo((WhereDelegate) Where);
+                .BeEquivalentTo((WhereDelegate)Where);
         }
 
         [Fact]
@@ -283,8 +283,8 @@ namespace JoinMonster.Tests.Unit.Language
                 .Which.Arguments.Should()
                 .SatisfyRespectively(argument =>
                 {
-                    argument.Name.Should().Be("id");
-                    argument.Value.Value.Should().Be("1");
+                    argument.Key.Should().Be("id");
+                    argument.Value.Should().Be("1");
                 });
         }
 
@@ -321,7 +321,7 @@ namespace JoinMonster.Tests.Unit.Language
         [Fact]
         public void Convert_WhenFieldHasJoinExpression_SetsJoinOnSqlTable()
         {
-            string Join(string parentTable, string childTable, IDictionary<string, object> arguments,
+            string Join(string parentTable, string childTable, IReadOnlyDictionary<string, object> arguments,
                 IDictionary<string, object> userContext) => $"{parentTable}.\"id\" = ${childTable}.\"productId\"";
 
             var schema = CreateSimpleSchema(builder =>

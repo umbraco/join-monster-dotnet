@@ -125,7 +125,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void GetSqlWhere_WhenWhereDelegateHasBeenSet_ReturnsWhereDelegate()
         {
-            string Where(string tableAlias, IDictionary<string, object> arguments,
+            string Where(string tableAlias, IReadOnlyDictionary<string, object> arguments,
                 IDictionary<string, object> userContext) => null;
 
             var fieldType = new FieldType();
@@ -181,7 +181,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void GetSqlJoin_WhenJoinDelegateHasBeenSet_ReturnsJoinDelegate()
         {
-            string Join(string parentTable, string childTable, IDictionary<string, object> arguments,
+            string Join(string parentTable, string childTable, IReadOnlyDictionary<string, object> arguments,
                 IDictionary<string, object> userContext) => $"{parentTable}.\"id\" = ${childTable}.\"parentId\"";
 
             var fieldType = new FieldType();
@@ -207,7 +207,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void SqlOrder_WithOrderByDelegate_AddsOrderByDelegateToMetadata()
         {
-            void OrderBy(OrderByBuilder order, IDictionary<string, object> arguments,
+            void OrderBy(OrderByBuilder order, IReadOnlyDictionary<string, object> arguments,
                 IDictionary<string, object> userContext) => order.By("name");
 
             var fieldType = new FieldType();

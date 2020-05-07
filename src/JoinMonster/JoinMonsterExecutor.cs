@@ -73,7 +73,7 @@ namespace JoinMonster
             var objectShape = _objectShaper.DefineObjectShape(sqlAst);
 #pragma warning disable 8620
             var nested = _hydrator.Nest(data, objectShape);
-            var result = _arrayToConnectionConverter.Convert(nested, sqlAst);
+            var result = _arrayToConnectionConverter.Convert(nested, sqlAst, context);
 #pragma warning restore 8620
 
             if (sqlAst.GrabMany)

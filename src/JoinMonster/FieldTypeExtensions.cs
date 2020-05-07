@@ -155,6 +155,34 @@ namespace JoinMonster
         }
 
         /// <summary>
+        /// Set a method that resolves the sort key used for keyset based pagination.
+        /// </summary>
+        /// <param name="fieldType">The field type.</param>
+        /// <param name="sort">The <c>Sort Key</c> builder.</param>
+        /// <returns>The <see cref="FieldType"/>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="fieldType"/> or <paramref name="sort"/> is <c>NULL</c>.</exception>
+        public static FieldType SqlSortKey(this FieldType fieldType, SortKeyDelegate sort)
+        {
+            if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
+            if (sort == null) throw new ArgumentNullException(nameof(sort));
+
+            return fieldType.WithMetadata(nameof(SortKeyDelegate), sort);
+        }
+
+        /// <summary>
+        /// Get the SQL <c>Sort Key</c> resolver.
+        /// </summary>
+        /// <param name="fieldType">The field type.</param>
+        /// <returns>A <see cref="SortKeyDelegate"/> if one is set, otherwise <c>null</c>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="fieldType"/> is <c>null</c>.</exception>
+        public static SortKeyDelegate? GetSqlSortKey(this FieldType fieldType)
+        {
+            if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
+
+            return fieldType.GetMetadata<SortKeyDelegate?>(nameof(SortKeyDelegate));
+        }
+
+        /// <summary>
         /// Sets whether the result set should be paginated.
         /// </summary>
         /// <param name="fieldType">The field type.</param>

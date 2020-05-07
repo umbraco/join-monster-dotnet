@@ -1,19 +1,22 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GraphQL;
 using GraphQL.Types.Relay.DataObjects;
+using JoinMonster.Builders;
 using JoinMonster.Language.AST;
 
 namespace JoinMonster
 {
     internal class ArrayToConnectionConverter
     {
-        public IEnumerable<IDictionary<string, object?>> Convert(IEnumerable<IDictionary<string, object?>> data, Node sqlAst)
+        public IEnumerable<IDictionary<string, object?>> Convert(IEnumerable<IDictionary<string, object?>> data, Node sqlAst, IResolveFieldContext context)
         {
             if (data == null) throw new ArgumentNullException(nameof(data));
             if (sqlAst == null) throw new ArgumentNullException(nameof(sqlAst));
+            if (context == null) throw new ArgumentNullException(nameof(context));
 
-            var converted = ConvertInternal(data, sqlAst);
+            var converted = ConvertInternal(data, sqlAst, context);
             return converted switch
             {
                 IEnumerable<IDictionary<string, object?>> dictionary => dictionary,
@@ -23,7 +26,7 @@ namespace JoinMonster
             };
         }
 
-        private object? ConvertInternal(object? data, Node sqlAst)
+        private object? ConvertInternal(object? data, Node sqlAst, IResolveFieldContext context)
         {
             foreach (var astChild in sqlAst.Children)
             {
@@ -32,12 +35,12 @@ namespace JoinMonster
                     case IEnumerable<Dictionary<string, object?>> array:
                     {
                         foreach (var dataItem in array)
-                            RecurseOnObjInData(dataItem, astChild);
+                            RecurseOnObjInData(dataItem, astChild, context);
 
                         break;
                     }
                     case Dictionary<string, object?> dataItem:
-                        RecurseOnObjInData(dataItem, astChild);
+                        RecurseOnObjInData(dataItem, astChild, context);
                         break;
                     case null:
                         break;
@@ -59,9 +62,72 @@ namespace JoinMonster
                     };
                 case null:
                     return null!;
+                case List<Dictionary<string, object?>> dataArr when sqlTable.SortKey != null || sqlTable.Junction?.SortKey != null:
+                {
+                    var arguments = sqlTable.Arguments;
+
+                    // $total was a special column for determining the total number of items
+                    int? arrayLength = dataArr.Count > 0 && dataArr[0].TryGetValue("$total", out var total) ? System.Convert.ToInt32(total) : (int?) null;
+
+                    var sortKey = sqlTable.SortKey ?? sqlTable.Junction?.SortKey;
+
+                    var hasNextPage = false;
+                    var hasPreviousPage = false;
+                    if (arguments.TryGetValue("first", out var first))
+                    {
+                        // we fetched an extra one in order to determine if there is a next page, if there is one, pop off that extra
+                        if (dataArr.Count > System.Convert.ToInt32(first)) {
+                            hasNextPage = true;
+                            dataArr.RemoveAt(dataArr.Count - 1);
+                        }
+                    }
+                    else if (arguments.TryGetValue("last", out var last))
+                    {
+                        // if backward paging, do the same, but also reverse it
+                        if (dataArr.Count > System.Convert.ToInt32(last))
+                        {
+                            hasPreviousPage = true;
+                            dataArr.RemoveAt(0);
+                        }
+
+                        dataArr.Reverse();
+                    }
+
+                    var cursor = new Dictionary<string, object?>();
+
+                    var edges = dataArr.Select(obj =>
+                    {
+                        var key = sortKey.Key;
+                        foreach (var column in key)
+                        {
+                            cursor[column] = obj[column];
+                        }
+
+                        return new Edge<object> {Cursor = ConnectionUtils.ObjectToCursor(cursor), Node = obj};
+                    }).ToList();
+
+                    var startCursor = edges.FirstOrDefault()?.Cursor;
+                    var endCursor = edges.LastOrDefault()?.Cursor;
+
+                    var connection = new Connection<object>
+                    {
+                        Edges = edges,
+                        PageInfo = new PageInfo
+                        {
+                            HasNextPage = hasNextPage,
+                            HasPreviousPage = hasPreviousPage,
+                            StartCursor = startCursor,
+                            EndCursor = endCursor
+                        }
+                    };
+
+                    if (arrayLength.HasValue)
+                        connection.TotalCount = arrayLength.Value;
+                    return connection;
+                }
                 case List<Dictionary<string, object?>> dataArr when (sqlTable.OrderBy != null || sqlTable.Junction?.OrderBy != null):
                 {
-                    var arguments = sqlTable.Arguments.ToDictionary(x => x.Name, x => x.Value.Value);
+                    var arguments = sqlTable.Arguments;
                     var offset = 0;
                     if (arguments.TryGetValue("after", out var after))
                         offset = ConnectionUtils.CursorToOffset((string) after);
@@ -80,7 +146,7 @@ namespace JoinMonster
         }
 
         private Connection<object> ConnectionFromArraySlice(IReadOnlyCollection<Dictionary<string, object?>> dataArr,
-            IDictionary<string, object> arguments, int offset, int? arrayLength)
+            IReadOnlyDictionary<string, object> arguments, int offset, int? arrayLength)
         {
             if (arrayLength == 0)
             {
@@ -122,7 +188,7 @@ namespace JoinMonster
             return connection;
         }
 
-        private void RecurseOnObjInData(IDictionary<string, object?> dataItem, Node astChild)
+        private void RecurseOnObjInData(IDictionary<string, object?> dataItem, Node astChild, IResolveFieldContext context)
         {
             var fieldName = astChild switch
             {
@@ -134,7 +200,7 @@ namespace JoinMonster
             if (fieldName == null) return;
 
             if (dataItem.TryGetValue(fieldName, out _))
-                dataItem[fieldName] = ConvertInternal(dataItem[fieldName], astChild);
+                dataItem[fieldName] = ConvertInternal(dataItem[fieldName], astChild, context);
         }
     }
 }

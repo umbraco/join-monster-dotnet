@@ -37,7 +37,7 @@ namespace JoinMonster.Tests.Unit
         public void SqlWhere_WithQuery_SetsQueryOnFieldType()
         {
 
-            string Where(string tableAlias, IDictionary<string, object> arguments,
+            string Where(string tableAlias, IReadOnlyDictionary<string, object> arguments,
                 IDictionary<string, object> userContext) => "";
 
             var builder = ConnectionBuilder.Create<ObjectGraphType, object>().SqlWhere(Where);
@@ -70,7 +70,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void SqlOrder_WithOrder_SetsOrderOnFieldType()
         {
-            void Order(OrderByBuilder order, IDictionary<string, object> arguments,
+            void Order(OrderByBuilder order, IReadOnlyDictionary<string, object> arguments,
                 IDictionary<string, object> userContext) => order.By("id");
 
             var builder = ConnectionBuilder.Create<ObjectGraphType, object>().SqlOrder(Order);
@@ -103,8 +103,8 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void SqlJoin_WithJoin_SetsJoinOnFieldType()
         {
-            string Join(string parentTable, string childTable,
-                IDictionary<string, object> userContext, IDictionary<string, object> dictionary) => "";
+            string Join(string parentTable, string childTable, IReadOnlyDictionary<string, object> arguments,
+                IDictionary<string, object> userContext) => "";
 
             var builder = ConnectionBuilder.Create<ObjectGraphType, object>().SqlJoin(Join);
 

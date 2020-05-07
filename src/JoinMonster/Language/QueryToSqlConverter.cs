@@ -4,9 +4,9 @@ using System.Linq;
 using GraphQL;
 using GraphQL.Language.AST;
 using GraphQL.Types;
+using JoinMonster.Builders;
 using JoinMonster.Configs;
 using JoinMonster.Language.AST;
-using Argument = JoinMonster.Language.AST.Argument;
 
 namespace JoinMonster.Language
 {
@@ -103,6 +103,7 @@ namespace JoinMonster.Language
             var join = field.GetSqlJoin();
             var junction = field.GetSqlJunction();
             var orderBy = field.GetSqlOrder();
+            var sortKey = field.GetSqlSortKey();
             var paginate = false;
 
             if (!grabMany && field.ResolvedType.IsConnectionType())
@@ -114,23 +115,90 @@ namespace JoinMonster.Language
             HandleSelections(columns, tables, graphType, fieldAst.SelectionSet.Selections, depth, userContext);
 
             var sqlTable = new SqlTable(tableName, fieldName, tableAs, columns.AsReadOnly(), tables.AsReadOnly(),
-                    arguments.AsReadOnly(), grabMany).WithLocation(fieldAst.SourceLocation);
+                    arguments, grabMany).WithLocation(fieldAst.SourceLocation);
 
-            sqlTable.Where = where;
-            sqlTable.OrderBy = orderBy;
+            if (where != null)
+            {
+                sqlTable.Where = where;
+            }
+
+            if (orderBy != null)
+            {
+                var builder = new OrderByBuilder();
+                orderBy(builder, arguments, userContext);
+                sqlTable.OrderBy = builder.OrderBy;
+            }
+
+            if (sortKey != null)
+            {
+                var builder = new SortKeyBuilder();
+                sortKey(builder, arguments, userContext);
+                sqlTable.SortKey = builder.SortKey;
+            }
+
             sqlTable.Paginate = paginate;
 
             if (join != null)
             {
                 sqlTable.Join = join;
             }
-            else if(junction != null)
+            else if (junction != null)
             {
-                sqlTable.Junction = new SqlJunction(junction.Table, junction.Table, junction.FromParent,
-                    junction.ToChild, junction.Where, junction.OrderBy);
+                sqlTable.Junction =
+                    new SqlJunction(junction.Table, junction.Table, junction.FromParent, junction.ToChild);
+
+                if (junction.Where != null)
+                {
+                    sqlTable.Junction.Where = junction.Where;
+                }
+
+                if (junction.OrderBy != null)
+                {
+                    var builder = new OrderByBuilder();
+                    junction.OrderBy(builder, arguments, userContext);
+                    sqlTable.Junction.OrderBy = builder.OrderBy;
+                }
+
+                if (junction.SortKey != null)
+                {
+                    var builder = new SortKeyBuilder();
+                    junction.SortKey(builder, arguments, userContext);
+                    sqlTable.Junction.SortKey = builder.SortKey;
+                }
+            }
+
+            if (paginate)
+            {
+                HandleColumnsRequiredForPagination(sqlTable, columns);
             }
 
             return sqlTable;
+        }
+
+        private void HandleColumnsRequiredForPagination(SqlTable sqlTable, ICollection<SqlColumnBase> columns)
+        {
+            if (sqlTable.SortKey != null || sqlTable.Junction?.SortKey != null)
+            {
+                var sortKey = sqlTable.SortKey ?? sqlTable.Junction?.SortKey;
+                if (sortKey == null) return;
+
+                foreach (var column in sortKey.Key)
+                {
+                    var newChild = new SqlColumn(column, column, column);
+                    if (sqlTable.SortKey == null && sqlTable.Junction != null)
+                        newChild.FromOtherTable = sqlTable.Junction.As;
+
+                    columns.Add(newChild);
+                }
+            }
+            else if (sqlTable.OrderBy != null || sqlTable.Junction?.OrderBy != null)
+            {
+                var newChild = new SqlColumn("$total", "$total", "$total");
+                if (sqlTable.SortKey == null && sqlTable.Junction != null)
+                    newChild.FromOtherTable = sqlTable.Junction.As;
+
+                columns.Add(newChild);
+            }
         }
 
         private Node HandleColumn(Field fieldAst, FieldType field, IGraphType graphType,
@@ -143,22 +211,20 @@ namespace JoinMonster.Language
             return new SqlColumn(columnName, fieldName, columnAs).WithLocation(fieldAst.SourceLocation);
         }
 
-        private List<Argument> HandleArguments(Field fieldAst)
+        private IReadOnlyDictionary<string, object> HandleArguments(Field fieldAst)
         {
-            var arguments = new List<Argument>();
+            var arguments = new Dictionary<string, object>();
             if (fieldAst.Arguments != null)
             {
                 foreach (var arg in fieldAst.Arguments)
                 {
-                    var value = new ValueNode(arg.Value.Value).WithLocation(arg.Value.SourceLocation);
-                    var argument = new Argument(arg.Name, value).WithLocation(arg.SourceLocation);
-                    arguments.Add(argument);
+                    arguments.Add(arg.Name, arg.Value.Value);
                 }
             }
             return arguments;
         }
 
-        private void HandleSelections(List<SqlColumnBase> sqlColumns, List<SqlTable> tables,
+        private void HandleSelections(List<SqlColumnBase> sqlColumns, ICollection<SqlTable> tables,
             IComplexGraphType graphType, IEnumerable<ISelection> selections, int depth, IDictionary<string, object> userContext)
         {
             foreach (var selection in selections)

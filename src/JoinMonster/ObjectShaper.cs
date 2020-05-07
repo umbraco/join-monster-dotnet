@@ -50,7 +50,6 @@ namespace JoinMonster
 
                         properties.Add(property);
                         break;
-                    case Argument _:
                     case SqlJunction _:
                     case SqlNoop _:
                     case ValueNode _:
