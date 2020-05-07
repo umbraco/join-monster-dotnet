@@ -79,7 +79,7 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void Where_WithWhereCondition_SetsWhere()
         {
-            string? Where(string tableAlias, IDictionary<string, object> arguments,
+            string Where(string tableAlias, IDictionary<string, object> arguments,
                 IDictionary<string, object> userContext) => "";
 
             var builder = SqlJunctionConfigBuilder.Create("friends", (_, __, ___, ____) => "", (_, __, ___, ____) => "");

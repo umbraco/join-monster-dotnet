@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using GraphQL.Types;
+using GraphQL;
 using JoinMonster.Builders;
 using JoinMonster.Configs;
 using JoinMonster.Language.AST;
@@ -105,7 +105,7 @@ namespace JoinMonster.Data
             }
         }
 
-        private void HandleTable(Node? parent, SqlTable node, IReadOnlyCollection<string> prefix,
+        private void HandleTable(Node? parent, SqlTable node, IEnumerable<string> prefix,
             IResolveFieldContext context, ICollection<string> selections, ICollection<string> tables,
             ICollection<string> wheres, ICollection<string> orders)
         {
@@ -132,7 +132,17 @@ namespace JoinMonster.Data
                     var join = node.Join(_dialect.Quote(parentTable.As), _dialect.Quote(node.As), arguments,
                         context.UserContext);
 
-                    tables.Add($"LEFT JOIN {_dialect.Quote(node.Name)} {_dialect.Quote(node.As)} ON {join}");
+                    if (node.Paginate)
+                    {
+                        _dialect.HandleJoinedOneToManyPaginated(parentTable, node, arguments, context, tables, join);
+                        selections.Add(
+                            $"{_dialect.Quote(node.As)}.{_dialect.Quote("$total")} AS {_dialect.Quote(JoinPrefix(prefix) + node.As  + "__$total")}");
+                    }
+                    else
+                    {
+                        tables.Add($"LEFT JOIN {_dialect.Quote(node.Name)} {_dialect.Quote(node.As)} ON {join}");
+                    }
+
                     return;
                 }
 

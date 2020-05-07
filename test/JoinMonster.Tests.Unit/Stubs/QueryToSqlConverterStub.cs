@@ -1,4 +1,4 @@
-using GraphQL.Types;
+using GraphQL;
 using JoinMonster.Language;
 using JoinMonster.Language.AST;
 

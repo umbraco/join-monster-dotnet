@@ -1,6 +1,7 @@
 using System;
 using FluentAssertions;
 using GraphQL.Types;
+using GraphQL.Types.Relay;
 using Xunit;
 
 namespace JoinMonster.Tests.Unit
@@ -124,6 +125,26 @@ namespace JoinMonster.Tests.Unit
             var config = graphType.GetSqlTableConfig();
 
             config.Should().Be(builder.SqlTableConfig);
+        }
+
+        [Fact]
+        public void IsConnectionType_ConnectionType_ReturnsTrue()
+        {
+            var graphType = new ConnectionType<ObjectGraphType>();
+
+            var isConnectionType = graphType.IsConnectionType();
+
+            isConnectionType.Should().BeTrue();
+        }
+
+        [Fact]
+        public void IsConnectionType_ObjectGraphType_ReturnsFalse()
+        {
+            var graphType = new ObjectGraphType();
+
+            var isConnectionType = graphType.IsConnectionType();
+
+            isConnectionType.Should().BeFalse();
         }
     }
 }

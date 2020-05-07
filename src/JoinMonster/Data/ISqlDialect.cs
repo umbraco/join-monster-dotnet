@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using GraphQL;
+using JoinMonster.Language.AST;
 
 namespace JoinMonster.Data
 {
@@ -21,5 +23,9 @@ namespace JoinMonster.Data
         /// <param name="keys">The keys to select.</param>
         /// <returns>A SQL string containing the columns to select.</returns>
         string CompositeKey(string parentTable, IEnumerable<string> keys);
+
+        void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
+            IDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
+            string joinCondition);
     }
 }

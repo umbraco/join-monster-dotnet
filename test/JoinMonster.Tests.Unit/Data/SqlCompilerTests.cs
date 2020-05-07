@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
-using System.Threading.Tasks;
 using FluentAssertions;
+using GraphQL;
 using GraphQL.Execution;
 using GraphQL.Types;
 using GraphQL.Utilities;
@@ -187,7 +187,7 @@ namespace JoinMonster.Tests.Unit.Data
                     .SqlTable("productVariants", "id");
             });
 
-            var query = "{ product { name, variants { name } } }";
+            var query = "{ product { name, variants { edges { node { name } } } } }";
             var context = CreateResolveFieldContext(schema, query);
 
             var converter = new QueryToSqlConverter();
@@ -333,6 +333,39 @@ namespace JoinMonster.Tests.Unit.Data
             sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"relatedProducts\".\"id\" AS \"relatedProducts__id\",\n  \"relatedProducts\".\"name\" AS \"relatedProducts__name\"\nFROM \"products\" AS \"product\"\nLEFT JOIN \"productRelations\" \"productRelations\" ON \"product\".\"id\" = \"productRelations\".\"productId\"\nLEFT JOIN \"products\" \"relatedProducts\" ON \"productRelations\".\"relatedProductId\" = \"relatedProducts\".\"id\"\nORDER BY \"relatedProducts\".\"productId\" ASC");
         }
 
+        [Fact]
+        public void Compile_WithJoinAndPaginate_SqlShouldIncludePaginationClause()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Product")
+                    .SqlTable("products", "id");
+
+                builder.Types.For("ProductVariant")
+                    .SqlTable("productVariants", "id");
+
+                builder.Types.For("Product")
+                    .FieldFor("variants", null)
+                    .SqlJoin((products, variants, _, __) => $"{products}.\"id\" = {variants}.\"productId\"")
+                    .SqlPaginate(true)
+                    .SqlOrder((order, _, __) => order.By("id"));
+            });
+
+            var query = "{ product { name, variants { edges { node { name } } } } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var joinedOneToManyPaginatedSql = "LEFT JOIN LATERAL (\n  SELECT \"variants\".*, COUNT(*) OVER () AS \"$total\"\n  FROM \"productVariants\" \"variants\"\n  WHERE \"products\".\"id\" = \"variants\".\"productId\"\n  ORDER BY \"variants\".\"id\" ASC\n  LIMIT ALL OFFSET 0\n) \"variants\" ON \"products\".\"id\" = \"variants\".\"productId\"";
+
+            var converter = new QueryToSqlConverter();
+            var dialect = new SqlDialectStub(joinedOneToManyPaginatedSql: joinedOneToManyPaginatedSql);
+            var compiler = new SqlCompiler(dialect);
+
+            var node = converter.Convert(context);
+            var sql = compiler.Compile(node, context);
+
+            sql.Should().Be($"SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"variants\".\"$total\" AS \"variants__$total\",\n  \"variants\".\"id\" AS \"variants__id\",\n  \"variants\".\"name\" AS \"variants__name\"\nFROM \"products\" AS \"product\"\n{joinedOneToManyPaginatedSql}\nORDER BY \"variants\".\"id\" ASC");
+        }
+
         private static ISchema CreateSimpleSchema(Action<SchemaBuilder> configure = null)
         {
             return Schema.For(@"
@@ -341,12 +374,22 @@ type ProductVariant {
   name: String
 }
 
+type ProductVariantConnection {
+    edges: [ProductVariantEdge]
+}
+
+type ProductVariantEdge {
+    cursor: String!
+    node: ProductVariant
+}
+
 type Product {
   id: ID!
   name: String
-  variants: [ProductVariant]
+  variants: ProductVariantConnection
   relatedProducts: [Product]
 }
+
 type Query {
   product(id: ID): Product
   products: [Product]

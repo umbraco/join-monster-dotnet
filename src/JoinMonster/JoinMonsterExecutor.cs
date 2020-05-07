@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
-using GraphQL.Types;
+using GraphQL;
+using GraphQL.Types.Relay.DataObjects;
 using JoinMonster.Configs;
 using JoinMonster.Data;
 using JoinMonster.Language;
+using JoinMonster.Language.AST;
 using NestHydration;
 
 namespace JoinMonster
@@ -20,6 +22,7 @@ namespace JoinMonster
         private readonly SqlCompiler _compiler;
         private readonly Hydrator _hydrator;
         private readonly ObjectShaper _objectShaper;
+        private readonly ArrayToConnectionConverter _arrayToConnectionConverter;
 
         /// <summary>
         /// Creates a new instance of <see cref="JoinMonsterExecutor"/>.
@@ -34,6 +37,7 @@ namespace JoinMonster
             _hydrator = hydrator ?? throw new ArgumentNullException(nameof(hydrator));
 
             _objectShaper = new ObjectShaper(new SqlAstValidator());
+            _arrayToConnectionConverter = new ArrayToConnectionConverter();
         }
 
         /// <summary>
@@ -49,10 +53,13 @@ namespace JoinMonster
             if (databaseCall == null) throw new ArgumentNullException(nameof(databaseCall));
 
             var sqlAst = _converter.Convert(context);
+            if(!(sqlAst is SqlTable sqlTable))
+                throw new Exception("Expected SQL AST node to be of type SqlTable.");
+
             var sql = _compiler.Compile(sqlAst, context);
 
             // TODO: Run batches and map result
-            using var reader =  await databaseCall(sql, new Dictionary<string, object>()).ConfigureAwait(false);
+            using var reader = await databaseCall(sql, new Dictionary<string, object>()).ConfigureAwait(false);
 
             var data = new List<Dictionary<string, object?>>();
             while (reader.Read())
@@ -62,17 +69,19 @@ namespace JoinMonster
                 {
                     item[reader.GetName(i)] = reader.IsDBNull(i) ? null : reader.GetValue(i);
                 }
+
                 data.Add(item);
             }
 
             var objectShape = _objectShaper.DefineObjectShape(sqlAst);
-
             var result = _hydrator.Nest(data, objectShape);
+            result = (List<Dictionary<string, object>>) _arrayToConnectionConverter.ArrayToConnection(result, sqlTable);
 
-            if (sqlAst.GrabMany)
+            if (sqlTable.GrabMany)
                 return result.AsEnumerable();
 
             return result.FirstOrDefault();
         }
+
     }
 }

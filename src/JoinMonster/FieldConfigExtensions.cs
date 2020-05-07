@@ -86,5 +86,20 @@ namespace JoinMonster
 
             return fieldConfig.WithMetadata(nameof(OrderByDelegate), orderBy);
         }
+
+        /// <summary>
+        /// Sets whether the result set should be paginated.
+        /// </summary>
+        /// <param name="fieldConfig">The field config.</param>
+        /// <param name="paginate">Should the result be paginated?</param>
+        /// <returns>The <see cref="FieldConfig"/>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="fieldConfig"/> is <c>null</c>.</exception>
+        public static FieldConfig SqlPaginate(this FieldConfig fieldConfig, bool paginate = true)
+        {
+            if (fieldConfig == null) throw new ArgumentNullException(nameof(fieldConfig));
+
+            fieldConfig.WithMetadata("JoinMonster.SqlPaginate", paginate);
+            return fieldConfig;
+        }
     }
 }

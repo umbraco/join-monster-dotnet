@@ -9,8 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="GraphQL" Version="3.0.0-preview-1490" />
-      <PackageReference Include="GraphQL-Parser" Version="5.1.0" />
+      <PackageReference Include="GraphQL" Version="3.0.0-preview-1648" />
       <PackageReference Include="NestHydration" Version="0.1.0" />
     </ItemGroup>
 

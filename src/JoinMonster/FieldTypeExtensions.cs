@@ -144,11 +144,39 @@ namespace JoinMonster
         /// <param name="fieldType">The field type.</param>
         /// <returns>A <see cref="OrderByDelegate"/> if one is set, otherwise <c>null</c>.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="fieldType"/> is <c>null</c>.</exception>
-        public static OrderByDelegate GetSqlOrder(this FieldType fieldType)
+        public static OrderByDelegate? GetSqlOrder(this FieldType fieldType)
         {
             if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
 
             return fieldType.GetMetadata<OrderByDelegate>(nameof(OrderByDelegate));
+        }
+
+        /// <summary>
+        /// Sets whether the result set should be paginated.
+        /// </summary>
+        /// <param name="fieldType">The field type.</param>
+        /// <param name="paginate">Should the result be paginated?</param>
+        /// <returns>The <see cref="FieldType"/>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="fieldType"/> is <c>null</c>.</exception>
+        public static FieldType SqlPaginate(this FieldType fieldType, bool paginate = true)
+        {
+            if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
+
+            fieldType.WithMetadata("JoinMonster.SqlPaginate", paginate);
+            return fieldType;
+        }
+
+        /// <summary>
+        /// Get whether the SQL query should be paginated.
+        /// </summary>
+        /// <param name="fieldType">The field type.</param>
+        /// <returns><c>true</c> if the SQL query should be paginated, otherwise <c>false</c>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="fieldType"/> is <c>null</c>.</exception>
+        public static bool? GetSqlPaginate(this FieldType fieldType)
+        {
+            if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
+
+            return fieldType.GetMetadata<bool?>("JoinMonster.SqlPaginate");
         }
     }
 }

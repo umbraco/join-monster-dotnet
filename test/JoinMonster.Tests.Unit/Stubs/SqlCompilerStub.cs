@@ -1,5 +1,4 @@
-using System.Threading.Tasks;
-using GraphQL.Types;
+using GraphQL;
 using JoinMonster.Data;
 using JoinMonster.Language.AST;
 

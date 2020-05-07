@@ -1,8 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using FluentAssertions;
-using GraphQL.Types;
 using JoinMonster.Data;
+using GraphQL;
 using JoinMonster.Tests.Unit.Stubs;
 using NestHydration;
 using Xunit;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using GraphQL;
 using GraphQL.Language.AST;
 using GraphQL.Types;
@@ -44,10 +45,13 @@ namespace JoinMonster.Language
 
             var gqlType = field.ResolvedType.GetNamedType();
 
-            var sqlTableConfig = gqlType.GetSqlTableConfig();
-
             if (gqlType is IComplexGraphType complexGraphType)
             {
+                if (complexGraphType.IsConnectionType())
+                    (complexGraphType, fieldAst) = StripRelayConnection(complexGraphType, fieldAst);
+
+                var sqlTableConfig = complexGraphType.GetSqlTableConfig();
+
                 if(sqlTableConfig == null)
                     return new SqlNoop();
 
@@ -93,22 +97,28 @@ namespace JoinMonster.Language
 
             var tables = new List<SqlTable>();
 
-            HandleSelections(columns, tables, graphType, fieldAst.SelectionSet.Selections, depth, userContext);
-
             var arguments = HandleArguments(fieldAst);
             var grabMany = field.ResolvedType.IsListType();
             var where = field.GetSqlWhere();
             var join = field.GetSqlJoin();
             var junction = field.GetSqlJunction();
             var orderBy = field.GetSqlOrder();
+            var paginate = false;
+
+            if (!grabMany && field.ResolvedType.IsConnectionType())
+            {
+                grabMany = true;
+                paginate = field.GetSqlPaginate().GetValueOrDefault(false);
+            }
+
+            HandleSelections(columns, tables, graphType, fieldAst.SelectionSet.Selections, depth, userContext);
 
             var sqlTable = new SqlTable(tableName, fieldName, tableAs, columns.AsReadOnly(), tables.AsReadOnly(),
-                    arguments.AsReadOnly(), grabMany, where).WithLocation(fieldAst.SourceLocation);
+                    arguments.AsReadOnly(), grabMany).WithLocation(fieldAst.SourceLocation);
 
-            if (orderBy != null)
-            {
-                sqlTable.OrderBy = orderBy;
-            }
+            sqlTable.Where = where;
+            sqlTable.OrderBy = orderBy;
+            sqlTable.Paginate = paginate;
 
             if (join != null)
             {
@@ -186,6 +196,29 @@ namespace JoinMonster.Language
                         throw new ArgumentOutOfRangeException(nameof(selection), $"Unknown selection kind: {selection.GetType()}");
                 }
             }
+        }
+
+        private (IComplexGraphType edgeType, Field queryAstNode) StripRelayConnection(IComplexGraphType graphType, Field fieldAst)
+        {
+            var edgesType = (IComplexGraphType) graphType.GetField("edges").ResolvedType.GetNamedType();
+            var edgeType = (IComplexGraphType) edgesType.GetField("node").ResolvedType.GetNamedType();
+
+            var field = fieldAst.SelectionSet.Selections
+                           .OfType<Field>()
+                           .FirstOrDefault(x => x.Name == "edges")
+                           ?.SelectionSet.Selections.OfType<Field>()
+                           .FirstOrDefault(x => x.Name == "node")
+                       ?? new Field();
+
+            fieldAst = new Field(fieldAst.AliasNode, fieldAst.NameNode)
+            {
+                Arguments = fieldAst.Arguments,
+                Directives = fieldAst.Directives,
+                SelectionSet = field.SelectionSet,
+                SourceLocation = fieldAst.SourceLocation
+            };
+
+            return (edgeType, fieldAst);
         }
     }
 }
