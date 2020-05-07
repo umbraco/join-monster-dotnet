@@ -24,6 +24,6 @@ namespace JoinMonster.Data
         /// <inheritdoc />
         public override void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
             IDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
-            string joinCondition) => throw new NotSupportedException();
+            string? joinCondition) => throw new NotSupportedException();
     }
 }

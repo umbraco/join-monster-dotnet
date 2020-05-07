@@ -11,6 +11,7 @@ namespace JoinMonster.Data
     /// </summary>
     public class PostgresSqlDialect : SqlDialect
     {
+        /// <inheritdoc />
         protected override string MaxLimit { get; } = "ALL";
 
         /// <inheritdoc />
@@ -36,9 +37,16 @@ namespace JoinMonster.Data
         }
 
         /// <inheritdoc />
-        public override void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node, IDictionary<string, object> arguments, IResolveFieldContext context,
-            ICollection<string> tables, string joinCondition)
+        public override void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
+            IDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
+            string? joinCondition)
         {
+            if (parent == null) throw new ArgumentNullException(nameof(parent));
+            if (node == null) throw new ArgumentNullException(nameof(node));
+            if (arguments == null) throw new ArgumentNullException(nameof(arguments));
+            if (context == null) throw new ArgumentNullException(nameof(context));
+            if (tables == null) throw new ArgumentNullException(nameof(tables));
+
             if (node.Join == null)
                 throw new JoinMonsterException($"{nameof(node)}.{nameof(node.Join)} cannot be null.");
 

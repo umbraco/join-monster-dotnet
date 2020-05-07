@@ -24,8 +24,17 @@ namespace JoinMonster.Data
         /// <returns>A SQL string containing the columns to select.</returns>
         string CompositeKey(string parentTable, IEnumerable<string> keys);
 
+        /// <summary>
+        /// Handles pagination for one-to-many join.
+        /// </summary>
+        /// <param name="parent">The parent node.</param>
+        /// <param name="node">The node.</param>
+        /// <param name="arguments">The arguments.</param>
+        /// <param name="context">The context.</param>
+        /// <param name="tables">The tables builder.</param>
+        /// <param name="joinCondition">The join condition if any.</param>
         void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
             IDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
-            string joinCondition);
+            string? joinCondition);
     }
 }

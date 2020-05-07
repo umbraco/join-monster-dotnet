@@ -3,7 +3,7 @@ using System.Text;
 
 namespace JoinMonster
 {
-    internal class ConnectionUtils
+    internal static class ConnectionUtils
     {
         private const string Prefix = "arrayconnection:";
 

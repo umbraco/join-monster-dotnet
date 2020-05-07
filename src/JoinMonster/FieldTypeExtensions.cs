@@ -6,6 +6,9 @@ using JoinMonster.Configs;
 
 namespace JoinMonster
 {
+    /// <summary>
+    /// Extension methods for <see cref="FieldType"/>.
+    /// </summary>
     public static class FieldTypeExtensions
     {
         /// <summary>
@@ -43,7 +46,7 @@ namespace JoinMonster
         /// <param name="fieldType">The field type.</param>
         /// <param name="where">The WHERE condition condition.</param>
         /// <returns>The <see cref="FieldType"/>.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="fieldType"/> or <see cref="where"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentNullException">If <paramref name="fieldType"/> or <paramref name="where"/> is <c>null</c>.</exception>
         public static FieldType SqlWhere(this FieldType fieldType, WhereDelegate where)
         {
             if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));

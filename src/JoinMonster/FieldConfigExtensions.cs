@@ -6,6 +6,9 @@ using JoinMonster.Configs;
 
 namespace JoinMonster
 {
+    /// <summary>
+    /// Extension methods for <see cref="FieldConfig"/>.
+    /// </summary>
     public static class FieldConfigExtensions
     {
         /// <summary>
@@ -30,7 +33,7 @@ namespace JoinMonster
         /// <param name="fieldConfig">The field config.</param>
         /// <param name="where">The WHERE condition resolver.</param>
         /// <returns>The <see cref="FieldConfig"/>.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="fieldConfig"/> or <see cref="where"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentNullException">If <paramref name="fieldConfig"/> or <paramref name="where"/> is <c>null</c>.</exception>
         public static FieldConfig SqlWhere(this FieldConfig fieldConfig, WhereDelegate where)
         {
             if (fieldConfig == null) throw new ArgumentNullException(nameof(fieldConfig));
@@ -45,7 +48,7 @@ namespace JoinMonster
         /// <param name="fieldConfig">The field config.</param>
         /// <param name="join">The JOIN condition resolver.</param>
         /// <returns>The <see cref="FieldConfig"/></returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="fieldConfig"/> or <see cref="join"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentNullException">If <paramref name="fieldConfig"/> or <paramref name="join"/> is <c>null</c>.</exception>
         public static FieldConfig SqlJoin(this FieldConfig fieldConfig, JoinDelegate join)
         {
             if (fieldConfig == null) throw new ArgumentNullException(nameof(fieldConfig));

@@ -53,9 +53,6 @@ namespace JoinMonster
             if (databaseCall == null) throw new ArgumentNullException(nameof(databaseCall));
 
             var sqlAst = _converter.Convert(context);
-            if(!(sqlAst is SqlTable sqlTable))
-                throw new Exception("Expected SQL AST node to be of type SqlTable.");
-
             var sql = _compiler.Compile(sqlAst, context);
 
             // TODO: Run batches and map result
@@ -74,10 +71,12 @@ namespace JoinMonster
             }
 
             var objectShape = _objectShaper.DefineObjectShape(sqlAst);
-            var result = _hydrator.Nest(data, objectShape);
-            result = (List<Dictionary<string, object>>) _arrayToConnectionConverter.ArrayToConnection(result, sqlTable);
+#pragma warning disable 8620
+            var nested = _hydrator.Nest(data, objectShape);
+            var result = _arrayToConnectionConverter.Convert(nested, sqlAst);
+#pragma warning restore 8620
 
-            if (sqlTable.GrabMany)
+            if (sqlAst.GrabMany)
                 return result.AsEnumerable();
 
             return result.FirstOrDefault();

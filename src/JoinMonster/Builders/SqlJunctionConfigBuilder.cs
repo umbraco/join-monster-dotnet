@@ -41,7 +41,7 @@ namespace JoinMonster.Builders
         /// <summary>
         /// Sets the <c>WHERE</c> condition for the junction configuration.
         /// </summary>
-        /// <param name="where">The WHERE condition condition.</param>
+        /// <param name="where">The WHERE condition.</param>
         /// <returns>The <see cref="SqlJunctionConfig"/>.</returns>
         public SqlJunctionConfigBuilder Where(WhereDelegate where)
         {
@@ -49,6 +49,11 @@ namespace JoinMonster.Builders
             return this;
         }
 
+        /// <summary>
+        /// Sets the <c>ORDER BY</c> clause for the junction configuration.
+        /// </summary>
+        /// <param name="orderBy">The ORDER BY clause.</param>
+        /// <returns>The <see cref="SqlJunctionConfig"/>.</returns>
         public SqlJunctionConfigBuilder OrderBy(OrderByDelegate orderBy)
         {
             SqlJunctionConfig.OrderBy = orderBy;

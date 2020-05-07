@@ -4,6 +4,9 @@ using JoinMonster.Configs;
 
 namespace JoinMonster
 {
+    /// <summary>
+    /// Extension methods for <see cref="ConnectionBuilder{TSource}"/>.
+    /// </summary>
     public static class ConnectionExtensions
     {
         /// <summary>
@@ -12,7 +15,7 @@ namespace JoinMonster
         /// <param name="builder">The connection builder.</param>
         /// <param name="where">The WHERE condition condition.</param>
         /// <returns>The <see cref="ConnectionBuilder{T}"/>.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="builder"/> or <see cref="where"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentNullException">If <paramref name="builder"/> or <paramref name="where"/> is <c>null</c>.</exception>
         public static ConnectionBuilder<T> SqlWhere<T>(this ConnectionBuilder<T> builder, WhereDelegate where)
         {
             if (builder == null) throw new ArgumentNullException(nameof(builder));

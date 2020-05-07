@@ -9,6 +9,9 @@ namespace JoinMonster.Data
 {
     public abstract class SqlDialect : ISqlDialect
     {
+        /// <summary>
+        /// The max LIMIT supported by the database.
+        /// </summary>
         protected virtual string MaxLimit { get; } = "-1";
 
         /// <inheritdoc />
@@ -20,10 +23,10 @@ namespace JoinMonster.Data
         /// <inheritdoc />
         public abstract void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
             IDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
-            string joinCondition);
+            string? joinCondition);
 
         protected virtual string OffsetPagingSelect(string table, IEnumerable<string> pagingWhereConditions, string order,
-            int limit, int offset, string @as, string joinCondition, string joinType, object? extraJoin = null)
+            int limit, int offset, string @as, string? joinCondition, string? joinType, object? extraJoin = null)
         {
             var whereCondition = string.Join(" AND ", pagingWhereConditions);
             if (string.IsNullOrEmpty(whereCondition)) whereCondition = "TRUE";

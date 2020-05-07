@@ -8,7 +8,22 @@ namespace JoinMonster
 {
     internal class ArrayToConnectionConverter
     {
-        public object? ArrayToConnection(object? data, Node sqlAst)
+        public IEnumerable<IDictionary<string, object?>> Convert(IEnumerable<IDictionary<string, object?>> data, Node sqlAst)
+        {
+            if (data == null) throw new ArgumentNullException(nameof(data));
+            if (sqlAst == null) throw new ArgumentNullException(nameof(sqlAst));
+
+            var converted = ConvertInternal(data, sqlAst);
+            return converted switch
+            {
+                IEnumerable<IDictionary<string, object?>> dictionary => dictionary,
+                null => throw new JoinMonsterException("Expected result to not be null."),
+                _ => throw new JoinMonsterException(
+                    $"Expected result to be of type '{typeof(IEnumerable<IDictionary<string, object?>>)}' but was '{converted.GetType()}'")
+            };
+        }
+
+        private object? ConvertInternal(object? data, Node sqlAst)
         {
             foreach (var astChild in sqlAst.Children)
             {
@@ -52,7 +67,7 @@ namespace JoinMonster
                         offset = ConnectionUtils.CursorToOffset((string) after);
 
                     // $total was a special column for determining the total number of items
-                    int? arrayLength = dataArr.Count > 0 && dataArr[0].TryGetValue("$total", out var total) ? Convert.ToInt32(total) : (int?) null;
+                    int? arrayLength = dataArr.Count > 0 && dataArr[0].TryGetValue("$total", out var total) ? System.Convert.ToInt32(total) : (int?) null;
 
                     var connection = ConnectionFromArraySlice(dataArr, arguments, offset, arrayLength);
                     if (arrayLength.HasValue)
@@ -119,7 +134,7 @@ namespace JoinMonster
             if (fieldName == null) return;
 
             if (dataItem.TryGetValue(fieldName, out _))
-                dataItem[fieldName] = ArrayToConnection(dataItem[fieldName], astChild);
+                dataItem[fieldName] = ConvertInternal(dataItem[fieldName], astChild);
         }
     }
 }
