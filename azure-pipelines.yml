@@ -32,16 +32,24 @@ steps:
     projects: src/**/*.csproj
 
 - task: DotNetCoreCLI@2
+  displayName: Build
   inputs:
     command: 'build'
     projects: 'src/**/*.csproj'
     arguments: '--configuration $(buildConfiguration) -p:Version=$(GitVersion.SemVer)'
     
 - task: DotNetCoreCLI@2
+  displayName: Test
   inputs:
     command: 'test'
     projects: 'test/**/*.csproj'
     arguments: '--collect:"XPlat Code Coverage"'
+
+- task: PublishCodeCoverageResults@1
+  displayName: 'Publish Code Coverage Results'
+  inputs:
+    codeCoverageTool: 'Cobertura'
+    summaryFileLocation: '$(Agent.TempDirectory)/**/coverage.cobertura.xml'
 
 - task: DotNetCoreCLI@2
   displayName: Pack
