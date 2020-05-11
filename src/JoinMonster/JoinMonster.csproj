@@ -6,12 +6,27 @@
         <LangVersion>latestmajor</LangVersion>
         <Nullable>enable</Nullable>
         <DocumentationFile>bin\$(Configuration)\JoinMonster.xml</DocumentationFile>
+        <Authors>Umbraco HQ</Authors>
+        <Owners>Umbraco HQ</Owners>
+        <Description>A GraphQL to SQL query execution layer for query planning and batch data fetching.</Description>
+        <Copyright>2020</Copyright>
+        <RequireLicenseAcceptance>false</RequireLicenseAcceptance>
+        <Language>en-US</Language>
+        <Tags>graphql,join-monster</Tags>
+        <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+        <PackageProjectUrl>https://github.com/umbraco/join-monster-dotnet</PackageProjectUrl>
+        <RepositoryType>git</RepositoryType>
+        <RepositoryUrl>https://github.com/umbraco/join-nomster-dotnet</RepositoryUrl>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="GraphQL" Version="3.0.0-preview-1648" />
       <PackageReference Include="NestHydration" Version="0.1.0" />
       <PackageReference Include="System.Text.Json" Version="4.7.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="../../LICENSE.md" Pack="true" Visible="false" PackagePath="$(PackageLicenseFile)" />
     </ItemGroup>
 
 </Project>
