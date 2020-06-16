@@ -106,9 +106,8 @@ namespace JoinMonster.Language
             var sortKey = field.GetSqlSortKey();
             var paginate = false;
 
-            if (!grabMany && field.ResolvedType.IsConnectionType())
+            if (!grabMany && field.ResolvedType.GetNamedType().IsConnectionType())
             {
-                grabMany = true;
                 paginate = field.GetSqlPaginate().GetValueOrDefault(false);
             }
 
@@ -168,9 +167,7 @@ namespace JoinMonster.Language
             }
 
             if (paginate)
-            {
                 HandleColumnsRequiredForPagination(sqlTable, columns);
-            }
 
             return sqlTable;
         }

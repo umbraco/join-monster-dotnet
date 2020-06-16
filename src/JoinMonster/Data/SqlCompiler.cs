@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using GraphQL;
-using JoinMonster.Builders;
-using JoinMonster.Configs;
 using JoinMonster.Language.AST;
 
 namespace JoinMonster.Data
@@ -160,6 +158,11 @@ namespace JoinMonster.Data
 
                     return;
                 }
+            }
+            else if (node.Paginate)
+            {
+                _dialect.HandlePaginationAtRoot(parent, node, arguments, context, tables);
+                return;
             }
 
             tables.Add($"FROM {_dialect.Quote(node.Name)} AS {_dialect.Quote(node.As)}");

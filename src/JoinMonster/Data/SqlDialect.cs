@@ -1,11 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using GraphQL;
 using JoinMonster.Builders;
-using JoinMonster.Configs;
 using JoinMonster.Language.AST;
 
 namespace JoinMonster.Data
@@ -27,6 +24,10 @@ namespace JoinMonster.Data
         public abstract void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
             IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
             string? joinCondition);
+
+        /// <inheritdoc />
+        public abstract void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
+            IResolveFieldContext context, ICollection<string> tables);
 
         protected virtual string KeysetPagingSelect(string table, IEnumerable<string> pagingWhereCondition, string order,
             int limit, string @as, string? joinCondition, string? joinType) {
@@ -68,7 +69,7 @@ namespace JoinMonster.Data
   WHERE {whereCondition}
   ORDER BY {order}
   LIMIT {(limit == -1 ? MaxLimit : (object) limit)} OFFSET {offset}
-) ${Quote(@as)}";
+) {Quote(@as)}";
             }
 
             return $@"{joinType ?? ""} JOIN LATERAL (

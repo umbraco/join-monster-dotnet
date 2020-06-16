@@ -36,5 +36,15 @@ namespace JoinMonster.Data
         void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
             IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
             string? joinCondition);
+
+        /// <summary>
+        /// Handles pagination at root.
+        /// </summary>
+        /// <param name="parent">The parent node.</param>
+        /// <param name="node">The node.</param>
+        /// <param name="arguments">The arguments.</param>
+        /// <param name="context">The context.</param>
+        /// <param name="tables">The tables builder.</param>
+        void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables);
     }
 }

@@ -4,11 +4,9 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using GraphQL;
-using GraphQL.Types.Relay.DataObjects;
 using JoinMonster.Configs;
 using JoinMonster.Data;
 using JoinMonster.Language;
-using JoinMonster.Language.AST;
 using NestHydration;
 
 namespace JoinMonster
@@ -16,7 +14,7 @@ namespace JoinMonster
     /// <summary>
     /// The entry class for JoinMonster.
     /// </summary>
-    public class JoinMonsterExecutor
+    public class JoinMonsterExecuter
     {
         private readonly QueryToSqlConverter _converter;
         private readonly SqlCompiler _compiler;
@@ -25,12 +23,12 @@ namespace JoinMonster
         private readonly ArrayToConnectionConverter _arrayToConnectionConverter;
 
         /// <summary>
-        /// Creates a new instance of <see cref="JoinMonsterExecutor"/>.
+        /// Creates a new instance of <see cref="JoinMonsterExecuter"/>.
         /// </summary>
         /// <param name="converter">The <see cref="QueryToSqlConverter"/>.</param>
         /// <param name="compiler">The <see cref="SqlCompiler"/>.</param>
         /// <param name="hydrator">The <see cref="Hydrator"/>.</param>
-        public JoinMonsterExecutor(QueryToSqlConverter converter, SqlCompiler compiler, Hydrator hydrator)
+        public JoinMonsterExecuter(QueryToSqlConverter converter, SqlCompiler compiler, Hydrator hydrator)
         {
             _converter = converter ?? throw new ArgumentNullException(nameof(converter));
             _compiler = compiler ?? throw new ArgumentNullException(nameof(compiler));
@@ -76,10 +74,9 @@ namespace JoinMonster
             var result = _arrayToConnectionConverter.Convert(nested, sqlAst, context);
 #pragma warning restore 8620
 
-            if (sqlAst.GrabMany)
-                return result.AsEnumerable();
-
-            return result.FirstOrDefault();
+            return sqlAst.GrabMany
+                ? result
+                : result.FirstOrDefault();
         }
 
     }

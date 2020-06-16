@@ -9,10 +9,12 @@ namespace JoinMonster.Tests.Unit.Stubs
     public class SqlDialectStub : SqlDialect
     {
         private readonly string _joinedOneToManyPaginatedSql;
+        private readonly string _paginatedAtRootSql;
 
-        public SqlDialectStub(string joinedOneToManyPaginatedSql = null)
+        public SqlDialectStub(string joinedOneToManyPaginatedSql = null, string paginatedAtRootSql = null)
         {
             _joinedOneToManyPaginatedSql = joinedOneToManyPaginatedSql;
+            _paginatedAtRootSql = paginatedAtRootSql;
         }
 
         public override string CompositeKey(string parentTable, IEnumerable<string> keys)
@@ -26,6 +28,12 @@ namespace JoinMonster.Tests.Unit.Stubs
             string joinCondition)
         {
             tables.Add(_joinedOneToManyPaginatedSql);
+        }
+
+        public override void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context,
+            ICollection<string> tables)
+        {
+            tables.Add(_paginatedAtRootSql);
         }
     }
 }

@@ -77,5 +77,32 @@ namespace JoinMonster.Data
                 throw new JoinMonsterException("Cannot paginate without an SortKey or OrderBy clause.");
             }
         }
+
+        /// <inheritdoc />
+        public override void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables)
+        {
+            var pagingWhereConditions = new List<string>();
+            if (node.SortKey != null)
+            {
+                var (limit, order, whereCondition) = InterpretForKeysetPaging(node, arguments, context);
+                if (whereCondition != null)
+                    pagingWhereConditions.Add(whereCondition);
+
+                var where = node.Where?.Invoke($"{Quote(node.As)}", arguments, context.UserContext);
+                if (where != null)
+                    pagingWhereConditions.Add(where);
+
+                tables.Add(KeysetPagingSelect(node.Name, pagingWhereConditions, order, limit, node.As, null, null));
+
+            } else if (node.OrderBy != null) {
+                var (limit, offset, order) = InterpretForOffsetPaging(node, arguments, context);
+
+                var where = node.Where?.Invoke($"{node.As}", arguments, context.UserContext);
+                if (where != null)
+                    pagingWhereConditions.Add(where);
+
+                tables.Add(OffsetPagingSelect(node.Name, pagingWhereConditions, order, limit, offset, node.As, null, null));
+            }
+        }
     }
 }

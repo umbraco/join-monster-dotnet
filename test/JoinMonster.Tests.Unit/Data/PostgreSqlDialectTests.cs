@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
@@ -182,6 +181,126 @@ namespace JoinMonster.Tests.Unit.Data
   ORDER BY ""variants"".""id"" DESC
   LIMIT 6
 ) ""variants"" ON ""products"".""id"" = ""variants"".""productId""");
+        }
+
+        [Fact]
+        public void HandlePaginationAtRoot_WhenCalledWithOffsetPagination_ReturnsPagedJoinString()
+        {
+            var dialect = new PostgresSqlDialect();
+            var node = new SqlTable("variants", "variants", "variants", new[] {new SqlColumn("id", "id", "id", true)},
+                new SqlTable[0], new Dictionary<string, object>(), true)
+            {
+                OrderBy = new OrderBy("id", SortDirection.Ascending),
+                Where = (variants, _, __) => $"{variants}.\"id\" <> 1"
+            };
+
+            var arguments = new Dictionary<string, object>();
+            var context = new ResolveFieldContext();
+            var tables = new List<string>();
+
+            dialect.HandlePaginationAtRoot(null, node, arguments, context, tables);
+
+            tables.Should()
+                .Contain(@"FROM (
+  SELECT ""variants"".*, COUNT(*) OVER () AS ""$total""
+  FROM ""variants"" ""variants""
+  WHERE variants.""id"" <> 1
+  ORDER BY ""variants"".""id"" ASC
+  LIMIT ALL OFFSET 0
+) ""variants""");
+        }
+
+        [Fact]
+        public void HandlePaginationAtRoot_WhenCalledWithKeysetPagination_ReturnsPagedJoinString()
+        {
+            var dialect = new PostgresSqlDialect();
+            var node = new SqlTable("variants", "variants", "variants", new[] {new SqlColumn("id", "id", "id", true)},
+                new SqlTable[0], new Dictionary<string, object>(), true)
+            {
+                OrderBy = new OrderBy("id", SortDirection.Ascending),
+                SortKey = new SortKey(new[] {"id"}, SortDirection.Ascending),
+                Where = (variants, _, __) => $"{variants}.\"id\" <> 1"
+            };
+
+            var arguments = new Dictionary<string, object>();
+            var context = new ResolveFieldContext();
+            var tables = new List<string>();
+
+            dialect.HandlePaginationAtRoot(null, node, arguments, context, tables);
+
+            tables.Should()
+                .Contain(@"FROM (
+  SELECT ""variants"".*
+  FROM variants ""variants""
+  WHERE ""variants"".""id"" <> 1
+  ORDER BY ""variants"".""id"" ASC
+  LIMIT ALL
+) ""variants""");
+        }
+
+        [Fact]
+        public void HandlePaginationAtRoot_WhenCalledWithKeysetPaginationAndFirstAndAfter_ReturnsPagedJoinString()
+        {
+            var dialect = new PostgresSqlDialect();
+            var node = new SqlTable("variants", "variants", "variants", new[] {new SqlColumn("id", "id", "id", true)},
+                new SqlTable[0], new Dictionary<string, object>(), true)
+            {
+                SortKey = new SortKey(new[] {"id"}, SortDirection.Descending),
+                Where = (variants, _, __) => $"{variants}.\"id\" <> 1"
+            };
+
+            var arguments = new Dictionary<string, object>
+            {
+                {"first", 2},
+                {"after", Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { id = 1 })))}
+            };
+            var context = new ResolveFieldContext();
+            var tables = new List<string>();
+
+            dialect.HandlePaginationAtRoot(null, node, arguments, context, tables);
+
+            tables.Should()
+                .Contain(@"FROM (
+  SELECT ""variants"".*
+  FROM variants ""variants""
+  WHERE ""variants"".""id"" < (1) AND ""variants"".""id"" <> 1
+  ORDER BY ""variants"".""id"" DESC
+  LIMIT 3
+) ""variants""");
+        }
+
+        [Fact]
+        public void HandlePaginationAtRoot_WhenCalledWithKeysetPaginationAndLastAndBefore_ReturnsPagedJoinString()
+        {
+            var dialect = new PostgresSqlDialect();
+            var node = new SqlTable("variants", "variants", "variants", new[] {new SqlColumn("id", "id", "id", true)},
+                new SqlTable[0], new Dictionary<string, object>(), true)
+            {
+                OrderBy = new OrderBy("id", SortDirection.Ascending),
+                SortKey = new SortKey(new[] {"id"}, SortDirection.Ascending),
+                Where = (variants, _, __) => $"{variants}.\"id\" <> 1"
+            };
+
+
+            var arguments = new Dictionary<string, object>
+            {
+                {"last", 5},
+                {"before", Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { id = 1 })))}
+            };
+            var context = new ResolveFieldContext();
+            var tables = new List<string>();
+
+            dialect.HandlePaginationAtRoot(null, node, arguments, context, tables);
+
+            tables.Should()
+                .Contain(@"FROM (
+  SELECT ""variants"".*
+  FROM variants ""variants""
+  WHERE ""variants"".""id"" < (1) AND ""variants"".""id"" <> 1
+  ORDER BY ""variants"".""id"" DESC
+  LIMIT 6
+) ""variants""");
+
         }
     }
 }

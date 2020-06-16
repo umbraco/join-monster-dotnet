@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using GraphQL;
 using GraphQL.Types.Relay.DataObjects;
-using JoinMonster.Builders;
 using JoinMonster.Language.AST;
 
 namespace JoinMonster
 {
     internal class ArrayToConnectionConverter
     {
-        public IEnumerable<IDictionary<string, object?>> Convert(IEnumerable<IDictionary<string, object?>> data, Node sqlAst, IResolveFieldContext context)
+        public IEnumerable<object> Convert(IEnumerable<IDictionary<string, object?>> data, Node sqlAst, IResolveFieldContext context)
         {
             if (data == null) throw new ArgumentNullException(nameof(data));
             if (sqlAst == null) throw new ArgumentNullException(nameof(sqlAst));
@@ -20,6 +19,7 @@ namespace JoinMonster
             return converted switch
             {
                 IEnumerable<IDictionary<string, object?>> dictionary => dictionary,
+                Connection<object> connection => new [] { connection },
                 null => throw new JoinMonsterException("Expected result to not be null."),
                 _ => throw new JoinMonsterException(
                     $"Expected result to be of type '{typeof(IEnumerable<IDictionary<string, object?>>)}' but was '{converted.GetType()}'")
