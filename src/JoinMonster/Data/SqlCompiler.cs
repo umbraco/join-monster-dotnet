@@ -82,7 +82,15 @@ namespace JoinMonster.Data
                         throw new ArgumentException($"'{nameof(parent)}' must be of type {typeof(SqlTable)}", nameof(parent));
 
                     var parentTable = table.As;
-                    selections.Add($"{_dialect.Quote(parentTable)}.{_dialect.Quote(sqlColumn.Name)} AS {_dialect.Quote(JoinPrefix(prefix) + sqlColumn.As)}");
+                    if (sqlColumn.Expression != null)
+                    {
+                        selections.Add($"{sqlColumn.Expression(_dialect.Quote(parentTable), sqlColumn.Arguments, context)} AS {_dialect.Quote(JoinPrefix(prefix) + sqlColumn.As)}");
+                    }
+                    else
+                    {
+                        selections.Add($"{_dialect.Quote(parentTable)}.{_dialect.Quote(sqlColumn.Name)} AS {_dialect.Quote(JoinPrefix(prefix) + sqlColumn.As)}");
+                    }
+
                     break;
                 }
                 case SqlComposite sqlComposite:

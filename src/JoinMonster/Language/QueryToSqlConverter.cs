@@ -205,7 +205,12 @@ namespace JoinMonster.Language
             var columnName = config?.Column ?? fieldName;
             var columnAs = fieldName;
 
-            return new SqlColumn(columnName, fieldName, columnAs).WithLocation(fieldAst.SourceLocation);
+            var column = new SqlColumn(columnName, fieldName, columnAs).WithLocation(fieldAst.SourceLocation);
+
+            column.Arguments = HandleArguments(fieldAst);
+            column.Expression = config?.Expression;
+
+            return column;
         }
 
         private IReadOnlyDictionary<string, object> HandleArguments(Field fieldAst)

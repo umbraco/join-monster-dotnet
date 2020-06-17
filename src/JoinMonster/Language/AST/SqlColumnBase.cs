@@ -11,6 +11,6 @@ namespace JoinMonster.Language.AST
 
         public string As { get; }
         public string FieldName { get; }
-        public bool IsId { get; set; }
+        public bool IsId { get; }
     }
 }

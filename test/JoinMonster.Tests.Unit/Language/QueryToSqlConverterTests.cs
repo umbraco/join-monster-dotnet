@@ -236,7 +236,7 @@ namespace JoinMonster.Tests.Unit.Language
         }
 
         [Fact]
-        public void Convert_WhenFieldHasWhereExpression_SetsWhereOnSqlTable()
+        public void Convert_WhenFieldHasWhereClause_SetsWhereOnSqlTable()
         {
             string Where(string tableAlias, IReadOnlyDictionary<string, object> arguments,
                 IResolveFieldContext context) => $"{tableAlias}.\"id\" = 3";
@@ -382,12 +382,82 @@ namespace JoinMonster.Tests.Unit.Language
                 .NotContain(x => x.Name == "name");
         }
 
+        [Fact]
+        public void Convert_WhenFieldHasArguments_AddsArgumentsToSqlColumn()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Query")
+                    .FieldFor("product", null);
+
+                builder.Types.For("Product")
+                    .SqlTable("products", "id");
+
+                builder.Types.For("ProductVariant")
+                    .SqlTable("productVariants", "id");
+
+                builder.Types.For("Product")
+                    .FieldFor("variants", null)
+                    .SqlJoin((_, __, ___, ____) => "");
+            });
+
+            var query = "{ product { variants { price(currency: \"DKK\") } } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var node = converter.Convert(context);
+
+            node.Should()
+                .BeOfType<SqlTable>()
+                .Which.Tables.Should()
+                .ContainSingle()
+                .Which.Columns.OfType<SqlColumn>().Should()
+                .Contain(x => x.FieldName == "price")
+                .Which.Arguments.Should()
+                .SatisfyRespectively(argument =>
+                {
+                    argument.Key.Should().Be("currency");
+                    argument.Value.Should().Be("DKK");
+                });
+        }
+
+        [Fact]
+        public void Convert_WhenFieldHasExpression_SetsExpressionOnSqlColumn()
+        {
+            string Expression(string tableAlias, IReadOnlyDictionary<string, object> arguments,
+                IResolveFieldContext context) => $"{tableAlias}.\"productName\"";
+
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Product")
+                    .SqlTable("products", "id");
+
+                builder.Types.For("Product")
+                    .FieldFor("name", null)
+                    .SqlColumn()
+                    .Expression(Expression);
+            });
+
+            var query = "{ product { name } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var node = converter.Convert(context);
+
+            node.Should()
+                .BeOfType<SqlTable>()
+                .Which.Columns.OfType<SqlColumn>().Should().ContainSingle(x => x.FieldName == "name")
+                .Which.Expression.Should()
+                .BeEquivalentTo((ExpressionDelegate)Expression);
+        }
+
         private static ISchema CreateSimpleSchema(Action<SchemaBuilder> configure = null)
         {
             return Schema.For(@"
 type ProductVariant {
   id: ID!
   name: String
+  price: Decimal
 }
 
 type Product {
@@ -395,6 +465,7 @@ type Product {
   name: String
   variants: [ProductVariant]
 }
+
 type Query {
   product(id: ID): Product
 }
