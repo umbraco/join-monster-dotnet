@@ -108,11 +108,11 @@ namespace JoinMonster.Data
         {
             var arguments = node.Arguments;
 
-            var where = node.Junction?.Where?.Invoke(_dialect.Quote(node.Junction.As), arguments, context.UserContext);
+            var where = node.Junction?.Where?.Invoke(_dialect.Quote(node.Junction.As), arguments, context);
             if (where != null)
                 wheres.Add(where);
 
-            where = node.Where?.Invoke(_dialect.Quote(node.As), arguments, context.UserContext);
+            where = node.Where?.Invoke(_dialect.Quote(node.As), arguments, context);
             if (where != null)
                 wheres.Add(where);
 
@@ -126,8 +126,7 @@ namespace JoinMonster.Data
             {
                 if (node.Join != null)
                 {
-                    var join = node.Join(_dialect.Quote(parentTable.As), _dialect.Quote(node.As), arguments,
-                        context.UserContext);
+                    var join = node.Join(_dialect.Quote(parentTable.As), _dialect.Quote(node.As), arguments, context);
 
                     if (node.Paginate)
                     {
@@ -147,11 +146,11 @@ namespace JoinMonster.Data
                     var joinCondition1 = node.Junction.FromParent(
                         _dialect.Quote(parentTable.As),
                         _dialect.Quote(node.Junction.As),
-                        arguments, context.UserContext);
+                        arguments, context);
                     var joinCondition2 = node.Junction.ToChild(
                         _dialect.Quote(node.Junction.As),
                         _dialect.Quote(node.As),
-                        arguments, context.UserContext);
+                        arguments, context);
 
                     tables.Add($"LEFT JOIN {_dialect.Quote(node.Junction.Table)} {_dialect.Quote(node.Junction.As)} ON {joinCondition1}");
                     tables.Add($"LEFT JOIN {_dialect.Quote(node.Name)} {_dialect.Quote(node.As)} ON {joinCondition2}");

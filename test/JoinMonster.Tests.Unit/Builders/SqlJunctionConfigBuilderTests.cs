@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using FluentAssertions;
+using GraphQL;
 using JoinMonster.Builders;
 using JoinMonster.Configs;
 using Xunit;
@@ -56,7 +57,7 @@ namespace JoinMonster.Tests.Unit.Builders
         public void Create_WithFromParent_SetsFromParent()
         {
             string FromParent(string table, string childTable, IReadOnlyDictionary<string, object> arguments,
-                IDictionary<string, object> context) => "";
+                IResolveFieldContext context) => "";
 
             var builder =
                 SqlJunctionConfigBuilder.Create("friends", FromParent, (_, __, ___, ____) => "");
@@ -68,7 +69,7 @@ namespace JoinMonster.Tests.Unit.Builders
         public void Create_WithToChild_SetsToChild()
         {
             string ToChild(string table, string childTable, IReadOnlyDictionary<string, object> arguments,
-                IDictionary<string, object> context) => "";
+                IResolveFieldContext context) => "";
 
             var builder =
                 SqlJunctionConfigBuilder.Create("friends", (_, __, ___, ____) => "", ToChild);
@@ -80,7 +81,7 @@ namespace JoinMonster.Tests.Unit.Builders
         public void Where_WithWhereCondition_SetsWhere()
         {
             string Where(string tableAlias, IReadOnlyDictionary<string, object> arguments,
-                IDictionary<string, object> userContext) => "";
+                IResolveFieldContext context) => "";
 
             var builder = SqlJunctionConfigBuilder.Create("friends", (_, __, ___, ____) => "", (_, __, ___, ____) => "");
 

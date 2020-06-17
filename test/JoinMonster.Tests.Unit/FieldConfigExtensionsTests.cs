@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
+using GraphQL;
 using GraphQL.Utilities;
 using JoinMonster.Builders;
 using JoinMonster.Configs;
@@ -69,7 +70,7 @@ namespace JoinMonster.Tests.Unit
         public void SqlWhere_WithWhereDelegate_AddsWhereDelegateToMetadata()
         {
             string Where(string tableAlias, IReadOnlyDictionary<string, object> arguments,
-                IDictionary<string, object> userContext) => $"{tableAlias}.\"id\" = 3";
+                IResolveFieldContext context) => $"{tableAlias}.\"id\" = 3";
 
             var fieldConfig = new FieldConfig("name");
 
@@ -107,7 +108,7 @@ namespace JoinMonster.Tests.Unit
         public void SqlJoin_WithJoinDelegate_AddsJoinDelegateToMetadata()
         {
             string Join(string parentTable, string childTable, IReadOnlyDictionary<string, object> arguments,
-                IDictionary<string, object> userContext) => $"{parentTable}.\"id\" = ${childTable}.\"parentId\"";
+                IResolveFieldContext context) => $"{parentTable}.\"id\" = ${childTable}.\"parentId\"";
 
             var fieldConfig = new FieldConfig("name");
 
@@ -134,7 +135,7 @@ namespace JoinMonster.Tests.Unit
         public void SqlOrder_WithOrderByDelegate_AddsOrderByDelegateToMetadata()
         {
             void OrderBy(OrderByBuilder order, IReadOnlyDictionary<string, object> arguments,
-                IDictionary<string, object> userContext) => order.By("name");
+                IResolveFieldContext context) => order.By("name");
 
             var fieldConfig = new FieldConfig("name");
 

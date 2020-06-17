@@ -22,7 +22,7 @@ namespace JoinMonster
                 Connection<object> connection => new [] { connection },
                 null => throw new JoinMonsterException("Expected result to not be null."),
                 _ => throw new JoinMonsterException(
-                    $"Expected result to be of type '{typeof(IEnumerable<IDictionary<string, object?>>)}' but was '{converted.GetType()}'")
+                    $"Expected result to be of type '{typeof(IEnumerable<IDictionary<string, object?>>)}' or '{typeof(Connection<object>)}' but was '{converted.GetType()}'")
             };
         }
 

@@ -30,7 +30,7 @@ namespace JoinMonster.Tests.Unit.Stubs
             tables.Add(_joinedOneToManyPaginatedSql);
         }
 
-        public override void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context,
+        public override void HandlePaginationAtRoot(Node parent, SqlTable node, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context,
             ICollection<string> tables)
         {
             tables.Add(_paginatedAtRootSql);

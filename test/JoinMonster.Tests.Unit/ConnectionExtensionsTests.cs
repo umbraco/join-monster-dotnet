@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using FluentAssertions;
+using GraphQL;
 using GraphQL.Builders;
 using GraphQL.Types;
 using JoinMonster.Builders;
@@ -38,7 +39,7 @@ namespace JoinMonster.Tests.Unit
         {
 
             string Where(string tableAlias, IReadOnlyDictionary<string, object> arguments,
-                IDictionary<string, object> userContext) => "";
+                IResolveFieldContext context) => "";
 
             var builder = ConnectionBuilder.Create<ObjectGraphType, object>().SqlWhere(Where);
 
@@ -71,7 +72,7 @@ namespace JoinMonster.Tests.Unit
         public void SqlOrder_WithOrder_SetsOrderOnFieldType()
         {
             void Order(OrderByBuilder order, IReadOnlyDictionary<string, object> arguments,
-                IDictionary<string, object> userContext) => order.By("id");
+                IResolveFieldContext context) => order.By("id");
 
             var builder = ConnectionBuilder.Create<ObjectGraphType, object>().SqlOrder(Order);
 
@@ -104,7 +105,7 @@ namespace JoinMonster.Tests.Unit
         public void SqlJoin_WithJoin_SetsJoinOnFieldType()
         {
             string Join(string parentTable, string childTable, IReadOnlyDictionary<string, object> arguments,
-                IDictionary<string, object> userContext) => "";
+                IResolveFieldContext context) => "";
 
             var builder = ConnectionBuilder.Create<ObjectGraphType, object>().SqlJoin(Join);
 

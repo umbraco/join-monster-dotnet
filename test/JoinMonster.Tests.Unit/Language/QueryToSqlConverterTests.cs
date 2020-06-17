@@ -239,7 +239,7 @@ namespace JoinMonster.Tests.Unit.Language
         public void Convert_WhenFieldHasWhereExpression_SetsWhereOnSqlTable()
         {
             string Where(string tableAlias, IReadOnlyDictionary<string, object> arguments,
-                IDictionary<string, object> userContext) => $"{tableAlias}.\"id\" = 3";
+                IResolveFieldContext context) => $"{tableAlias}.\"id\" = 3";
 
             var schema = CreateSimpleSchema(builder =>
             {
@@ -322,7 +322,7 @@ namespace JoinMonster.Tests.Unit.Language
         public void Convert_WhenFieldHasJoinExpression_SetsJoinOnSqlTable()
         {
             string Join(string parentTable, string childTable, IReadOnlyDictionary<string, object> arguments,
-                IDictionary<string, object> userContext) => $"{parentTable}.\"id\" = ${childTable}.\"productId\"";
+                IResolveFieldContext context) => $"{parentTable}.\"id\" = ${childTable}.\"productId\"";
 
             var schema = CreateSimpleSchema(builder =>
             {

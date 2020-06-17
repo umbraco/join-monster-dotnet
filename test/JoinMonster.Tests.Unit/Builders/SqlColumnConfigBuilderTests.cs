@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
+using GraphQL;
 using JoinMonster.Builders;
 using JoinMonster.Configs;
 using Xunit;
@@ -61,7 +62,8 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void Expression_WithExpression_SetsExpression()
         {
-            Task<string> Expression(string tableAlias, IDictionary<string, object> userContext) => Task.FromResult($"{tableAlias}.firstName || ' ' {tableAlias}.lastName");
+            string Expression(string tableAlias, IReadOnlyDictionary<string, object> args,
+                IResolveFieldContext context) => $"{tableAlias}.\"firstName\" || ' ' {tableAlias}.\"lastName\"";
 
             var builder = SqlColumnConfigBuilder.Create("myColumn")
                 .Expression(Expression);

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
+using GraphQL;
 using JoinMonster.Builders;
 
 namespace JoinMonster.Configs
@@ -9,20 +10,21 @@ namespace JoinMonster.Configs
     /// Generates a SQL expression.
     /// </summary>
     /// <param name="tableAlias">An auto-generated table alias. Already quoted.</param>
-    /// <param name="userContext">The user context.</param>
+    /// <param name="arguments">The arguments.</param>
+    /// <param name="context">The context.</param>
     /// <returns>A RAW SQL expression.</returns>
-    public delegate Task<string> ExpressionDelegate(string tableAlias, IDictionary<string, object> userContext);
+    public delegate string ExpressionDelegate(string tableAlias, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context);
 
     /// <summary>
     /// Generates a <c>WHERE</c> condition.
     /// </summary>
     /// <param name="tableAlias">An auto-generated table alias. Already quoted</param>
     /// <param name="arguments">The arguments.</param>
-    /// <param name="userContext">The user context.</param>
+    /// <param name="context">The context.</param>
     /// <returns>A WHERE condition or null if there's no condition.</returns>
     // TODO: Maybe pass in a "ParameterNameGenerator" and return an object containing the WHERE condition and a Dictionary of parameters.
     // TODO: This would make it more safe instead of relying on the implementer to correctly escape the values.
-    public delegate string? WhereDelegate(string tableAlias, IReadOnlyDictionary<string, object> arguments, IDictionary<string, object> userContext);
+    public delegate string? WhereDelegate(string tableAlias, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context);
 
 
     /// <summary>
@@ -31,25 +33,25 @@ namespace JoinMonster.Configs
     /// <param name="parentTable">An auto-generated alias for the parent table. Already quoted.</param>
     /// <param name="childTable">An auto-generated alias for the child table. Already quoted.</param>
     /// <param name="arguments">The arguments.</param>
-    /// <param name="userContext">The user context.</param>
+    /// <param name="context">The context.</param>
     /// <returns>The RAW SQL condition for the LEFT JOIN.</returns>
-    public delegate string JoinDelegate(string parentTable, string childTable, IReadOnlyDictionary<string, object> arguments, IDictionary<string, object> userContext);
+    public delegate string JoinDelegate(string parentTable, string childTable, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context);
 
     /// <summary>
     /// Generates a <c>ORDER BY</c> clause.
     /// </summary>
     /// <param name="order">The <see cref="OrderByBuilder"/>.</param>
     /// <param name="arguments">The arguments.</param>
-    /// <param name="userContext">The user context.</param>
-    public delegate void OrderByDelegate(OrderByBuilder order, IReadOnlyDictionary<string, object> arguments, IDictionary<string, object> userContext);
+    /// <param name="context">The context.</param>
+    public delegate void OrderByDelegate(OrderByBuilder order, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context);
 
     /// <summary>
     /// Defines a sort key that is used when doing keyset pagination.
     /// </summary>
     /// <param name="sort">The <see cref="SortKeyBuilder"/>.</param>
     /// <param name="arguments">The arguments.</param>
-    /// <param name="userContext">The user context.</param>
-    public delegate void SortKeyDelegate(SortKeyBuilder sort, IReadOnlyDictionary<string, object> arguments, IDictionary<string, object> userContext);
+    /// <param name="context">The context.</param>
+    public delegate void SortKeyDelegate(SortKeyBuilder sort, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context);
 
     /// <summary>
     /// Takes the SQL string and the parameters and sends them to a database.

@@ -52,10 +52,10 @@ namespace JoinMonster.Data
 
             var pagingWhereConditions = new List<string>
             {
-                node.Join(Quote(parent.As), Quote(node.As), arguments, context.UserContext)
+                node.Join(Quote(parent.As), Quote(node.As), arguments, context)
             };
 
-            var where = node.Where?.Invoke(Quote(node.As), arguments, context.UserContext);
+            var where = node.Where?.Invoke(Quote(node.As), arguments, context);
             if (where != null)
                 pagingWhereConditions.Add(where);
 
@@ -88,7 +88,7 @@ namespace JoinMonster.Data
                 if (whereCondition != null)
                     pagingWhereConditions.Add(whereCondition);
 
-                var where = node.Where?.Invoke($"{Quote(node.As)}", arguments, context.UserContext);
+                var where = node.Where?.Invoke($"{Quote(node.As)}", arguments, context);
                 if (where != null)
                     pagingWhereConditions.Add(where);
 
@@ -97,7 +97,7 @@ namespace JoinMonster.Data
             } else if (node.OrderBy != null) {
                 var (limit, offset, order) = InterpretForOffsetPaging(node, arguments, context);
 
-                var where = node.Where?.Invoke($"{node.As}", arguments, context.UserContext);
+                var where = node.Where?.Invoke($"{node.As}", arguments, context);
                 if (where != null)
                     pagingWhereConditions.Add(where);
 

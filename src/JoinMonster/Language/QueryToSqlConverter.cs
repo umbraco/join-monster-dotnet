@@ -29,7 +29,7 @@ namespace JoinMonster.Language
             var field = context.FieldDefinition;
             var parentType = context.ParentType.GetNamedType();
 
-            var node = Convert(fieldAst, field, parentType, 0, context.UserContext);
+            var node = Convert(fieldAst, field, parentType, 0, context);
             if (node is SqlTable sqlTable)
                 return sqlTable;
 
@@ -37,7 +37,7 @@ namespace JoinMonster.Language
         }
 
         private Node Convert(Field fieldAst, FieldType field, IGraphType parentType, int depth,
-            IDictionary<string, object> userContext)
+            IResolveFieldContext context)
         {
             var sqlColumnConfig = field.GetSqlColumnConfig();
             if (sqlColumnConfig?.Ignored == true)
@@ -60,18 +60,18 @@ namespace JoinMonster.Language
                     //TODO: Validate that either join, batch or junction is set on the field
                 }
 
-                return HandleTable(fieldAst, field, complexGraphType, sqlTableConfig, depth, userContext);
+                return HandleTable(fieldAst, field, complexGraphType, sqlTableConfig, depth, context);
             }
 
             // TODO: Looks like we can't check if field.Resolver is null because FieldMiddleware is registered as a resolver
             // if (sqlColumnConfig != null || field.Resolver == null)
-                return HandleColumn(fieldAst, field, gqlType, sqlColumnConfig, depth, userContext);
+                return HandleColumn(fieldAst, field, gqlType, sqlColumnConfig, depth, context);
 
             // return new SqlNoop();
         }
 
         private Node HandleTable(Field fieldAst, FieldType field, IComplexGraphType graphType,
-            SqlTableConfig config, int depth, IDictionary<string, object> userContext)
+            SqlTableConfig config, int depth, IResolveFieldContext context)
         {
             var fieldName = fieldAst.Name;
             var tableName = config.Table;
@@ -111,7 +111,7 @@ namespace JoinMonster.Language
                 paginate = field.GetSqlPaginate().GetValueOrDefault(false);
             }
 
-            HandleSelections(columns, tables, graphType, fieldAst.SelectionSet.Selections, depth, userContext);
+            HandleSelections(columns, tables, graphType, fieldAst.SelectionSet.Selections, depth, context);
 
             var sqlTable = new SqlTable(tableName, fieldName, tableAs, columns.AsReadOnly(), tables.AsReadOnly(),
                     arguments, grabMany).WithLocation(fieldAst.SourceLocation);
@@ -124,14 +124,14 @@ namespace JoinMonster.Language
             if (orderBy != null)
             {
                 var builder = new OrderByBuilder();
-                orderBy(builder, arguments, userContext);
+                orderBy(builder, arguments, context);
                 sqlTable.OrderBy = builder.OrderBy;
             }
 
             if (sortKey != null)
             {
                 var builder = new SortKeyBuilder();
-                sortKey(builder, arguments, userContext);
+                sortKey(builder, arguments, context);
                 sqlTable.SortKey = builder.SortKey;
             }
 
@@ -154,14 +154,14 @@ namespace JoinMonster.Language
                 if (junction.OrderBy != null)
                 {
                     var builder = new OrderByBuilder();
-                    junction.OrderBy(builder, arguments, userContext);
+                    junction.OrderBy(builder, arguments, context);
                     sqlTable.Junction.OrderBy = builder.OrderBy;
                 }
 
                 if (junction.SortKey != null)
                 {
                     var builder = new SortKeyBuilder();
-                    junction.SortKey(builder, arguments, userContext);
+                    junction.SortKey(builder, arguments, context);
                     sqlTable.Junction.SortKey = builder.SortKey;
                 }
             }
@@ -199,7 +199,7 @@ namespace JoinMonster.Language
         }
 
         private Node HandleColumn(Field fieldAst, FieldType field, IGraphType graphType,
-            SqlColumnConfig? config, int depth, IDictionary<string, object> userContext)
+            SqlColumnConfig? config, int depth, IResolveFieldContext userContext)
         {
             var fieldName = fieldAst.Name;
             var columnName = config?.Column ?? fieldName;
@@ -222,7 +222,7 @@ namespace JoinMonster.Language
         }
 
         private void HandleSelections(List<SqlColumnBase> sqlColumns, ICollection<SqlTable> tables,
-            IComplexGraphType graphType, IEnumerable<ISelection> selections, int depth, IDictionary<string, object> userContext)
+            IComplexGraphType graphType, IEnumerable<ISelection> selections, int depth, IResolveFieldContext context)
         {
             foreach (var selection in selections)
             {
@@ -230,7 +230,7 @@ namespace JoinMonster.Language
                 {
                     case Field fieldAst:
                         var field = graphType.GetField(fieldAst.Name);
-                        var node = Convert(fieldAst, field, graphType, ++depth, userContext);
+                        var node = Convert(fieldAst, field, graphType, ++depth, context);
 
                         switch (node)
                         {
