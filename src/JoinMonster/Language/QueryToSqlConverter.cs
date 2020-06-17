@@ -267,11 +267,14 @@ namespace JoinMonster.Language
             var edgeType = (IComplexGraphType) edgesType.GetField("node").ResolvedType.GetNamedType();
 
             var field = fieldAst.SelectionSet.Selections
-                           .OfType<Field>()
-                           .FirstOrDefault(x => x.Name == "edges")
-                           ?.SelectionSet.Selections.OfType<Field>()
-                           .FirstOrDefault(x => x.Name == "node")
-                       ?? new Field();
+                            .OfType<Field>()
+                            .FirstOrDefault(x => x.Name == "edges")
+                            ?.SelectionSet.Selections.OfType<Field>()
+                            .FirstOrDefault(x => x.Name == "node")
+                        ?? fieldAst.SelectionSet.Selections
+                            .OfType<Field>()
+                            .FirstOrDefault(x => x.Name == "items")
+                        ?? new Field();
 
             fieldAst = new Field(fieldAst.AliasNode, fieldAst.NameNode)
             {
