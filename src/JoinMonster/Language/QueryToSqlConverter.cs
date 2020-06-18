@@ -52,15 +52,18 @@ namespace JoinMonster.Language
 
                 var sqlTableConfig = complexGraphType.GetSqlTableConfig();
 
-                if(sqlTableConfig == null)
-                    return new SqlNoop();
-
-                if (depth >= 1)
+                if (sqlTableConfig != null)
                 {
-                    //TODO: Validate that either join, batch or junction is set on the field
+                    if (depth >= 1)
+                    {
+                        //TODO: Validate that either join, batch or junction is set on the field
+                    }
+
+                    return HandleTable(fieldAst, field, complexGraphType, sqlTableConfig, depth, context);
                 }
 
-                return HandleTable(fieldAst, field, complexGraphType, sqlTableConfig, depth, context);
+                if (sqlColumnConfig == null)
+                    return new SqlNoop();
             }
 
             // TODO: Looks like we can't check if field.Resolver is null because FieldMiddleware is registered as a resolver
