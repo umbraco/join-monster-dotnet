@@ -256,10 +256,34 @@ namespace JoinMonster.Language
                         }
 
                         break;
-                    case InlineFragment _:
+                    case InlineFragment inlineFragment:
+                    {
+                        var selectionNameOfType = inlineFragment.Type.Name;
+                        var deferredType = context.Schema.FindType(selectionNameOfType);
+
+                        if (deferredType is IComplexGraphType complexGraphType)
+                        {
+                            HandleSelections(sqlColumns, tables, complexGraphType,
+                                inlineFragment.SelectionSet.Selections, depth, context);
+                        }
+
                         break;
-                    case FragmentSpread _:
+                    }
+                    case FragmentSpread fragmentSpread:
+                    {
+                        var fragmentName = fragmentSpread.Name;
+                        var definition = context.Fragments.FindDefinition(fragmentName);
+                        var selectionNameOfType = definition.Type.Name;
+                        var deferredType = context.Schema.FindType(selectionNameOfType);
+
+                        if (deferredType is IComplexGraphType complexGraphType)
+                        {
+                            HandleSelections(sqlColumns, tables, complexGraphType,
+                                definition.SelectionSet.Selections, depth, context);
+                        }
+
                         break;
+                    }
                     default:
                         throw new ArgumentOutOfRangeException(nameof(selection), $"Unknown selection kind: {selection.GetType()}");
                 }

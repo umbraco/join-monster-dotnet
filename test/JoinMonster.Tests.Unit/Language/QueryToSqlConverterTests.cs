@@ -451,16 +451,73 @@ namespace JoinMonster.Tests.Unit.Language
                 .BeEquivalentTo((ExpressionDelegate)Expression);
         }
 
+        [Fact]
+        public void Convert_WhenQueryHasInlineFragment_AddsSelectionToColumns()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Node")
+                    .SqlTable("nodes", "id");
+
+                builder.Types.For("Product")
+                    .SqlTable("products", "id");
+
+                builder.Types.For("Product").IsTypeOfFunc = obj => true;
+                builder.Types.For("ProductVariant").IsTypeOfFunc = obj => true;
+            });
+
+            var query = "{ node(id: 1) { id, ...on Product { name } } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var node = converter.Convert(context);
+
+            node.Should()
+                .BeOfType<SqlTable>()
+                .Which.Columns.Should()
+                .Contain(x => x.FieldName == "name")
+                .And.Contain(x => x.FieldName == "id");
+        }
+
+        [Fact]
+        public void Convert_WhenQueryHasFragments_AddsSelectionToColumns()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Node")
+                    .SqlTable("nodes", "id");
+
+                builder.Types.For("Product")
+                    .SqlTable("products", "id");
+            });
+
+            var query = "{ node(id: 1) { id, ...ProductName } } fragment ProductName on Product { name }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var node = converter.Convert(context);
+
+            node.Should()
+                .BeOfType<SqlTable>()
+                .Which.Columns.Should()
+                .Contain(x => x.FieldName == "name")
+                .And.Contain(x => x.FieldName == "id");
+        }
+
         private static ISchema CreateSimpleSchema(Action<SchemaBuilder> configure = null)
         {
             return Schema.For(@"
-type ProductVariant {
+interface Node {
+  id: ID!
+}
+
+type ProductVariant implements Node {
   id: ID!
   name: String
   price: Decimal
 }
 
-type Product {
+type Product implements Node {
   id: ID!
   name: String
   variants: [ProductVariant]
@@ -468,8 +525,15 @@ type Product {
 
 type Query {
   product(id: ID): Product
+  node(id: ID!): Node
 }
-", builder => { configure?.Invoke(builder); });
+", builder =>
+            {
+                builder.Types.For("Product").IsTypeOfFunc = obj => true;
+                builder.Types.For("ProductVariant").IsTypeOfFunc = obj => true;
+
+                configure?.Invoke(builder);
+            });
         }
 
         private static IResolveFieldContext CreateResolveFieldContext(ISchema schema, string query)
