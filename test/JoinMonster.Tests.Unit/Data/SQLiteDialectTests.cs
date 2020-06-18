@@ -32,7 +32,7 @@ namespace JoinMonster.Tests.Unit.Data
         {
             var dialect = new SQLiteDialect();
 
-            Action action = () => dialect.HandleJoinedOneToManyPaginated(null, null, null, null, null, null);
+            Action action = () => dialect.HandleJoinedOneToManyPaginated(null, null, null, null, null, null, null);
 
             action.Should().Throw<NotSupportedException>();
         }

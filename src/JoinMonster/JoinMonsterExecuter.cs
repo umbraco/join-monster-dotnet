@@ -17,7 +17,7 @@ namespace JoinMonster
     public class JoinMonsterExecuter
     {
         private readonly QueryToSqlConverter _converter;
-        private readonly SqlCompiler _compiler;
+        private readonly ISqlCompiler _compiler;
         private readonly Hydrator _hydrator;
         private readonly ObjectShaper _objectShaper;
         private readonly ArrayToConnectionConverter _arrayToConnectionConverter;
@@ -26,9 +26,9 @@ namespace JoinMonster
         /// Creates a new instance of <see cref="JoinMonsterExecuter"/>.
         /// </summary>
         /// <param name="converter">The <see cref="QueryToSqlConverter"/>.</param>
-        /// <param name="compiler">The <see cref="SqlCompiler"/>.</param>
+        /// <param name="compiler">The <see cref="ISqlCompiler"/>.</param>
         /// <param name="hydrator">The <see cref="Hydrator"/>.</param>
-        public JoinMonsterExecuter(QueryToSqlConverter converter, SqlCompiler compiler, Hydrator hydrator)
+        public JoinMonsterExecuter(QueryToSqlConverter converter, ISqlCompiler compiler, Hydrator hydrator)
         {
             _converter = converter ?? throw new ArgumentNullException(nameof(converter));
             _compiler = compiler ?? throw new ArgumentNullException(nameof(compiler));
@@ -51,10 +51,10 @@ namespace JoinMonster
             if (databaseCall == null) throw new ArgumentNullException(nameof(databaseCall));
 
             var sqlAst = _converter.Convert(context);
-            var sql = _compiler.Compile(sqlAst, context);
+            var sqlResult = _compiler.Compile(sqlAst, context);
 
-            // TODO: Run batches and map result
-            using var reader = await databaseCall(sql, new Dictionary<string, object>()).ConfigureAwait(false);
+            // TODO: Run batches
+            using var reader = await databaseCall(sqlResult.Sql, sqlResult.Parameters).ConfigureAwait(false);
 
             var data = new List<Dictionary<string, object?>>();
             while (reader.Read())

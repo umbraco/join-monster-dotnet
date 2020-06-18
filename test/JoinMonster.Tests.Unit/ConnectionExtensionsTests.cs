@@ -6,6 +6,7 @@ using GraphQL.Builders;
 using GraphQL.Types;
 using JoinMonster.Builders;
 using JoinMonster.Configs;
+using JoinMonster.Language.AST;
 using Xunit;
 
 namespace JoinMonster.Tests.Unit
@@ -37,9 +38,10 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void SqlWhere_WithQuery_SetsQueryOnFieldType()
         {
-
-            string Where(string tableAlias, IReadOnlyDictionary<string, object> arguments,
-                IResolveFieldContext context) => "";
+            void Where(WhereBuilder where, IReadOnlyDictionary<string, object> arguments,
+                IResolveFieldContext context)
+            {
+            }
 
             var builder = ConnectionBuilder.Create<ObjectGraphType, object>().SqlWhere(Where);
 
@@ -104,8 +106,10 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void SqlJoin_WithJoin_SetsJoinOnFieldType()
         {
-            string Join(string parentTable, string childTable, IReadOnlyDictionary<string, object> arguments,
-                IResolveFieldContext context) => "";
+            void Join(JoinBuilder join, IReadOnlyDictionary<string, object> arguments,
+                IResolveFieldContext context, Node sqlAstNode)
+            {
+            }
 
             var builder = ConnectionBuilder.Create<ObjectGraphType, object>().SqlJoin(Join);
 

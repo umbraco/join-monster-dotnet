@@ -3,6 +3,7 @@ using System.Data;
 using System.Threading.Tasks;
 using GraphQL;
 using JoinMonster.Builders;
+using JoinMonster.Language.AST;
 
 namespace JoinMonster.Configs
 {
@@ -18,24 +19,20 @@ namespace JoinMonster.Configs
     /// <summary>
     /// Generates a <c>WHERE</c> condition.
     /// </summary>
-    /// <param name="tableAlias">An auto-generated table alias. Already quoted</param>
+    /// <param name="where">The <see cref="WhereBuilder"/>.</param>
     /// <param name="arguments">The arguments.</param>
     /// <param name="context">The context.</param>
-    /// <returns>A WHERE condition or null if there's no condition.</returns>
-    // TODO: Maybe pass in a "ParameterNameGenerator" and return an object containing the WHERE condition and a Dictionary of parameters.
-    // TODO: This would make it more safe instead of relying on the implementer to correctly escape the values.
-    public delegate string? WhereDelegate(string tableAlias, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context);
+    public delegate void WhereDelegate(WhereBuilder where, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context);
 
 
     /// <summary>
     /// Generates a <c>JOIN</c> condition.
     /// </summary>
-    /// <param name="parentTable">An auto-generated alias for the parent table. Already quoted.</param>
-    /// <param name="childTable">An auto-generated alias for the child table. Already quoted.</param>
+    /// <param name="join">The <see cref="JoinBuilder"/>.</param>
     /// <param name="arguments">The arguments.</param>
     /// <param name="context">The context.</param>
-    /// <returns>The RAW SQL condition for the LEFT JOIN.</returns>
-    public delegate string JoinDelegate(string parentTable, string childTable, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context);
+    /// <param name="sqlAstNode">The SQL AST node.</param>
+    public delegate void JoinDelegate(JoinBuilder join, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, SqlTable sqlAstNode);
 
     /// <summary>
     /// Generates a <c>ORDER BY</c> clause.

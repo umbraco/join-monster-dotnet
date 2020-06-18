@@ -61,21 +61,22 @@ namespace JoinMonster.Tests.Unit.Data
             var node = new SqlTable("variants", "variants", "variants", new[] {new SqlColumn("id", "id", "id", true)},
                 new SqlTable[0], new Dictionary<string, object>(), true)
             {
-                Join = (products, variants, _, __) => $"{products}.\"id\" = {variants}.\"productId\"",
+                Join = (join, _, __, ___) => join.On("id", "productId"),
                 OrderBy = new OrderBy("id", SortDirection.Ascending),
-                Where = (variants, _, __) => $"{variants}.\"id\" <> 1"
+                Where = (where, _, __) => where.Column("id", 1, "<>")
             };
 
 
             var arguments = new Dictionary<string, object>();
             var context = new ResolveFieldContext();
             var tables = new List<string>();
+            var parameters = new Dictionary<string, object>();
 
-            dialect.HandleJoinedOneToManyPaginated(parent, node, arguments, context, tables,
+            dialect.HandleJoinedOneToManyPaginated(parent, node, arguments, context, tables, parameters,
                 "\"products\".\"id\" = \"variants\".\"productId\"");
 
             tables.Should()
-                .Contain("LEFT JOIN LATERAL (\n  SELECT \"variants\".*, COUNT(*) OVER () AS \"$total\"\n  FROM \"variants\" \"variants\"\n  WHERE \"products\".\"id\" = \"variants\".\"productId\" AND \"variants\".\"id\" <> 1\n  ORDER BY \"variants\".\"id\" ASC\n  LIMIT ALL OFFSET 0\n) \"variants\" ON \"products\".\"id\" = \"variants\".\"productId\"");
+                .Contain("LEFT JOIN LATERAL (\n  SELECT \"variants\".*, COUNT(*) OVER () AS \"$total\"\n  FROM \"variants\" \"variants\"\n  WHERE \"products\".\"id\" = \"variants\".\"productId\" AND \"variants\".\"id\" <> @p0\n  ORDER BY \"variants\".\"id\" ASC\n  LIMIT ALL OFFSET 0\n) \"variants\" ON \"products\".\"id\" = \"variants\".\"productId\"");
         }
 
         [Fact]
@@ -87,25 +88,26 @@ namespace JoinMonster.Tests.Unit.Data
             var node = new SqlTable("variants", "variants", "variants", new[] {new SqlColumn("id", "id", "id", true)},
                 new SqlTable[0], new Dictionary<string, object>(), true)
             {
-                Join = (products, variants, _, __) => $"{products}.\"id\" = {variants}.\"productId\"",
+                Join = (join, _, __, ___) => join.On("id", "productId"),
                 OrderBy = new OrderBy("id", SortDirection.Ascending),
                 SortKey = new SortKey(new[] {"id"}, SortDirection.Ascending),
-                Where = (variants, _, __) => $"{variants}.\"id\" <> 1"
+                Where = (where, _, __) => where.Column("id", 1, "<>")
             };
 
 
             var arguments = new Dictionary<string, object>();
             var context = new ResolveFieldContext();
             var tables = new List<string>();
+            var parameters = new Dictionary<string, object>();
 
-            dialect.HandleJoinedOneToManyPaginated(parent, node, arguments, context, tables,
+            dialect.HandleJoinedOneToManyPaginated(parent, node, arguments, context, tables, parameters,
                 "\"products\".\"id\" = \"variants\".\"productId\"");
 
             tables.Should()
                 .Contain(@"LEFT JOIN LATERAL (
   SELECT ""variants"".*
   FROM ""variants"" ""variants""
-  WHERE ""products"".""id"" = ""variants"".""productId"" AND ""variants"".""id"" <> 1
+  WHERE ""products"".""id"" = ""variants"".""productId"" AND ""variants"".""id"" <> @p0
   ORDER BY ""variants"".""id"" ASC
   LIMIT ALL
 ) ""variants"" ON ""products"".""id"" = ""variants"".""productId""");
@@ -120,9 +122,9 @@ namespace JoinMonster.Tests.Unit.Data
             var node = new SqlTable("variants", "variants", "variants", new[] {new SqlColumn("id", "id", "id", true)},
                 new SqlTable[0], new Dictionary<string, object>(), true)
             {
-                Join = (products, variants, _, __) => $"{products}.\"id\" = {variants}.\"productId\"",
+                Join = (join, _, __, ___) => join.On("id", "productId"),
                 SortKey = new SortKey(new[] {"id"}, SortDirection.Descending),
-                Where = (variants, _, __) => $"{variants}.\"id\" <> 1"
+                Where = (where, _, __) => where.Column("id", 1, "<>")
             };
 
             var arguments = new Dictionary<string, object>
@@ -132,15 +134,16 @@ namespace JoinMonster.Tests.Unit.Data
             };
             var context = new ResolveFieldContext();
             var tables = new List<string>();
+            var parameters = new Dictionary<string, object>();
 
-            dialect.HandleJoinedOneToManyPaginated(parent, node, arguments, context, tables,
+            dialect.HandleJoinedOneToManyPaginated(parent, node, arguments, context, tables, parameters,
                 "\"products\".\"id\" = \"variants\".\"productId\"");
 
             tables.Should()
                 .Contain(@"LEFT JOIN LATERAL (
   SELECT ""variants"".*
   FROM ""variants"" ""variants""
-  WHERE ""products"".""id"" = ""variants"".""productId"" AND ""variants"".""id"" <> 1 AND ""variants"".""id"" < (1)
+  WHERE ""products"".""id"" = ""variants"".""productId"" AND ""variants"".""id"" <> @p0 AND ""variants"".""id"" < (1)
   ORDER BY ""variants"".""id"" DESC
   LIMIT 3
 ) ""variants"" ON ""products"".""id"" = ""variants"".""productId""");
@@ -155,10 +158,10 @@ namespace JoinMonster.Tests.Unit.Data
             var node = new SqlTable("variants", "variants", "variants", new[] {new SqlColumn("id", "id", "id", true)},
                 new SqlTable[0], new Dictionary<string, object>(), true)
             {
-                Join = (products, variants, _, __) => $"{products}.\"id\" = {variants}.\"productId\"",
+                Join = (join, _, __, ____) => join.On("id", "productId"),
                 OrderBy = new OrderBy("id", SortDirection.Ascending),
                 SortKey = new SortKey(new[] {"id"}, SortDirection.Ascending),
-                Where = (variants, _, __) => $"{variants}.\"id\" <> 1"
+                Where = (where, _, __) => where.Column("id", 1, "<>")
             };
 
 
@@ -169,15 +172,16 @@ namespace JoinMonster.Tests.Unit.Data
             };
             var context = new ResolveFieldContext();
             var tables = new List<string>();
+            var parameters = new Dictionary<string, object>();
 
-            dialect.HandleJoinedOneToManyPaginated(parent, node, arguments, context, tables,
+            dialect.HandleJoinedOneToManyPaginated(parent, node, arguments, context, tables, parameters,
                 "\"products\".\"id\" = \"variants\".\"productId\"");
 
             tables.Should()
                 .Contain(@"LEFT JOIN LATERAL (
   SELECT ""variants"".*
   FROM ""variants"" ""variants""
-  WHERE ""products"".""id"" = ""variants"".""productId"" AND ""variants"".""id"" <> 1 AND ""variants"".""id"" < (1)
+  WHERE ""products"".""id"" = ""variants"".""productId"" AND ""variants"".""id"" <> @p0 AND ""variants"".""id"" < (1)
   ORDER BY ""variants"".""id"" DESC
   LIMIT 6
 ) ""variants"" ON ""products"".""id"" = ""variants"".""productId""");
@@ -191,20 +195,21 @@ namespace JoinMonster.Tests.Unit.Data
                 new SqlTable[0], new Dictionary<string, object>(), true)
             {
                 OrderBy = new OrderBy("id", SortDirection.Ascending),
-                Where = (variants, _, __) => $"{variants}.\"id\" <> 1"
+                Where = (where, _, __) => where.Column("id", 1, "<>")
             };
 
             var arguments = new Dictionary<string, object>();
             var context = new ResolveFieldContext();
             var tables = new List<string>();
+            var parameters = new Dictionary<string, object>();
 
-            dialect.HandlePaginationAtRoot(null, node, arguments, context, tables);
+            dialect.HandlePaginationAtRoot(null, node, arguments, context, tables, parameters);
 
             tables.Should()
                 .Contain(@"FROM (
   SELECT ""variants"".*, COUNT(*) OVER () AS ""$total""
   FROM ""variants"" ""variants""
-  WHERE variants.""id"" <> 1
+  WHERE ""variants"".""id"" <> @p0
   ORDER BY ""variants"".""id"" ASC
   LIMIT ALL OFFSET 0
 ) ""variants""");
@@ -219,20 +224,21 @@ namespace JoinMonster.Tests.Unit.Data
             {
                 OrderBy = new OrderBy("id", SortDirection.Ascending),
                 SortKey = new SortKey(new[] {"id"}, SortDirection.Ascending),
-                Where = (variants, _, __) => $"{variants}.\"id\" <> 1"
+                Where = (where, _, __) => where.Column("id", 1, "<>")
             };
 
             var arguments = new Dictionary<string, object>();
             var context = new ResolveFieldContext();
             var tables = new List<string>();
+            var parameters = new Dictionary<string, object>();
 
-            dialect.HandlePaginationAtRoot(null, node, arguments, context, tables);
+            dialect.HandlePaginationAtRoot(null, node, arguments, context, tables, parameters);
 
             tables.Should()
                 .Contain(@"FROM (
   SELECT ""variants"".*
   FROM variants ""variants""
-  WHERE ""variants"".""id"" <> 1
+  WHERE ""variants"".""id"" <> @p0
   ORDER BY ""variants"".""id"" ASC
   LIMIT ALL
 ) ""variants""");
@@ -246,7 +252,7 @@ namespace JoinMonster.Tests.Unit.Data
                 new SqlTable[0], new Dictionary<string, object>(), true)
             {
                 SortKey = new SortKey(new[] {"id"}, SortDirection.Descending),
-                Where = (variants, _, __) => $"{variants}.\"id\" <> 1"
+                Where = (where, _, __) => where.Column("id", 1, "<>")
             };
 
             var arguments = new Dictionary<string, object>
@@ -256,14 +262,15 @@ namespace JoinMonster.Tests.Unit.Data
             };
             var context = new ResolveFieldContext();
             var tables = new List<string>();
+            var parameters = new Dictionary<string, object>();
 
-            dialect.HandlePaginationAtRoot(null, node, arguments, context, tables);
+            dialect.HandlePaginationAtRoot(null, node, arguments, context, tables, parameters);
 
             tables.Should()
                 .Contain(@"FROM (
   SELECT ""variants"".*
   FROM variants ""variants""
-  WHERE ""variants"".""id"" < (1) AND ""variants"".""id"" <> 1
+  WHERE ""variants"".""id"" < (1) AND ""variants"".""id"" <> @p0
   ORDER BY ""variants"".""id"" DESC
   LIMIT 3
 ) ""variants""");
@@ -278,7 +285,7 @@ namespace JoinMonster.Tests.Unit.Data
             {
                 OrderBy = new OrderBy("id", SortDirection.Ascending),
                 SortKey = new SortKey(new[] {"id"}, SortDirection.Ascending),
-                Where = (variants, _, __) => $"{variants}.\"id\" <> 1"
+                Where = (where, _, __) => where.Column("id", 1, "<>")
             };
 
 
@@ -289,14 +296,15 @@ namespace JoinMonster.Tests.Unit.Data
             };
             var context = new ResolveFieldContext();
             var tables = new List<string>();
+            var parameters = new Dictionary<string, object>();
 
-            dialect.HandlePaginationAtRoot(null, node, arguments, context, tables);
+            dialect.HandlePaginationAtRoot(null, node, arguments, context, tables, parameters);
 
             tables.Should()
                 .Contain(@"FROM (
   SELECT ""variants"".*
   FROM variants ""variants""
-  WHERE ""variants"".""id"" < (1) AND ""variants"".""id"" <> 1
+  WHERE ""variants"".""id"" < (1) AND ""variants"".""id"" <> @p0
   ORDER BY ""variants"".""id"" DESC
   LIMIT 6
 ) ""variants""");

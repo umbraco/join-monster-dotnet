@@ -6,6 +6,7 @@ using GraphQL;
 using GraphQL.Types;
 using JoinMonster.Builders;
 using JoinMonster.Configs;
+using JoinMonster.Language.AST;
 using Xunit;
 
 namespace JoinMonster.Tests.Unit
@@ -126,8 +127,10 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void GetSqlWhere_WhenWhereDelegateHasBeenSet_ReturnsWhereDelegate()
         {
-            string Where(string tableAlias, IReadOnlyDictionary<string, object> arguments,
-                IResolveFieldContext context) => null;
+            void Where(WhereBuilder where, IReadOnlyDictionary<string, object> arguments,
+                IResolveFieldContext context)
+            {
+            }
 
             var fieldType = new FieldType();
             fieldType.SqlWhere(Where);
@@ -182,8 +185,8 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void GetSqlJoin_WhenJoinDelegateHasBeenSet_ReturnsJoinDelegate()
         {
-            string Join(string parentTable, string childTable, IReadOnlyDictionary<string, object> arguments,
-                IResolveFieldContext context) => $"{parentTable}.\"id\" = ${childTable}.\"parentId\"";
+            void Join(JoinBuilder join, IReadOnlyDictionary<string, object> arguments,
+                IResolveFieldContext context, Node sqlAstNode) => join.On("id", "parentId");
 
             var fieldType = new FieldType();
             fieldType.SqlJoin(Join);

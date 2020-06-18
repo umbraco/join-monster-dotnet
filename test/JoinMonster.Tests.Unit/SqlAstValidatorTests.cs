@@ -27,7 +27,7 @@ namespace JoinMonster.Tests.Unit
 
             var node = new SqlTable(null, null, null, null, null, null, false)
             {
-                Join = (table, childTable, arguments, context) => ""
+                Join = (join, arguments, context, sqlAstNode) => {}
             };
 
             Action action = () => validator.Validate(node);

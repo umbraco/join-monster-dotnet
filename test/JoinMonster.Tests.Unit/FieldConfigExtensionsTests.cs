@@ -6,6 +6,7 @@ using GraphQL;
 using GraphQL.Utilities;
 using JoinMonster.Builders;
 using JoinMonster.Configs;
+using JoinMonster.Language.AST;
 using Xunit;
 
 namespace JoinMonster.Tests.Unit
@@ -69,8 +70,8 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void SqlWhere_WithWhereDelegate_AddsWhereDelegateToMetadata()
         {
-            string Where(string tableAlias, IReadOnlyDictionary<string, object> arguments,
-                IResolveFieldContext context) => $"{tableAlias}.\"id\" = 3";
+            void Where(WhereBuilder where, IReadOnlyDictionary<string, object> arguments,
+                IResolveFieldContext context) => where.Column("id", 3);
 
             var fieldConfig = new FieldConfig("name");
 
@@ -107,8 +108,8 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void SqlJoin_WithJoinDelegate_AddsJoinDelegateToMetadata()
         {
-            string Join(string parentTable, string childTable, IReadOnlyDictionary<string, object> arguments,
-                IResolveFieldContext context) => $"{parentTable}.\"id\" = ${childTable}.\"parentId\"";
+            void Join(JoinBuilder join, IReadOnlyDictionary<string, object> arguments,
+                IResolveFieldContext context, Node sqlAstNode) => join.On("id", "parentId");
 
             var fieldConfig = new FieldConfig("name");
 

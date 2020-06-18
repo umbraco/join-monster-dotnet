@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GraphQL;
+using JoinMonster.Builders;
 using JoinMonster.Language.AST;
 
 namespace JoinMonster.Data
@@ -39,7 +40,7 @@ namespace JoinMonster.Data
         /// <inheritdoc />
         public override void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
             IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
-            string? joinCondition)
+            IDictionary<string, object> parameters, string? joinCondition)
         {
             if (parent == null) throw new ArgumentNullException(nameof(parent));
             if (node == null) throw new ArgumentNullException(nameof(node));
@@ -48,16 +49,24 @@ namespace JoinMonster.Data
             if (tables == null) throw new ArgumentNullException(nameof(tables));
 
             if (node.Join == null)
-                throw new JoinMonsterException($"{nameof(node)}.{nameof(node.Join)} cannot be null.");
+                throw new JoinMonsterException($"{nameof(node)}.{nameof(node.Join)} on table '{node.Name}' cannot be null.");
+
+            var join = new JoinBuilder(this, Quote(parent.As), Quote(node.As));
+            node.Join(join, arguments, context, node);
+
+            if(join.Condition == null)
+                throw new JoinMonsterException($"The join condition on table '{node.Name}' cannot be null.");
 
             var pagingWhereConditions = new List<string>
             {
-                node.Join(Quote(parent.As), Quote(node.As), arguments, context)
+                join.Condition
             };
 
-            var where = node.Where?.Invoke(Quote(node.As), arguments, context);
-            if (where != null)
-                pagingWhereConditions.Add(where);
+            if (node.Where != null)
+            {
+                var whereBuilder = new WhereBuilder(this, Quote(node.As), pagingWhereConditions, parameters);
+                node.Where?.Invoke(whereBuilder, arguments, context);
+            }
 
             if (node.SortKey != null)
             {
@@ -74,12 +83,12 @@ namespace JoinMonster.Data
             }
             else
             {
-                throw new JoinMonsterException("Cannot paginate without an SortKey or OrderBy clause.");
+                throw new JoinMonsterException("Cannot paginate without a SortKey or an OrderBy clause.");
             }
         }
 
         /// <inheritdoc />
-        public override void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables)
+        public override void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables, IDictionary<string, object> parameters)
         {
             var pagingWhereConditions = new List<string>();
             if (node.SortKey != null)
@@ -88,20 +97,27 @@ namespace JoinMonster.Data
                 if (whereCondition != null)
                     pagingWhereConditions.Add(whereCondition);
 
-                var where = node.Where?.Invoke($"{Quote(node.As)}", arguments, context);
-                if (where != null)
-                    pagingWhereConditions.Add(where);
+                if (node.Where != null)
+                {
+                    var whereBuilder = new WhereBuilder(this, Quote(node.As), pagingWhereConditions, parameters);
+                    node.Where.Invoke(whereBuilder, arguments, context);
+                }
 
                 tables.Add(KeysetPagingSelect(node.Name, pagingWhereConditions, order, limit, node.As, null, null));
 
-            } else if (node.OrderBy != null) {
+            }
+            else if (node.OrderBy != null)
+            {
                 var (limit, offset, order) = InterpretForOffsetPaging(node, arguments, context);
 
-                var where = node.Where?.Invoke($"{node.As}", arguments, context);
-                if (where != null)
-                    pagingWhereConditions.Add(where);
+                if (node.Where != null)
+                {
+                    var whereBuilder = new WhereBuilder(this, Quote(node.As), pagingWhereConditions, parameters);
+                    node.Where.Invoke(whereBuilder, arguments, context);
+                }
 
-                tables.Add(OffsetPagingSelect(node.Name, pagingWhereConditions, order, limit, offset, node.As, null, null));
+                tables.Add(OffsetPagingSelect(node.Name, pagingWhereConditions, order, limit, offset, node.As, null,
+                    null));
             }
         }
     }

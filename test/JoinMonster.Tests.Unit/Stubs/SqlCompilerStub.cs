@@ -1,21 +1,22 @@
+using System.Collections.Generic;
 using GraphQL;
 using JoinMonster.Data;
 using JoinMonster.Language.AST;
 
 namespace JoinMonster.Tests.Unit.Stubs
 {
-    public class SqlCompilerStub : SqlCompiler
+    public class SqlCompilerStub : ISqlCompiler
     {
         private readonly string _sql;
 
-        public SqlCompilerStub(string sql = null) : base(new SqlDialectStub())
+        public SqlCompilerStub(string sql = null)
         {
             _sql = sql;
         }
 
-        public override string Compile(Node node, IResolveFieldContext context)
+        public SqlResult Compile(Node node, IResolveFieldContext context)
         {
-            return _sql;
+            return new SqlResult(_sql, new Dictionary<string, object>());
         }
     }
 }

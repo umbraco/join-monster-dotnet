@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using GraphQL;
@@ -31,7 +32,7 @@ namespace JoinMonster.Tests.Unit.Data
         {
             var compiler = new SqlCompiler(new SqlDialectStub());
 
-            Func<string> action = () => compiler.Compile(null, null);
+            Func<SqlResult> action = () => compiler.Compile(null, null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
@@ -44,7 +45,7 @@ namespace JoinMonster.Tests.Unit.Data
         {
             var compiler = new SqlCompiler(new SqlDialectStub());
 
-            Func<string> action = () => compiler.Compile(new SqlNoop(), null);
+            Func<SqlResult> action = () => compiler.Compile(new SqlNoop(), null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
@@ -70,7 +71,7 @@ namespace JoinMonster.Tests.Unit.Data
             var node = converter.Convert(context);
             var sql = compiler.Compile(node, context);
 
-            sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\"\nFROM \"products\" AS \"product\"");
+            sql.Sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\"\nFROM \"products\" AS \"product\"");
         }
 
         [Fact]
@@ -91,7 +92,7 @@ namespace JoinMonster.Tests.Unit.Data
             var node = converter.Convert(context);
             var sql = compiler.Compile(node, context);
 
-            sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\"\nFROM \"products\" AS \"product\"");
+            sql.Sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\"\nFROM \"products\" AS \"product\"");
         }
 
         [Fact]
@@ -112,7 +113,7 @@ namespace JoinMonster.Tests.Unit.Data
             var node = converter.Convert(context);
             var sql = compiler.Compile(node, context);
 
-            sql.Should().Be("SELECT\n  CONCAT(\"product\".\"id\", \"product\".\"firstName\", \"product\".\"lastName\") AS \"id#firstName#lastName\",\n  \"product\".\"name\" AS \"name\"\nFROM \"products\" AS \"product\"");
+            sql.Sql.Should().Be("SELECT\n  CONCAT(\"product\".\"id\", \"product\".\"firstName\", \"product\".\"lastName\") AS \"id#firstName#lastName\",\n  \"product\".\"name\" AS \"name\"\nFROM \"products\" AS \"product\"");
         }
 
         [Fact]
@@ -125,7 +126,7 @@ namespace JoinMonster.Tests.Unit.Data
 
                 builder.Types.For("Query")
                     .FieldFor("product", null)
-                    .SqlWhere((tableAlias, _, __) => $"{tableAlias}.\"id\" = 1");
+                    .SqlWhere((where, _, __) => where.Column("id", 1));
             });
 
             var query = "{ product { name } }";
@@ -137,7 +138,11 @@ namespace JoinMonster.Tests.Unit.Data
             var node = converter.Convert(context);
             var sql = compiler.Compile(node, context);
 
-            sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\"\nFROM \"products\" AS \"product\"\nWHERE \"product\".\"id\" = 1");
+            var expectedSql = "SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\"\nFROM \"products\" AS \"product\"\nWHERE \"product\".\"id\" = @p0";
+            var expectedParameters = new Dictionary<string, object>{{"@p0", 1}};
+
+            sql.Should().BeEquivalentTo(new SqlResult(expectedSql, expectedParameters));
+
         }
 
         [Fact]
@@ -150,8 +155,7 @@ namespace JoinMonster.Tests.Unit.Data
 
                 builder.Types.For("Query")
                     .FieldFor("product", null)
-                    .SqlWhere((tableAlias, arguments, __) =>
-                        $"{tableAlias}.\"id\" = \"{arguments["id"]}\"");
+                    .SqlWhere((where, arguments, __) => where.Column("id", arguments["id"]));
             });
 
             var query = "{ product(id: \"3\") { name } }";
@@ -163,8 +167,10 @@ namespace JoinMonster.Tests.Unit.Data
             var node = converter.Convert(context);
             var sql = compiler.Compile(node, context);
 
-            sql.Should()
-                .Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\"\nFROM \"products\" AS \"product\"\nWHERE \"product\".\"id\" = \"3\"");
+            var expectedSql = "SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\"\nFROM \"products\" AS \"product\"\nWHERE \"product\".\"id\" = @p0";
+            var expectedParameters = new Dictionary<string, object>{{"@p0", "3"}};
+
+            sql.Should().BeEquivalentTo(new SqlResult(expectedSql, expectedParameters));
         }
 
         [Fact]
@@ -180,8 +186,7 @@ namespace JoinMonster.Tests.Unit.Data
 
                 builder.Types.For("Product")
                     .FieldFor("variants", null)
-                    .SqlJoin((parentTable, childTable, _, __) =>
-                        $"{parentTable}.\"id\" = {childTable}.\"productId\"");
+                    .SqlJoin((join, _, __, ___) => join.On("id", "productId"));
 
                 builder.Types.For("ProductVariant")
                     .SqlTable("productVariants", "id");
@@ -196,7 +201,38 @@ namespace JoinMonster.Tests.Unit.Data
             var node = converter.Convert(context);
             var sql = compiler.Compile(node, context);
 
-            sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"variants\".\"id\" AS \"variants__id\",\n  \"variants\".\"name\" AS \"variants__name\"\nFROM \"products\" AS \"product\"\nLEFT JOIN \"productVariants\" \"variants\" ON \"product\".\"id\" = \"variants\".\"productId\"");
+            sql.Sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"variants\".\"id\" AS \"variants__id\",\n  \"variants\".\"name\" AS \"variants__name\"\nFROM \"products\" AS \"product\"\nLEFT JOIN \"productVariants\" \"variants\" ON \"product\".\"id\" = \"variants\".\"productId\"");
+        }
+
+        [Fact]
+        public void Compile_WithRawJoinCondition_SqlShouldIncludeJoinCondition()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Query")
+                    .FieldFor("product", null);
+
+                builder.Types.For("Product")
+                    .SqlTable("products", "id");
+
+                builder.Types.For("Product")
+                    .FieldFor("variants", null)
+                    .SqlJoin((join, _, __, ___) => join.Raw($"LEFT JOIN \"productVariants\" {join.ChildTableAlias} ON {join.ParentTableAlias}.\"id\" = {join.ChildTableAlias}.\"productId\""));
+
+                builder.Types.For("ProductVariant")
+                    .SqlTable("productVariants", "id");
+            });
+
+            var query = "{ product { name, variants { edges { node { name } } } } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var compiler = new SqlCompiler(new SqlDialectStub());
+
+            var node = converter.Convert(context);
+            var sql = compiler.Compile(node, context);
+
+            sql.Sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"variants\".\"id\" AS \"variants__id\",\n  \"variants\".\"name\" AS \"variants__name\"\nFROM \"products\" AS \"product\"\nLEFT JOIN \"productVariants\" \"variants\" ON \"product\".\"id\" = \"variants\".\"productId\"");
         }
 
         [Fact]
@@ -210,8 +246,8 @@ namespace JoinMonster.Tests.Unit.Data
                 builder.Types.For("Product")
                     .FieldFor("relatedProducts", null)
                     .SqlJunction("productRelations",
-                        (products, productRelations, _, __) => $"{products}.\"id\" = {productRelations}.\"productId\"",
-                        (productRelations, products, _, __) => $"{productRelations}.\"relatedProductId\" = {products}.\"id\"");
+                        (join, _, __, ___) => join.On("id", "productId"),
+                        (join, _, __, ___) => join.On("relatedProductId", "id"));
             });
 
             var query = "{ product { name, relatedProducts { name } } }";
@@ -223,7 +259,7 @@ namespace JoinMonster.Tests.Unit.Data
             var node = converter.Convert(context);
             var sql = compiler.Compile(node, context);
 
-            sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"relatedProducts\".\"id\" AS \"relatedProducts__id\",\n  \"relatedProducts\".\"name\" AS \"relatedProducts__name\"\nFROM \"products\" AS \"product\"\nLEFT JOIN \"productRelations\" \"productRelations\" ON \"product\".\"id\" = \"productRelations\".\"productId\"\nLEFT JOIN \"products\" \"relatedProducts\" ON \"productRelations\".\"relatedProductId\" = \"relatedProducts\".\"id\"");
+            sql.Sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"relatedProducts\".\"id\" AS \"relatedProducts__id\",\n  \"relatedProducts\".\"name\" AS \"relatedProducts__name\"\nFROM \"products\" AS \"product\"\nLEFT JOIN \"productRelations\" \"productRelations\" ON \"product\".\"id\" = \"productRelations\".\"productId\"\nLEFT JOIN \"products\" \"relatedProducts\" ON \"productRelations\".\"relatedProductId\" = \"relatedProducts\".\"id\"");
         }
 
         [Fact]
@@ -237,9 +273,9 @@ namespace JoinMonster.Tests.Unit.Data
                 builder.Types.For("Product")
                     .FieldFor("relatedProducts", null)
                     .SqlJunction("productRelations",
-                        (products, productRelations, _, __) => $"{products}.\"id\" = {productRelations}.\"productId\"",
-                        (productRelations, products, _, __) => $"{productRelations}.\"relatedProductId\" = {products}.\"id\"")
-                    .Where((productRelations, _, __) => $"{productRelations}.\"productId\" <> {productRelations}.\"relatedProductId\"");
+                        (join, _, __, ___) => join.On("id", "productId"),
+                        (join, _, __, ___) => join.On("relatedProductId", "id"))
+                    .Where((where, _, __) => where.Columns("productId", "relatedProductId", "<>"));
             });
 
             var query = "{ product { name, relatedProducts { name } } }";
@@ -251,7 +287,7 @@ namespace JoinMonster.Tests.Unit.Data
             var node = converter.Convert(context);
             var sql = compiler.Compile(node, context);
 
-            sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"relatedProducts\".\"id\" AS \"relatedProducts__id\",\n  \"relatedProducts\".\"name\" AS \"relatedProducts__name\"\nFROM \"products\" AS \"product\"\nLEFT JOIN \"productRelations\" \"productRelations\" ON \"product\".\"id\" = \"productRelations\".\"productId\"\nLEFT JOIN \"products\" \"relatedProducts\" ON \"productRelations\".\"relatedProductId\" = \"relatedProducts\".\"id\"\nWHERE \"productRelations\".\"productId\" <> \"productRelations\".\"relatedProductId\"");
+            sql.Sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"relatedProducts\".\"id\" AS \"relatedProducts__id\",\n  \"relatedProducts\".\"name\" AS \"relatedProducts__name\"\nFROM \"products\" AS \"product\"\nLEFT JOIN \"productRelations\" \"productRelations\" ON \"product\".\"id\" = \"productRelations\".\"productId\"\nLEFT JOIN \"products\" \"relatedProducts\" ON \"productRelations\".\"relatedProductId\" = \"relatedProducts\".\"id\"\nWHERE \"productRelations\".\"productId\" <> \"productRelations\".\"relatedProductId\"");
         }
 
         [Fact]
@@ -276,7 +312,7 @@ namespace JoinMonster.Tests.Unit.Data
             var node = converter.Convert(context);
             var sql = compiler.Compile(node, context);
 
-            sql.Should().Be("SELECT\n  \"products\".\"id\" AS \"id\",\n  \"products\".\"name\" AS \"name\"\nFROM \"products\" AS \"products\"\nORDER BY \"products\".\"name\" ASC, \"products\".\"price\" DESC");
+            sql.Sql.Should().Be("SELECT\n  \"products\".\"id\" AS \"id\",\n  \"products\".\"name\" AS \"name\"\nFROM \"products\" AS \"products\"\nORDER BY \"products\".\"name\" ASC, \"products\".\"price\" DESC");
         }
 
         [Fact]
@@ -289,7 +325,7 @@ namespace JoinMonster.Tests.Unit.Data
 
                 builder.Types.For("Query")
                     .FieldFor("products", null)
-                    .SqlWhere((products, _, __) => $"{products}.\"id\" <> 0")
+                    .SqlWhere((where, _, __) => where.Column("id", 0, "<>"))
                     .SqlOrder((order, _, __) => order.By("name").ThenByDescending("price"));
             });
 
@@ -302,7 +338,12 @@ namespace JoinMonster.Tests.Unit.Data
             var node = converter.Convert(context);
             var sql = compiler.Compile(node, context);
 
-            sql.Should().Be("SELECT\n  \"products\".\"id\" AS \"id\",\n  \"products\".\"name\" AS \"name\"\nFROM \"products\" AS \"products\"\nWHERE \"products\".\"id\" <> 0\nORDER BY \"products\".\"name\" ASC, \"products\".\"price\" DESC");
+            var expectedSql =
+                "SELECT\n  \"products\".\"id\" AS \"id\",\n  \"products\".\"name\" AS \"name\"\nFROM \"products\" AS \"products\"\nWHERE \"products\".\"id\" <> @p0\nORDER BY \"products\".\"name\" ASC, \"products\".\"price\" DESC";
+            var expectedParameters = new Dictionary<string, object>{{"@p0", 0}};
+
+            sql.Should()
+                .BeEquivalentTo(new SqlResult(expectedSql, expectedParameters));
         }
 
         [Fact]
@@ -316,8 +357,8 @@ namespace JoinMonster.Tests.Unit.Data
                 builder.Types.For("Product")
                     .FieldFor("relatedProducts", null)
                     .SqlJunction("productRelations",
-                        (products, productRelations, _, __) => $"{products}.\"id\" = {productRelations}.\"productId\"",
-                        (productRelations, products, _, __) => $"{productRelations}.\"relatedProductId\" = {products}.\"id\"")
+                        (join, _, __, ___) => join.On("id", "productId"),
+                        (join, _, __, ___) => join.On("relatedProductId", "id"))
                     .OrderBy((order, _, __) => order.By("productId"));
             });
 
@@ -330,7 +371,7 @@ namespace JoinMonster.Tests.Unit.Data
             var node = converter.Convert(context);
             var sql = compiler.Compile(node, context);
 
-            sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"relatedProducts\".\"id\" AS \"relatedProducts__id\",\n  \"relatedProducts\".\"name\" AS \"relatedProducts__name\"\nFROM \"products\" AS \"product\"\nLEFT JOIN \"productRelations\" \"productRelations\" ON \"product\".\"id\" = \"productRelations\".\"productId\"\nLEFT JOIN \"products\" \"relatedProducts\" ON \"productRelations\".\"relatedProductId\" = \"relatedProducts\".\"id\"\nORDER BY \"relatedProducts\".\"productId\" ASC");
+            sql.Sql.Should().Be("SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"relatedProducts\".\"id\" AS \"relatedProducts__id\",\n  \"relatedProducts\".\"name\" AS \"relatedProducts__name\"\nFROM \"products\" AS \"product\"\nLEFT JOIN \"productRelations\" \"productRelations\" ON \"product\".\"id\" = \"productRelations\".\"productId\"\nLEFT JOIN \"products\" \"relatedProducts\" ON \"productRelations\".\"relatedProductId\" = \"relatedProducts\".\"id\"\nORDER BY \"relatedProducts\".\"productId\" ASC");
         }
 
         [Fact]
@@ -346,7 +387,7 @@ namespace JoinMonster.Tests.Unit.Data
 
                 builder.Types.For("Product")
                     .FieldFor("variants", null)
-                    .SqlJoin((products, variants, _, __) => $"{products}.\"id\" = {variants}.\"productId\"")
+                    .SqlJoin((join, _, __, ___) => join.On("id", "productId"))
                     .SqlPaginate(true)
                     .SqlOrder((order, _, __) => order.By("id"));
             });
@@ -363,7 +404,7 @@ namespace JoinMonster.Tests.Unit.Data
             var node = converter.Convert(context);
             var sql = compiler.Compile(node, context);
 
-            sql.Should().Be($"SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"variants\".\"id\" AS \"variants__id\",\n  \"variants\".\"name\" AS \"variants__name\",\n  \"variants\".\"$total\" AS \"variants__$total\"\nFROM \"products\" AS \"product\"\n{joinedOneToManyPaginatedSql}\nORDER BY \"variants\".\"id\" ASC");
+            sql.Sql.Should().Be($"SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"variants\".\"id\" AS \"variants__id\",\n  \"variants\".\"name\" AS \"variants__name\",\n  \"variants\".\"$total\" AS \"variants__$total\"\nFROM \"products\" AS \"product\"\n{joinedOneToManyPaginatedSql}\nORDER BY \"variants\".\"id\" ASC");
         }
 
         private static ISchema CreateSimpleSchema(Action<SchemaBuilder> configure = null)

@@ -23,11 +23,11 @@ namespace JoinMonster.Data
         /// <inheritdoc />
         public abstract void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
             IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
-            string? joinCondition);
+            IDictionary<string, object> parameters, string? joinCondition);
 
         /// <inheritdoc />
         public abstract void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
-            IResolveFieldContext context, ICollection<string> tables);
+            IResolveFieldContext context, ICollection<string> tables, IDictionary<string, object> parameters);
 
         protected virtual string KeysetPagingSelect(string table, IEnumerable<string> pagingWhereCondition, string order,
             int limit, string @as, string? joinCondition, string? joinType) {

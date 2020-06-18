@@ -58,11 +58,11 @@ namespace JoinMonster.Builders
         /// <summary>
         /// Set a method that resolves to a RAW SQL expression.
         /// </summary>
-        /// <param name="expressionResolver">The expression resolver.</param>
+        /// <param name="expression">The expression resolver.</param>
         /// <returns>The <see cref="SqlColumnConfigBuilder"/>.</returns>
-        public SqlColumnConfigBuilder Expression(ExpressionDelegate expressionResolver)
+        public SqlColumnConfigBuilder Expression(ExpressionDelegate expression)
         {
-            SqlColumnConfig.Expression = expressionResolver;
+            SqlColumnConfig.Expression = expression;
             return this;
         }
     }

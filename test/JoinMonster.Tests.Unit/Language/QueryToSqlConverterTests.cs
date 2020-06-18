@@ -7,6 +7,7 @@ using GraphQL.Execution;
 using GraphQL.Resolvers;
 using GraphQL.Types;
 using GraphQL.Utilities;
+using JoinMonster.Builders;
 using JoinMonster.Configs;
 using JoinMonster.Language;
 using JoinMonster.Language.AST;
@@ -238,8 +239,8 @@ namespace JoinMonster.Tests.Unit.Language
         [Fact]
         public void Convert_WhenFieldHasWhereClause_SetsWhereOnSqlTable()
         {
-            string Where(string tableAlias, IReadOnlyDictionary<string, object> arguments,
-                IResolveFieldContext context) => $"{tableAlias}.\"id\" = 3";
+            void Where(WhereBuilder where, IReadOnlyDictionary<string, object> arguments,
+                IResolveFieldContext context) => where.Column("id", 3);
 
             var schema = CreateSimpleSchema(builder =>
             {
@@ -321,8 +322,8 @@ namespace JoinMonster.Tests.Unit.Language
         [Fact]
         public void Convert_WhenFieldHasJoinExpression_SetsJoinOnSqlTable()
         {
-            string Join(string parentTable, string childTable, IReadOnlyDictionary<string, object> arguments,
-                IResolveFieldContext context) => $"{parentTable}.\"id\" = ${childTable}.\"productId\"";
+            void Join(JoinBuilder join, IReadOnlyDictionary<string, object> arguments,
+                IResolveFieldContext context, Node sqlAstNode) => join.On("id", "productId");
 
             var schema = CreateSimpleSchema(builder =>
             {
@@ -398,7 +399,7 @@ namespace JoinMonster.Tests.Unit.Language
 
                 builder.Types.For("Product")
                     .FieldFor("variants", null)
-                    .SqlJoin((_, __, ___, ____) => "");
+                    .SqlJoin((_, __, ___, ____) => {});
             });
 
             var query = "{ product { variants { price(currency: \"DKK\") } } }";

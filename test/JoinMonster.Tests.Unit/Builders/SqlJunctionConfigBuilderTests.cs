@@ -4,6 +4,7 @@ using FluentAssertions;
 using GraphQL;
 using JoinMonster.Builders;
 using JoinMonster.Configs;
+using JoinMonster.Language.AST;
 using Xunit;
 
 namespace JoinMonster.Tests.Unit.Builders
@@ -35,7 +36,7 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void Create_WhenToChildIsNull_ThrowsException()
         {
-            Action action = () => SqlJunctionConfigBuilder.Create("friends", (_, __, ___, ____) => "", null);
+            Action action = () => SqlJunctionConfigBuilder.Create("friends", (_, __, ___, ____) => { }, null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
@@ -48,7 +49,7 @@ namespace JoinMonster.Tests.Unit.Builders
         {
             var tableName = "friends";
             var builder =
-                SqlJunctionConfigBuilder.Create(tableName, (_, __, ___, ____) => "", (_, __, ___, ____) => "");
+                SqlJunctionConfigBuilder.Create(tableName, (_, __, ___, ____) => { }, (_, __, ___, ____) => { });
 
             builder.SqlJunctionConfig.Table.Should().Be(tableName);
         }
@@ -56,11 +57,13 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void Create_WithFromParent_SetsFromParent()
         {
-            string FromParent(string table, string childTable, IReadOnlyDictionary<string, object> arguments,
-                IResolveFieldContext context) => "";
+            void FromParent(JoinBuilder join, IReadOnlyDictionary<string, object> arguments,
+                IResolveFieldContext context, Node sqlAstNode)
+            {
+            }
 
             var builder =
-                SqlJunctionConfigBuilder.Create("friends", FromParent, (_, __, ___, ____) => "");
+                SqlJunctionConfigBuilder.Create("friends", FromParent, (_, __, ___, ____) => { });
 
             builder.SqlJunctionConfig.FromParent.Should().Be((JoinDelegate) FromParent);
         }
@@ -68,11 +71,13 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void Create_WithToChild_SetsToChild()
         {
-            string ToChild(string table, string childTable, IReadOnlyDictionary<string, object> arguments,
-                IResolveFieldContext context) => "";
+            void ToChild(JoinBuilder join, IReadOnlyDictionary<string, object> arguments,
+                IResolveFieldContext context, Node sqlAstNode)
+            {
+            }
 
             var builder =
-                SqlJunctionConfigBuilder.Create("friends", (_, __, ___, ____) => "", ToChild);
+                SqlJunctionConfigBuilder.Create("friends", (_, __, ___, ____) => { }, ToChild);
 
             builder.SqlJunctionConfig.ToChild.Should().Be((JoinDelegate) ToChild);
         }
@@ -80,10 +85,12 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void Where_WithWhereCondition_SetsWhere()
         {
-            string Where(string tableAlias, IReadOnlyDictionary<string, object> arguments,
-                IResolveFieldContext context) => "";
+            void Where(WhereBuilder where, IReadOnlyDictionary<string, object> arguments,
+                IResolveFieldContext context)
+            {
+            }
 
-            var builder = SqlJunctionConfigBuilder.Create("friends", (_, __, ___, ____) => "", (_, __, ___, ____) => "");
+            var builder = SqlJunctionConfigBuilder.Create("friends", (_, __, ___, ____) => { }, (_, __, ___, ____) => { });
 
             builder.Where(Where);
 
