@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using FluentAssertions;
 using JoinMonster.Language.AST;
 using Newtonsoft.Json;
@@ -13,22 +12,17 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void DefineObjectShape_WhenCalledWithObject_ReturnsObjectShapeDefinition()
         {
-            var node = new SqlTable("products", "products", "products",
-                new[] {new SqlColumn("id", "id", "id", true), new SqlColumn("name", "name", "name")},
-                new[]
-                {
-                    new SqlTable("variants", "variants", "variants",
-                        new[] {new SqlColumn("id", "id", "id", true), new SqlColumn("name", "name", "name")},
-                        new[]
-                        {
-                            new SqlTable("colors", "color", "color",
-                                new[] {new SqlColumn("id", "id", "id", true), new SqlColumn("color", "color", "color")},
-                                Enumerable.Empty<SqlTable>(), new Dictionary<string, object>(), false),
-                        }, new Dictionary<string, object>(), true)
-                    {
-                        SortKey = new SortKey(new [] { "sortOrder" }, SortDirection.Ascending)
-                    }
-                }, new Dictionary<string, object>(), true);
+            var node = new SqlTable(null, "products", "products", "products", new Dictionary<string, object>(),
+                true);
+            node.AddColumn("id", "id", "id", true);
+            node.AddColumn("name", "name", "name");
+            var variantsTable = node.AddTable(null, "variants", "variants", "variants", new Dictionary<string, object>(), true);
+            variantsTable.AddColumn("id", "id", "id", true);
+            variantsTable.AddColumn("name", "name", "name");
+            variantsTable.SortKey = new SortKey(new[] {"sortOrder"}, SortDirection.Ascending);
+            var colorsTable = variantsTable.AddTable(null, "colors", "color", "color", new Dictionary<string, object>(), true);
+            colorsTable.AddColumn("id", "id", "id", true);
+            colorsTable.AddColumn("color", "color", "color");
 
             var objectShaper = new ObjectShaper(new SqlAstValidator());
 

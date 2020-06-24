@@ -2,7 +2,7 @@ namespace JoinMonster.Language.AST
 {
     public class ValueNode : Node
     {
-        public ValueNode(object value)
+        public ValueNode(Node parent, object value) : base(parent)
         {
             Value = value;
         }

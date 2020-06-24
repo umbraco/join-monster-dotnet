@@ -1,19 +1,19 @@
+using System;
 using System.Collections.Generic;
 using JoinMonster.Configs;
-using JoinMonster.Data;
 
 namespace JoinMonster.Language.AST
 {
     public class SqlTable : Node
     {
-        public SqlTable(string name, string fieldName, string @as, IEnumerable<SqlColumnBase> columns,
-            IEnumerable<SqlTable> tables, IReadOnlyDictionary<string, object> arguments, bool grabMany)
+        public SqlTable(Node? parent, string name, string fieldName, string @as,
+            IReadOnlyDictionary<string, object> arguments, bool grabMany) : base(parent)
         {
             FieldName = fieldName;
             Name = name;
             As = @as;
-            Columns = columns;
-            Tables = tables;
+            Columns = new List<SqlColumnBase>();
+            Tables = new List<SqlTable>();
             Arguments = arguments;
             GrabMany = grabMany;
         }
@@ -24,13 +24,28 @@ namespace JoinMonster.Language.AST
         public bool GrabMany { get; }
         public bool Paginate { get; set; }
         public IReadOnlyDictionary<string, object> Arguments { get; }
-        public IEnumerable<SqlColumnBase> Columns { get; }
-        public IEnumerable<SqlTable> Tables { get; }
+        public ICollection<SqlColumnBase> Columns { get; }
+        public ICollection<SqlTable> Tables { get; }
         public SqlJunction? Junction { get; set; }
         public WhereDelegate? Where { get; set; }
         public JoinDelegate? Join { get; set; }
         public OrderBy? OrderBy { get; set; }
         public SortKey? SortKey { get; set; }
+
+        public SqlColumn AddColumn(string name, string fieldName, string @as, bool isId = false)
+        {
+            var column = new SqlColumn(this, name, fieldName, @as, isId);
+            Columns.Add(column);
+            return column;
+        }
+
+        public SqlTable AddTable(SqlTableConfig? config, string name, string fieldName, string @as,
+                                         IReadOnlyDictionary<string, object> arguments, bool grabMany)
+        {
+            var sqlTable = new SqlTable(this, name, fieldName, @as, arguments, grabMany);
+            Tables.Add(sqlTable);
+            return sqlTable;
+        }
 
         public override IEnumerable<Node> Children
         {

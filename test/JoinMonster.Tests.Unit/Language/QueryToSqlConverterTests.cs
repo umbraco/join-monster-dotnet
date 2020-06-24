@@ -96,9 +96,9 @@ namespace JoinMonster.Tests.Unit.Language
             node.Should()
                 .BeOfType<SqlTable>()
                 .Which.Columns.Should()
-                .ContainEquivalentOf(new SqlColumn("id", "id", "id", true),
+                .ContainEquivalentOf(new SqlColumn(node, "id", "id", "id", true),
                     config => config.Excluding(x => x.SourceLocation))
-                .And.ContainEquivalentOf(new SqlColumn("name", "name", "name"),
+                .And.ContainEquivalentOf(new SqlColumn(node, "name", "name", "name"),
                     config => config.Excluding(x => x.SourceLocation));
         }
 
@@ -121,7 +121,7 @@ namespace JoinMonster.Tests.Unit.Language
             node.Should()
                 .BeOfType<SqlTable>()
                 .Which.Columns.Should()
-                .ContainEquivalentOf(new SqlColumn("productName", "name", "name"),
+                .ContainEquivalentOf(new SqlColumn(node, "productName", "name", "name"),
                     config => config.Excluding(x => x.SourceLocation));
         }
 
@@ -168,7 +168,7 @@ namespace JoinMonster.Tests.Unit.Language
             node.Should()
                 .BeOfType<SqlTable>()
                 .Which.Columns.Should()
-                .ContainEquivalentOf(new SqlColumn("id", "id", "id", true));
+                .ContainEquivalentOf(new SqlColumn(node, "id", "id", "id", true));
         }
 
         [Fact]
@@ -189,7 +189,7 @@ namespace JoinMonster.Tests.Unit.Language
             node.Should()
                 .BeOfType<SqlTable>()
                 .Which.Columns.Should()
-                .ContainEquivalentOf(new SqlComposite(new[] {"id", "key"}, "id#key", "id#key", true));
+                .ContainEquivalentOf(new SqlComposite(node, new[] {"id", "key"}, "id#key", "id#key", true));
         }
 
         [Fact]
@@ -232,8 +232,8 @@ namespace JoinMonster.Tests.Unit.Language
             node.Should()
                 .BeOfType<SqlTable>()
                 .Which.Columns.Should()
-                .ContainEquivalentOf(new SqlColumn("key", "key", "key"))
-                .And.ContainEquivalentOf(new SqlColumn("type", "type", "type"));
+                .ContainEquivalentOf(new SqlColumn(node, "key", "key", "key"))
+                .And.ContainEquivalentOf(new SqlColumn(node, "type", "type", "type"));
         }
 
         [Fact]

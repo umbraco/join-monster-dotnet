@@ -1,9 +1,13 @@
+using System;
+
 namespace JoinMonster.Language.AST
 {
     public abstract class SqlColumnBase : Node
     {
-        protected SqlColumnBase(string fieldName, string @as, bool isId)
+        protected SqlColumnBase(Node parent, string fieldName, string @as, bool isId) : base(parent)
         {
+            if (parent == null) throw new ArgumentNullException(nameof(parent));
+
             FieldName = fieldName;
             As = @as;
             IsId = isId;

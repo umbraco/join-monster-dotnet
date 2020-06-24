@@ -25,7 +25,7 @@ namespace JoinMonster.Tests.Unit
         {
             var validator = new SqlAstValidator();
 
-            var node = new SqlTable(null, null, null, null, null, null, false)
+            var node = new SqlTable(null, null, null, null, null, false)
             {
                 Join = (join, arguments, context, sqlAstNode) => {}
             };
@@ -58,7 +58,7 @@ namespace JoinMonster.Tests.Unit
         {
             var validator = new SqlAstValidator();
 
-            var node = new SqlTable(null, null, null, null, null, null, false);
+            var node = new SqlTable(null, null, null, null, null, false);
 
             Action action = () => validator.Validate(node);
 

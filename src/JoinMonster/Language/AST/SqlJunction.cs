@@ -1,11 +1,13 @@
+using System;
 using JoinMonster.Configs;
 
 namespace JoinMonster.Language.AST
 {
     public class SqlJunction : Node
     {
-        public SqlJunction(string table, string @as, JoinDelegate fromParent, JoinDelegate toChild)
+        public SqlJunction(Node parent, string table, string @as, JoinDelegate fromParent, JoinDelegate toChild) : base(parent)
         {
+            if (parent == null) throw new ArgumentNullException(nameof(parent));
             Table = table;
             As = @as;
             FromParent = fromParent;
