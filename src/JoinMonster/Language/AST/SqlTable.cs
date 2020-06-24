@@ -6,9 +6,10 @@ namespace JoinMonster.Language.AST
 {
     public class SqlTable : Node
     {
-        public SqlTable(Node? parent, string name, string fieldName, string @as,
+        public SqlTable(Node? parent, SqlTableConfig? config, string name, string fieldName, string @as,
             IReadOnlyDictionary<string, object> arguments, bool grabMany) : base(parent)
         {
+            Config = config;
             FieldName = fieldName;
             Name = name;
             As = @as;
@@ -20,6 +21,7 @@ namespace JoinMonster.Language.AST
 
         public string As { get; }
         public string Name { get; }
+        public SqlTableConfig Config { get; }
         public string FieldName { get; }
         public bool GrabMany { get; }
         public bool Paginate { get; set; }
@@ -31,6 +33,7 @@ namespace JoinMonster.Language.AST
         public JoinDelegate? Join { get; set; }
         public OrderBy? OrderBy { get; set; }
         public SortKey? SortKey { get; set; }
+        public ColumnExpressionDelegate? ColumnExpression { get; set; }
 
         public SqlColumn AddColumn(string name, string fieldName, string @as, bool isId = false)
         {
@@ -42,7 +45,7 @@ namespace JoinMonster.Language.AST
         public SqlTable AddTable(SqlTableConfig? config, string name, string fieldName, string @as,
                                          IReadOnlyDictionary<string, object> arguments, bool grabMany)
         {
-            var sqlTable = new SqlTable(this, name, fieldName, @as, arguments, grabMany);
+            var sqlTable = new SqlTable(this, config, name, fieldName, @as, arguments, grabMany);
             Tables.Add(sqlTable);
             return sqlTable;
         }

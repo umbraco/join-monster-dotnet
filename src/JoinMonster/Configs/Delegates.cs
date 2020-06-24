@@ -11,6 +11,16 @@ namespace JoinMonster.Configs
     /// Generates a SQL expression.
     /// </summary>
     /// <param name="tableAlias">An auto-generated table alias. Already quoted.</param>
+    /// <param name="column">The column name. Not quoted.</param>
+    /// <param name="arguments">The arguments.</param>
+    /// <param name="context">The context.</param>
+    /// <returns>A RAW SQL expression.</returns>
+    public delegate string ColumnExpressionDelegate(string tableAlias, string column, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context);
+
+    /// <summary>
+    /// Generates a SQL expression.
+    /// </summary>
+    /// <param name="tableAlias">An auto-generated table alias. Already quoted.</param>
     /// <param name="arguments">The arguments.</param>
     /// <param name="context">The context.</param>
     /// <returns>A RAW SQL expression.</returns>

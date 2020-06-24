@@ -81,18 +81,26 @@ namespace JoinMonster.Data
                 case SqlColumn sqlColumn:
                 {
                     if (!(parent is SqlTable table))
-                        throw new ArgumentException($"'{nameof(parent)}' must be of type {typeof(SqlTable)}", nameof(parent));
+                        throw new ArgumentException($"'{nameof(parent)}' must be of type {typeof(SqlTable)}",
+                            nameof(parent));
 
                     var parentTable = table.As;
+                    string columnName;
+
                     if (sqlColumn.Expression != null)
                     {
-                        selections.Add($"{sqlColumn.Expression(_dialect.Quote(parentTable), sqlColumn.Arguments, context)} AS {_dialect.Quote(JoinPrefix(prefix) + sqlColumn.As)}");
+                        columnName = sqlColumn.Expression(_dialect.Quote(parentTable), sqlColumn.Arguments, context);
+                    }
+                    else if (table.ColumnExpression != null)
+                    {
+                        columnName = table.ColumnExpression(_dialect.Quote(parentTable), sqlColumn.Name, sqlColumn.Arguments, context);
                     }
                     else
                     {
-                        selections.Add($"{_dialect.Quote(parentTable)}.{_dialect.Quote(sqlColumn.Name)} AS {_dialect.Quote(JoinPrefix(prefix) + sqlColumn.As)}");
+                        columnName = $"{_dialect.Quote(parentTable)}.{_dialect.Quote(sqlColumn.Name)}";
                     }
 
+                    selections.Add($"{columnName} AS {_dialect.Quote(JoinPrefix(prefix) + sqlColumn.As)}");
                     break;
                 }
                 case SqlComposite sqlComposite:

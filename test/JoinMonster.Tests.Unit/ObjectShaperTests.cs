@@ -12,7 +12,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void DefineObjectShape_WhenCalledWithObject_ReturnsObjectShapeDefinition()
         {
-            var node = new SqlTable(null, "products", "products", "products", new Dictionary<string, object>(),
+            var node = new SqlTable(null, null, "products", "products", "products", new Dictionary<string, object>(),
                 true);
             node.AddColumn("id", "id", "id", true);
             node.AddColumn("name", "name", "name");

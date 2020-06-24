@@ -97,7 +97,7 @@ namespace JoinMonster.Language
                 paginate = field.GetSqlPaginate().GetValueOrDefault(false);
             }
 
-            var sqlTable = new SqlTable(parent, tableName, fieldName, tableAs, arguments, grabMany)
+            var sqlTable = new SqlTable(parent, config, tableName, fieldName, tableAs, arguments, grabMany)
                 .WithLocation(fieldAst.SourceLocation);
 
             if (config.UniqueKey.Length == 1)
@@ -118,6 +118,7 @@ namespace JoinMonster.Language
 
             HandleSelections(sqlTable, graphType, fieldAst.SelectionSet.Selections, depth, context);
 
+            sqlTable.ColumnExpression = config.ColumnExpression;
 
             if (where != null)
             {

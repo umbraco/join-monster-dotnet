@@ -1,4 +1,5 @@
 using System;
+using GraphQL;
 using JoinMonster.Configs;
 
 namespace JoinMonster.Builders
@@ -43,6 +44,29 @@ namespace JoinMonster.Builders
         public SqlTableConfigBuilder AlwaysFetch(params string[] columnNames)
         {
             SqlTableConfig.AlwaysFetch = columnNames;
+            return this;
+        }
+
+        /// <summary>
+        /// Set a custom column expression.
+        /// </summary>
+        /// <param name="resolve">The column resolver.</param>
+        /// <returns>The <see cref="SqlTableConfigBuilder"/>.</returns>
+        public SqlTableConfigBuilder ColumnExpression(ColumnExpressionDelegate resolve)
+        {
+            SqlTableConfig.ColumnExpression = resolve;
+            return this;
+        }
+
+        /// <summary>
+        /// Set metadata on the table config.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="value">The value.</param>
+        /// <returns>The <see cref="SqlTableConfigBuilder"/>.</returns>
+        public SqlTableConfigBuilder WithMetadata(string key, object value)
+        {
+            SqlTableConfig.WithMetadata(key, value);
             return this;
         }
     }

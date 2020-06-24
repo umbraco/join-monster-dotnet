@@ -56,9 +56,9 @@ namespace JoinMonster.Tests.Unit.Data
         public void HandleJoinedOneToManyPaginated_WhenCalledWithOffsetPagination_ReturnsPagedJoinString()
         {
             var dialect = new PostgresSqlDialect();
-            var parent = new SqlTable(null, "products", "products", "products", new Dictionary<string, object>(), true);
+            var parent = new SqlTable(null, null, "products", "products", "products", new Dictionary<string, object>(), true);
             parent.AddColumn("id", "id", "id", true);
-            var node = new SqlTable(null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
+            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
             {
                 Join = (join, _, __, ___) => join.On("id", "productId"),
                 OrderBy = new OrderBy("id", SortDirection.Ascending),
@@ -82,9 +82,9 @@ namespace JoinMonster.Tests.Unit.Data
         public void HandleJoinedOneToManyPaginated_WhenCalledWithKeysetPagination_ReturnsPagedJoinString()
         {
             var dialect = new PostgresSqlDialect();
-            var parent = new SqlTable(null, "products", "products", "products", new Dictionary<string, object>(), true);
+            var parent = new SqlTable(null, null, "products", "products", "products", new Dictionary<string, object>(), true);
             parent.AddColumn("id", "id", "id", true);
-            var node = new SqlTable(null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
+            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
             {
                 Join = (join, _, __, ___) => join.On("id", "productId"),
                 OrderBy = new OrderBy("id", SortDirection.Ascending),
@@ -117,9 +117,9 @@ namespace JoinMonster.Tests.Unit.Data
         {
             var dialect = new PostgresSqlDialect();
 
-            var parent = new SqlTable(null, "products", "products", "products", new Dictionary<string, object>(), true);
+            var parent = new SqlTable(null, null, "products", "products", "products", new Dictionary<string, object>(), true);
             parent.AddColumn("id", "id", "id", true);
-            var node = new SqlTable(null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
+            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
             {
                 Join = (join, _, __, ___) => join.On("id", "productId"),
                 SortKey = new SortKey(new[] {"id"}, SortDirection.Descending),
@@ -154,9 +154,9 @@ namespace JoinMonster.Tests.Unit.Data
         public void HandleJoinedOneToManyPaginated_WhenCalledWithKeysetPaginationAndLastAndBefore_ReturnsPagedJoinString()
         {
             var dialect = new PostgresSqlDialect();
-            var parent = new SqlTable(null, "products", "products", "products", new Dictionary<string, object>(), true);
+            var parent = new SqlTable(null, null, "products", "products", "products", new Dictionary<string, object>(), true);
             parent.AddColumn("id", "id", "id", true);
-            var node = new SqlTable(null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
+            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
             {
                 Join = (join, _, __, ____) => join.On("id", "productId"),
                 OrderBy = new OrderBy("id", SortDirection.Ascending),
@@ -191,7 +191,7 @@ namespace JoinMonster.Tests.Unit.Data
         public void HandlePaginationAtRoot_WhenCalledWithOffsetPagination_ReturnsPagedJoinString()
         {
             var dialect = new PostgresSqlDialect();
-            var node = new SqlTable(null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
+            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
             {
                 OrderBy = new OrderBy("id", SortDirection.Ascending),
                 Where = (where, _, __) => where.Column("id", 1, "<>")
@@ -219,7 +219,7 @@ namespace JoinMonster.Tests.Unit.Data
         public void HandlePaginationAtRoot_WhenCalledWithKeysetPagination_ReturnsPagedJoinString()
         {
             var dialect = new PostgresSqlDialect();
-            var node = new SqlTable(null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
+            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
             {
                 OrderBy = new OrderBy("id", SortDirection.Ascending),
                 SortKey = new SortKey(new[] {"id"}, SortDirection.Ascending),
@@ -248,7 +248,7 @@ namespace JoinMonster.Tests.Unit.Data
         public void HandlePaginationAtRoot_WhenCalledWithKeysetPaginationAndFirstAndAfter_ReturnsPagedJoinString()
         {
             var dialect = new PostgresSqlDialect();
-            var node = new SqlTable(null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
+            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
             {
                 SortKey = new SortKey(new[] {"id"}, SortDirection.Descending),
                 Where = (where, _, __) => where.Column("id", 1, "<>")
@@ -280,7 +280,7 @@ namespace JoinMonster.Tests.Unit.Data
         public void HandlePaginationAtRoot_WhenCalledWithKeysetPaginationAndLastAndBefore_ReturnsPagedJoinString()
         {
             var dialect = new PostgresSqlDialect();
-            var node = new SqlTable(null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
+            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
             {
                 OrderBy = new OrderBy("id", SortDirection.Ascending),
                 SortKey = new SortKey(new[] {"id"}, SortDirection.Ascending),

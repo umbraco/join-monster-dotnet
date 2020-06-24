@@ -1,11 +1,12 @@
 using System;
+using GraphQL.Utilities;
 
 namespace JoinMonster.Configs
 {
     /// <summary>
     /// SQL table configuration.
     /// </summary>
-    public class SqlTableConfig
+    public class SqlTableConfig : MetadataProvider
     {
         /// <summary>
         /// Creates a new instance of <see cref="SqlTableConfig"/>.
@@ -32,5 +33,10 @@ namespace JoinMonster.Configs
         /// Columns to always fetch.
         /// </summary>
         public string[]? AlwaysFetch { get; set; }
+
+        /// <summary>
+        /// Custom column SQL expression.
+        /// </summary>
+        public ColumnExpressionDelegate? ColumnExpression { get; set; }
     }
 }
