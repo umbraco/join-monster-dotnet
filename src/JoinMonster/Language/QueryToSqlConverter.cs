@@ -95,6 +95,7 @@ namespace JoinMonster.Language
             if (!grabMany && field.ResolvedType.GetNamedType().IsConnectionType())
             {
                 paginate = field.GetSqlPaginate().GetValueOrDefault(false);
+                grabMany = true;
             }
 
             var sqlTable = new SqlTable(parent, config, tableName, fieldName, tableAs, arguments, grabMany)

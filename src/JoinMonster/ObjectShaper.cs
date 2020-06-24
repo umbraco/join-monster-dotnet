@@ -54,7 +54,7 @@ namespace JoinMonster
                     case SqlTable sqlTable:
                         var childProperties = DefineObjectShape(node, prefix, sqlTable);
                         IProperty property;
-                        if (sqlTable.GrabMany || sqlTable.Paginate)
+                        if (sqlTable.GrabMany)
                             property = new PropertyArray(sqlTable.FieldName, childProperties);
                         else
                             property = new PropertyObject(sqlTable.FieldName, childProperties);

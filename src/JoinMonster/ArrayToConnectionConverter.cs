@@ -9,7 +9,7 @@ namespace JoinMonster
 {
     internal class ArrayToConnectionConverter
     {
-        public IEnumerable<object> Convert(IEnumerable<IDictionary<string, object?>> data, Node sqlAst, IResolveFieldContext context)
+        public object Convert(IEnumerable<IDictionary<string, object?>> data, Node sqlAst, IResolveFieldContext context)
         {
             if (data == null) throw new ArgumentNullException(nameof(data));
             if (sqlAst == null) throw new ArgumentNullException(nameof(sqlAst));
@@ -18,8 +18,9 @@ namespace JoinMonster
             var converted = ConvertInternal(data, sqlAst, context);
             return converted switch
             {
-                IEnumerable<IDictionary<string, object?>> dictionary => dictionary,
-                Connection<object> connection => new [] { connection },
+                IEnumerable<IDictionary<string, object?>> enumerable when sqlAst is SqlTable table && table.GrabMany => enumerable,
+                IEnumerable<IDictionary<string, object?>> enumerable => enumerable.FirstOrDefault(),
+                Connection<object> connection => connection,
                 null => throw new JoinMonsterException("Expected result to not be null."),
                 _ => throw new JoinMonsterException(
                     $"Expected result to be of type '{typeof(IEnumerable<IDictionary<string, object?>>)}' or '{typeof(Connection<object>)}' but was '{converted.GetType()}'")

@@ -74,9 +74,7 @@ namespace JoinMonster
             var result = _arrayToConnectionConverter.Convert(nested, sqlAst, context);
 #pragma warning restore 8620
 
-            return sqlAst.GrabMany
-                ? result
-                : result.FirstOrDefault();
+            return result;
         }
 
     }
