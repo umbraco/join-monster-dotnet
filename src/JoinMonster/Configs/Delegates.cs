@@ -23,8 +23,9 @@ namespace JoinMonster.Configs
     /// <param name="tableAlias">An auto-generated table alias. Already quoted.</param>
     /// <param name="arguments">The arguments.</param>
     /// <param name="context">The context.</param>
+    /// <param name="sqlAstNode">The SQL AST node.</param>
     /// <returns>A RAW SQL expression.</returns>
-    public delegate string ExpressionDelegate(string tableAlias, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context);
+    public delegate string ExpressionDelegate(string tableAlias, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, SqlTable sqlAstNode);
 
     /// <summary>
     /// Generates a <c>WHERE</c> condition.

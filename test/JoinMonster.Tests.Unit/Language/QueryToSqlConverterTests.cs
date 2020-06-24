@@ -426,7 +426,7 @@ namespace JoinMonster.Tests.Unit.Language
         public void Convert_WhenFieldHasExpression_SetsExpressionOnSqlColumn()
         {
             string Expression(string tableAlias, IReadOnlyDictionary<string, object> arguments,
-                IResolveFieldContext context) => $"{tableAlias}.\"productName\"";
+                IResolveFieldContext context, SqlTable sqlAstNode) => $"{tableAlias}.\"productName\"";
 
             var schema = CreateSimpleSchema(builder =>
             {

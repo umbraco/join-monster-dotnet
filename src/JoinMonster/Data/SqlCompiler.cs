@@ -89,7 +89,7 @@ namespace JoinMonster.Data
 
                     if (sqlColumn.Expression != null)
                     {
-                        columnName = sqlColumn.Expression(_dialect.Quote(parentTable), sqlColumn.Arguments, context);
+                        columnName = sqlColumn.Expression(_dialect.Quote(parentTable), sqlColumn.Arguments, context, table);
                     }
                     else if (table.ColumnExpression != null)
                     {

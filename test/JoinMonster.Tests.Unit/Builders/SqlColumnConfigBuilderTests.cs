@@ -5,6 +5,7 @@ using FluentAssertions;
 using GraphQL;
 using JoinMonster.Builders;
 using JoinMonster.Configs;
+using JoinMonster.Language.AST;
 using Xunit;
 
 namespace JoinMonster.Tests.Unit.Builders
@@ -63,7 +64,7 @@ namespace JoinMonster.Tests.Unit.Builders
         public void Expression_WithExpression_SetsExpression()
         {
             string Expression(string tableAlias, IReadOnlyDictionary<string, object> args,
-                IResolveFieldContext context) => $"{tableAlias}.\"firstName\" || ' ' {tableAlias}.\"lastName\"";
+                IResolveFieldContext context, SqlTable sqlAstNode) => $"{tableAlias}.\"firstName\" || ' ' {tableAlias}.\"lastName\"";
 
             var builder = SqlColumnConfigBuilder.Create("myColumn")
                 .Expression(Expression);
