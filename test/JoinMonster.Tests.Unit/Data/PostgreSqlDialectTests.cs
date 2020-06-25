@@ -62,7 +62,7 @@ namespace JoinMonster.Tests.Unit.Data
             {
                 Join = (join, _, __, ___) => join.On("id", "productId"),
                 OrderBy = new OrderBy("id", SortDirection.Ascending),
-                Where = (where, _, __) => where.Column("id", 1, "<>")
+                Where = (where, _, __, ___) => where.Column("id", 1, "<>")
             };
             node.AddColumn("id", "id", "id", true);
 
@@ -89,7 +89,7 @@ namespace JoinMonster.Tests.Unit.Data
                 Join = (join, _, __, ___) => join.On("id", "productId"),
                 OrderBy = new OrderBy("id", SortDirection.Ascending),
                 SortKey = new SortKey(new[] {"id"}, SortDirection.Ascending),
-                Where = (where, _, __) => where.Column("id", 1, "<>")
+                Where = (where, _, __, ___) => where.Column("id", 1, "<>")
 
             };
             node.AddColumn("id", "id", "id", true);
@@ -123,7 +123,7 @@ namespace JoinMonster.Tests.Unit.Data
             {
                 Join = (join, _, __, ___) => join.On("id", "productId"),
                 SortKey = new SortKey(new[] {"id"}, SortDirection.Descending),
-                Where = (where, _, __) => where.Column("id", 1, "<>")
+                Where = (where, _, __, ___) => where.Column("id", 1, "<>")
 
             };
             node.AddColumn("id", "id", "id", true);
@@ -161,7 +161,7 @@ namespace JoinMonster.Tests.Unit.Data
                 Join = (join, _, __, ____) => join.On("id", "productId"),
                 OrderBy = new OrderBy("id", SortDirection.Ascending),
                 SortKey = new SortKey(new[] {"id"}, SortDirection.Ascending),
-                Where = (where, _, __) => where.Column("id", 1, "<>")
+                Where = (where, _, __, ___) => where.Column("id", 1, "<>")
             };
             node.AddColumn("id", "id", "id", true);
 
@@ -194,7 +194,7 @@ namespace JoinMonster.Tests.Unit.Data
             var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
             {
                 OrderBy = new OrderBy("id", SortDirection.Ascending),
-                Where = (where, _, __) => where.Column("id", 1, "<>")
+                Where = (where, _, __, ___) => where.Column("id", 1, "<>")
             };
             node.AddColumn("id", "id", "id", true);
 
@@ -223,7 +223,7 @@ namespace JoinMonster.Tests.Unit.Data
             {
                 OrderBy = new OrderBy("id", SortDirection.Ascending),
                 SortKey = new SortKey(new[] {"id"}, SortDirection.Ascending),
-                Where = (where, _, __) => where.Column("id", 1, "<>")
+                Where = (where, _, __, ___) => where.Column("id", 1, "<>")
             };
             node.AddColumn("id", "id", "id", true);
 
@@ -251,7 +251,7 @@ namespace JoinMonster.Tests.Unit.Data
             var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
             {
                 SortKey = new SortKey(new[] {"id"}, SortDirection.Descending),
-                Where = (where, _, __) => where.Column("id", 1, "<>")
+                Where = (where, _, __, ___) => where.Column("id", 1, "<>")
             };
             node.AddColumn("id", "id", "id", true);
 
@@ -284,7 +284,7 @@ namespace JoinMonster.Tests.Unit.Data
             {
                 OrderBy = new OrderBy("id", SortDirection.Ascending),
                 SortKey = new SortKey(new[] {"id"}, SortDirection.Ascending),
-                Where = (where, _, __) => where.Column("id", 1, "<>")
+                Where = (where, _, __, ___) => where.Column("id", 1, "<>")
             };
             node.AddColumn("id", "id", "id", true);
 
