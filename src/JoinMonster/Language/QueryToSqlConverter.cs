@@ -79,9 +79,9 @@ namespace JoinMonster.Language
         private Node HandleTable(Node? parent, Field fieldAst, FieldType field, IComplexGraphType graphType,
             SqlTableConfig config, int depth, IResolveFieldContext context)
         {
-            var fieldName = fieldAst.Name;
+            var fieldName = fieldAst.Alias ?? fieldAst.Name;
             var tableName = config.Table;
-            var tableAs = fieldAst.Name;
+            var tableAs = fieldName;
 
             var arguments = HandleArguments(fieldAst);
             var grabMany = field.ResolvedType.IsListType();
@@ -206,8 +206,8 @@ namespace JoinMonster.Language
         private Node HandleColumn(SqlTable sqlTable, Field fieldAst, FieldType field, IGraphType graphType,
             SqlColumnConfig? config, int depth, IResolveFieldContext userContext)
         {
-            var fieldName = fieldAst.Name;
-            var columnName = config?.Column ?? fieldName;
+            var fieldName = fieldAst.Alias ?? fieldAst.Name;
+            var columnName = config?.Column ?? fieldAst.Name;
             var columnAs = fieldName;
 
             var column = new SqlColumn(sqlTable, columnName, fieldName, columnAs).WithLocation(fieldAst.SourceLocation);
@@ -245,7 +245,9 @@ namespace JoinMonster.Language
                         switch (node)
                         {
                             case SqlColumnBase sqlColumn:
-                                var existing = parent.Columns.Any(x => x.FieldName == fieldAst.Name);
+                                var fieldName = fieldAst.Alias ?? fieldAst.Name;
+                                var existing = parent.Columns.Any(x => x.FieldName == fieldName);
+
                                 if (existing)
                                     continue;
 

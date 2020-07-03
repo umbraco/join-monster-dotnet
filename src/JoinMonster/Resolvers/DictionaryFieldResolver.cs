@@ -19,7 +19,7 @@ namespace JoinMonster.Resolvers
         public object? Resolve(IResolveFieldContext context)
         {
             if (context.Source is IDictionary<string, object> dict
-                && dict.TryGetValue(context.FieldName, out var value))
+                && dict.TryGetValue(context.FieldAst.Alias ?? context.FieldName, out var value))
             {
                 return value;
             }

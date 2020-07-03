@@ -103,6 +103,24 @@ namespace JoinMonster.Tests.Unit.Language
         }
 
         [Fact]
+        public void Convert_WithFieldAlias_SetsFieldNameToAlias()
+        {
+            var schema = CreateSimpleSchema(builder => { builder.Types.For("Product").SqlTable("products", "id"); });
+
+            var query = "{ product { id, productName:name } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter();
+            var node = converter.Convert(context);
+
+            node.Should()
+                .BeOfType<SqlTable>()
+                .Which.Columns.Should()
+                .ContainEquivalentOf(new SqlColumn(node, "name", "productName", "productName"),
+                    config => config.Excluding(x => x.SourceLocation));
+        }
+
+        [Fact]
         public void Convert_WhenColumnNameIsConfigured_UsesConfiguredColumnName()
         {
             var schema = CreateSimpleSchema(builder =>
