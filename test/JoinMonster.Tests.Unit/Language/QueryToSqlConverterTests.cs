@@ -134,8 +134,7 @@ namespace JoinMonster.Tests.Unit.Language
                     .SqlTable("products", "id");
                 builder.Types.For("Product")
                     .FieldFor("name", null)
-                    .SqlColumn()
-                    .Ignore();
+                    .SqlColumn(ignore: true);
             });
 
             var query = "{ product { name } }";

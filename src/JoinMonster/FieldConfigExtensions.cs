@@ -17,15 +17,24 @@ namespace JoinMonster
         /// </summary>
         /// <param name="fieldConfig">The <see cref="FieldConfig"/>.</param>
         /// <param name="columnName">The column name, if null the field name is used.</param>
+        /// <param name="ignore"><c>true</c> if the column should be ignored, otherwise <c>false</c>.</param>
         /// <returns>The <see cref="SqlColumnConfigBuilder"/></returns>
         /// <exception cref="ArgumentNullException">If <paramref name="fieldConfig"/> is <c>null</c>.</exception>
-        public static SqlColumnConfigBuilder SqlColumn(this FieldConfig fieldConfig, string? columnName = null)
+        public static SqlColumnConfigBuilder SqlColumn(this FieldConfig fieldConfig, string? columnName = null, bool ignore = false)
         {
             if (fieldConfig == null) throw new ArgumentNullException(nameof(fieldConfig));
 
             var builder = SqlColumnConfigBuilder.Create(columnName ?? fieldConfig.Name);
             fieldConfig.WithMetadata(nameof(SqlColumnConfig), builder.SqlColumnConfig);
-            fieldConfig.Resolver ??= DictionaryFieldResolver.Instance;
+
+            if (ignore)
+            {
+                builder.SqlColumnConfig.Ignored = true;
+            }
+            else if (fieldConfig.Resolver == null)
+            {
+                fieldConfig.Resolver = DictionaryFieldResolver.Instance;
+            }
 
             return builder;
         }

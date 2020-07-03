@@ -33,24 +33,6 @@ namespace JoinMonster.Tests.Unit.Builders
         }
 
         [Fact]
-        public void Ignore_WithTrue_SetsIgnoredToTrue()
-        {
-            var builder = SqlColumnConfigBuilder.Create("myColumn")
-                .Ignore(true);
-
-            builder.SqlColumnConfig.Ignored.Should().BeTrue();
-        }
-
-        [Fact]
-        public void Ignore_WithFalse_SetsIgnoredToFalse()
-        {
-            var builder = SqlColumnConfigBuilder.Create("myColumn")
-                .Ignore(false);
-
-            builder.SqlColumnConfig.Ignored.Should().BeFalse();
-        }
-
-        [Fact]
         public void Dependencies_WithValues_SetsDependencies()
         {
             var dependencies = new[] {"firstName", "lastName"};

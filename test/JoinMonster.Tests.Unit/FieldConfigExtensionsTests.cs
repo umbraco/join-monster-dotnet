@@ -71,6 +71,16 @@ namespace JoinMonster.Tests.Unit
         }
 
         [Fact]
+        public void SqlColumn_WhenColumnIsIgnored_DoesntSetResolver()
+        {
+            var fieldConfig = new FieldConfig("name");
+
+            fieldConfig.SqlColumn(ignore: true);
+
+            fieldConfig.Resolver.Should().BeNull();
+        }
+
+        [Fact]
         public void SqlWhere_WhenFieldConfigIsNull_ThrowsException()
         {
             Action action = () => FieldConfigExtensions.SqlWhere(null, null);

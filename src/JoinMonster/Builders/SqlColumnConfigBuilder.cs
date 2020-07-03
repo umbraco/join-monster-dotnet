@@ -34,17 +34,6 @@ namespace JoinMonster.Builders
         public SqlColumnConfig SqlColumnConfig { get; }
 
         /// <summary>
-        /// Set whether the column should be ignored from the generated SQL query.
-        /// </summary>
-        /// <param name="ignored"><c>true</c> if the column should be ignored, otherwise <c>false</c>.</param>
-        /// <returns>The <see cref="SqlColumnConfigBuilder"/>.</returns>
-        public SqlColumnConfigBuilder Ignore(bool ignored = true)
-        {
-            SqlColumnConfig.Ignored = ignored;
-            return this;
-        }
-
-        /// <summary>
         /// Set the dependant columns, a custom resolver must be specified on the field.
         /// </summary>
         /// <param name="columnNames">The column names to select.</param>
