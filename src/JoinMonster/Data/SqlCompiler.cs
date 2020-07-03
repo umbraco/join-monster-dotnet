@@ -126,16 +126,21 @@ namespace JoinMonster.Data
         {
             var arguments = node.Arguments;
 
-            if (node.Junction?.Where != null)
+            // also check for batching
+            if (node.Paginate == false && parent == null)
             {
-                var whereBuilder = new WhereBuilder(_dialect, _dialect.Quote(node.Junction.As), wheres, parameters);
-                node.Junction?.Where?.Invoke(whereBuilder, arguments, context, node);
-            }
+                if (node.Junction?.Where != null)
+                {
+                    var whereBuilder = new WhereBuilder(_dialect, _dialect.Quote(node.Junction.As), wheres, parameters);
+                    node.Junction?.Where?.Invoke(whereBuilder, arguments, context, node);
+                }
 
-            if (node.Where != null)
-            {
-                var whereBuilder = new WhereBuilder(_dialect, _dialect.Quote(node.As), wheres, parameters);
-                node.Where?.Invoke(whereBuilder, arguments, context, node);
+                // only add the where clause if there's no join or the join is not paginated
+                if (node.Where != null)
+                {
+                    var whereBuilder = new WhereBuilder(_dialect, _dialect.Quote(node.As), wheres, parameters);
+                    node.Where?.Invoke(whereBuilder, arguments, context, node);
+                }
             }
 
             HandleOrderBy(node.Junction?.OrderBy, node.As, orders);

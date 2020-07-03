@@ -44,7 +44,7 @@ namespace JoinMonster.Data
   LIMIT {(limit == -1 ? MaxLimit : (object) limit)}
 ) {Quote(@as)}";
 
-            return $@"{joinType ?? ""} JOIN LATERAL (
+            return $@"{joinType} JOIN LATERAL (
   SELECT {Quote(@as)}.*
   FROM {Quote(table)} {Quote(@as)}
   WHERE {whereCondition}
@@ -72,7 +72,7 @@ namespace JoinMonster.Data
 ) {Quote(@as)}";
             }
 
-            return $@"{joinType ?? ""} JOIN LATERAL (
+            return $@"{joinType} JOIN LATERAL (
   SELECT {Quote(@as)}.*, COUNT(*) OVER () AS {Quote("$total")}
   FROM {Quote(table)} {Quote(@as)}
   WHERE {whereCondition}
