@@ -129,13 +129,13 @@ namespace JoinMonster.Data
             if (node.Junction?.Where != null)
             {
                 var whereBuilder = new WhereBuilder(_dialect, _dialect.Quote(node.Junction.As), wheres, parameters);
-                node.Junction?.Where?.Invoke(whereBuilder, arguments, context);
+                node.Junction?.Where?.Invoke(whereBuilder, arguments, context, node);
             }
 
             if (node.Where != null)
             {
                 var whereBuilder = new WhereBuilder(_dialect, _dialect.Quote(node.As), wheres, parameters);
-                node.Where?.Invoke(whereBuilder, arguments, context);
+                node.Where?.Invoke(whereBuilder, arguments, context, node);
             }
 
             HandleOrderBy(node.Junction?.OrderBy, node.As, orders);

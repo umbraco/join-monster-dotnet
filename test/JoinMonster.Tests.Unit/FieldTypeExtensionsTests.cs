@@ -128,7 +128,7 @@ namespace JoinMonster.Tests.Unit
         public void GetSqlWhere_WhenWhereDelegateHasBeenSet_ReturnsWhereDelegate()
         {
             void Where(WhereBuilder where, IReadOnlyDictionary<string, object> arguments,
-                IResolveFieldContext context)
+                IResolveFieldContext context, SqlTable sqlAStNode)
             {
             }
 

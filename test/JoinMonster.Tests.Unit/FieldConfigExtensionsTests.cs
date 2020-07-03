@@ -71,7 +71,7 @@ namespace JoinMonster.Tests.Unit
         public void SqlWhere_WithWhereDelegate_AddsWhereDelegateToMetadata()
         {
             void Where(WhereBuilder where, IReadOnlyDictionary<string, object> arguments,
-                IResolveFieldContext context) => where.Column("id", 3);
+                IResolveFieldContext context, SqlTable sqlAStNode) => where.Column("id", 3);
 
             var fieldConfig = new FieldConfig("name");
 

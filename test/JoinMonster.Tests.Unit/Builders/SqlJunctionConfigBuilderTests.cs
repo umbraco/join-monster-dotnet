@@ -86,7 +86,7 @@ namespace JoinMonster.Tests.Unit.Builders
         public void Where_WithWhereCondition_SetsWhere()
         {
             void Where(WhereBuilder where, IReadOnlyDictionary<string, object> arguments,
-                IResolveFieldContext context)
+                IResolveFieldContext context, SqlTable sqlAStNode)
             {
             }
 

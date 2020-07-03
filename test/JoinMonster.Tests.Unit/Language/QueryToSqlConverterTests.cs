@@ -240,7 +240,7 @@ namespace JoinMonster.Tests.Unit.Language
         public void Convert_WhenFieldHasWhereClause_SetsWhereOnSqlTable()
         {
             void Where(WhereBuilder where, IReadOnlyDictionary<string, object> arguments,
-                IResolveFieldContext context) => where.Column("id", 3);
+                IResolveFieldContext context, SqlTable sqlAStNode) => where.Column("id", 3);
 
             var schema = CreateSimpleSchema(builder =>
             {

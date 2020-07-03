@@ -33,7 +33,8 @@ namespace JoinMonster.Configs
     /// <param name="where">The <see cref="WhereBuilder"/>.</param>
     /// <param name="arguments">The arguments.</param>
     /// <param name="context">The context.</param>
-    public delegate void WhereDelegate(WhereBuilder where, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context);
+    /// <param name="sqlAstNode">The SQL AST node.</param>
+    public delegate void WhereDelegate(WhereBuilder where, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, SqlTable sqlAstNode);
 
 
     /// <summary>

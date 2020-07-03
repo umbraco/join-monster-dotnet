@@ -65,7 +65,7 @@ namespace JoinMonster.Data
             if (node.Where != null)
             {
                 var whereBuilder = new WhereBuilder(this, Quote(node.As), pagingWhereConditions, parameters);
-                node.Where?.Invoke(whereBuilder, arguments, context);
+                node.Where?.Invoke(whereBuilder, arguments, context, node);
             }
 
             if (node.SortKey != null)
@@ -100,7 +100,7 @@ namespace JoinMonster.Data
                 if (node.Where != null)
                 {
                     var whereBuilder = new WhereBuilder(this, Quote(node.As), pagingWhereConditions, parameters);
-                    node.Where.Invoke(whereBuilder, arguments, context);
+                    node.Where.Invoke(whereBuilder, arguments, context, node);
                 }
 
                 tables.Add(KeysetPagingSelect(node.Name, pagingWhereConditions, order, limit, node.As, null, null));
@@ -113,7 +113,7 @@ namespace JoinMonster.Data
                 if (node.Where != null)
                 {
                     var whereBuilder = new WhereBuilder(this, Quote(node.As), pagingWhereConditions, parameters);
-                    node.Where.Invoke(whereBuilder, arguments, context);
+                    node.Where.Invoke(whereBuilder, arguments, context, node);
                 }
 
                 tables.Add(OffsetPagingSelect(node.Name, pagingWhereConditions, order, limit, offset, node.As, null,

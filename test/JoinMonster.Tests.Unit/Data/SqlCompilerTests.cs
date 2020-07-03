@@ -126,7 +126,7 @@ namespace JoinMonster.Tests.Unit.Data
 
                 builder.Types.For("Query")
                     .FieldFor("product", null)
-                    .SqlWhere((where, _, __) => where.Column("id", 1));
+                    .SqlWhere((where, _, __, ___) => where.Column("id", 1));
             });
 
             var query = "{ product { name } }";
@@ -155,7 +155,7 @@ namespace JoinMonster.Tests.Unit.Data
 
                 builder.Types.For("Query")
                     .FieldFor("product", null)
-                    .SqlWhere((where, arguments, __) => where.Column("id", arguments["id"]));
+                    .SqlWhere((where, arguments, _, __) => where.Column("id", arguments["id"]));
             });
 
             var query = "{ product(id: \"3\") { name } }";
@@ -275,7 +275,7 @@ namespace JoinMonster.Tests.Unit.Data
                     .SqlJunction("productRelations",
                         (join, _, __, ___) => join.On("id", "productId"),
                         (join, _, __, ___) => join.On("relatedProductId", "id"))
-                    .Where((where, _, __) => where.Columns("productId", "relatedProductId", "<>"));
+                    .Where((where, _, __, ___) => where.Columns("productId", "relatedProductId", "<>"));
             });
 
             var query = "{ product { name, relatedProducts { name } } }";
@@ -325,7 +325,7 @@ namespace JoinMonster.Tests.Unit.Data
 
                 builder.Types.For("Query")
                     .FieldFor("products", null)
-                    .SqlWhere((where, _, __) => where.Column("id", 0, "<>"))
+                    .SqlWhere((where, _, __, ___) => where.Column("id", 0, "<>"))
                     .SqlOrder((order, _, __) => order.By("name").ThenByDescending("price"));
             });
 

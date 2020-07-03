@@ -39,7 +39,7 @@ namespace JoinMonster.Tests.Unit
         public void SqlWhere_WithQuery_SetsQueryOnFieldType()
         {
             void Where(WhereBuilder where, IReadOnlyDictionary<string, object> arguments,
-                IResolveFieldContext context)
+                IResolveFieldContext context, SqlTable sqlAStNode)
             {
             }
 
