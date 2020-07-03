@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using GraphQL;
+using GraphQL.Resolvers;
 using GraphQL.Utilities;
 using JoinMonster.Builders;
 using JoinMonster.Configs;
 using JoinMonster.Language.AST;
+using JoinMonster.Resolvers;
 using Xunit;
 
 namespace JoinMonster.Tests.Unit
@@ -42,6 +44,30 @@ namespace JoinMonster.Tests.Unit
             var builder = fieldConfig.SqlColumn("productName");
 
             builder.SqlColumnConfig.Column.Should().Be("productName");
+        }
+
+        [Fact]
+        public void SqlColumn_WhenFieldResolverIsNull_SetsResolver()
+        {
+            var fieldConfig = new FieldConfig("name");
+
+            fieldConfig.SqlColumn("productName");
+
+            fieldConfig.Resolver.Should().Be(DictionaryFieldResolver.Instance);
+        }
+
+        [Fact]
+        public void SqlColumn_WhenFieldResolverIsNotNull_DoesntSetResolver()
+        {
+            var resolver = new FuncFieldResolver<string>(_ => "");
+            var fieldConfig = new FieldConfig("name")
+            {
+                Resolver = resolver
+            };
+
+            fieldConfig.SqlColumn("productName");
+
+            fieldConfig.Resolver.Should().Be(resolver);
         }
 
         [Fact]
@@ -121,6 +147,29 @@ namespace JoinMonster.Tests.Unit
         }
 
         [Fact]
+        public void SqlJoin_WhenFieldResolverIsNull_SetsResolver()
+        {
+            var fieldConfig = new FieldConfig("name");
+
+            fieldConfig.SqlJoin((join, arguments, context, node) => {});
+
+            fieldConfig.Resolver.Should().Be(DictionaryFieldResolver.Instance);
+        }
+        [Fact]
+        public void SqlJoin_WhenFieldResolverIsNotNull_DoesntSetResolver()
+        {
+            var resolver = new FuncFieldResolver<string>(_ => "");
+            var fieldConfig = new FieldConfig("name")
+            {
+                Resolver = resolver
+            };
+
+            fieldConfig.SqlJoin((join, arguments, context, node) => {});
+
+            fieldConfig.Resolver.Should().Be(resolver);
+        }
+
+        [Fact]
         public void SqlOrder_WhenOrderByDelegateIsNull_ThrowsException()
         {
             var fieldConfig = new FieldConfig("name");
@@ -145,6 +194,32 @@ namespace JoinMonster.Tests.Unit
             fieldConfig.GetMetadata<OrderByDelegate>(nameof(OrderByDelegate))
                 .Should()
                 .Be((OrderByDelegate) OrderBy);
+        }
+
+        [Fact]
+        public void SqlJunction_WhenFieldResolverIsNull_SetsResolver()
+        {
+            var fieldConfig = new FieldConfig("name");
+
+            fieldConfig.SqlJunction("", (join, arguments, context, node) => { },
+                (join, arguments, context, node) => { });
+
+            fieldConfig.Resolver.Should().Be(DictionaryFieldResolver.Instance);
+        }
+
+        [Fact]
+        public void SqlJunction_WhenFieldResolverIsNotNull_DoesntSetResolver()
+        {
+            var resolver = new FuncFieldResolver<string>(_ => "");
+            var fieldConfig = new FieldConfig("name")
+            {
+                Resolver = resolver
+            };
+
+            fieldConfig.SqlJunction("", (join, arguments, context, node) => { },
+                (join, arguments, context, node) => { });
+
+            fieldConfig.Resolver.Should().Be(resolver);
         }
     }
 }

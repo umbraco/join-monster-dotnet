@@ -3,6 +3,7 @@ using GraphQL;
 using GraphQL.Utilities;
 using JoinMonster.Builders;
 using JoinMonster.Configs;
+using JoinMonster.Resolvers;
 
 namespace JoinMonster
 {
@@ -24,6 +25,8 @@ namespace JoinMonster
 
             var builder = SqlColumnConfigBuilder.Create(columnName ?? fieldConfig.Name);
             fieldConfig.WithMetadata(nameof(SqlColumnConfig), builder.SqlColumnConfig);
+            fieldConfig.Resolver ??= DictionaryFieldResolver.Instance;
+
             return builder;
         }
 
@@ -43,7 +46,7 @@ namespace JoinMonster
         }
 
         /// <summary>
-        /// Set a method that resolves the <c>LEFT JOIN</c> condition.
+        /// Set a method that resolves the <c>JOIN</c> condition.
         /// </summary>
         /// <param name="fieldConfig">The field config.</param>
         /// <param name="join">The JOIN condition resolver.</param>
@@ -53,6 +56,8 @@ namespace JoinMonster
         {
             if (fieldConfig == null) throw new ArgumentNullException(nameof(fieldConfig));
             if (join == null) throw new ArgumentNullException(nameof(join));
+
+            fieldConfig.Resolver ??= DictionaryFieldResolver.Instance;
 
             return fieldConfig.WithMetadata(nameof(JoinDelegate), join);
         }
@@ -72,6 +77,8 @@ namespace JoinMonster
 
             var builder = SqlJunctionConfigBuilder.Create(tableName, fromParent, toChild);
             fieldConfig.WithMetadata(nameof(SqlJunctionConfig), builder.SqlJunctionConfig);
+            fieldConfig.Resolver ??= DictionaryFieldResolver.Instance;
+
             return builder;
         }
 

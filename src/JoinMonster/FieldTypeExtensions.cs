@@ -3,6 +3,7 @@ using GraphQL;
 using GraphQL.Types;
 using JoinMonster.Builders;
 using JoinMonster.Configs;
+using JoinMonster.Resolvers;
 
 namespace JoinMonster
 {
@@ -16,7 +17,7 @@ namespace JoinMonster
         /// </summary>
         /// <param name="fieldType">The <see cref="FieldType"/>.</param>
         /// <param name="columnName">The column name, if null the field name is used.</param>
-        /// <returns>The <see cref="SqlColumnConfigBuilder"/></returns>
+        /// <returns>The <see cref="SqlColumnConfigBuilder"/>.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="fieldType"/> is <c>null</c>.</exception>
         public static SqlColumnConfigBuilder SqlColumn(this FieldType fieldType, string? columnName = null)
         {
@@ -24,6 +25,8 @@ namespace JoinMonster
 
             var builder = SqlColumnConfigBuilder.Create(columnName ?? fieldType.Name);
             fieldType.WithMetadata(nameof(SqlColumnConfig), builder.SqlColumnConfig);
+            fieldType.Resolver ??= DictionaryFieldResolver.Instance;
+
             return builder;
         }
 
@@ -68,7 +71,7 @@ namespace JoinMonster
         }
 
         /// <summary>
-        /// Set a method that resolves the LEFT JOIN condition.
+        /// Set a method that resolves the <c>JOIN</c> condition.
         /// </summary>
         /// <param name="fieldType">The field type.</param>
         /// <param name="join">The JOIN condition resolver.</param>
@@ -78,6 +81,8 @@ namespace JoinMonster
         {
             if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
             if (join == null) throw new ArgumentNullException(nameof(join));
+
+            fieldType.Resolver ??= DictionaryFieldResolver.Instance;
 
             return fieldType.WithMetadata(nameof(JoinDelegate), join);
         }
@@ -110,6 +115,8 @@ namespace JoinMonster
 
             var builder = SqlJunctionConfigBuilder.Create(tableName, fromParent, toChild);
             fieldType.WithMetadata(nameof(SqlJunctionConfig), builder.SqlJunctionConfig);
+            fieldType.Resolver ??= DictionaryFieldResolver.Instance;
+
             return builder;
         }
 
