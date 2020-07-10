@@ -83,7 +83,7 @@ namespace JoinMonster.Language
             var tableName = config.Table;
             var tableAs = fieldName;
 
-            var arguments = HandleArguments(fieldAst);
+            var arguments = HandleArguments(fieldAst, context);
             var grabMany = field.ResolvedType.IsListType();
             var where = field.GetSqlWhere();
             var join = field.GetSqlJoin();
@@ -204,7 +204,7 @@ namespace JoinMonster.Language
         }
 
         private Node HandleColumn(SqlTable sqlTable, Field fieldAst, FieldType field, IGraphType graphType,
-            SqlColumnConfig? config, int depth, IResolveFieldContext userContext)
+            SqlColumnConfig? config, int depth, IResolveFieldContext context)
         {
             var fieldName = fieldAst.Alias ?? fieldAst.Name;
             var columnName = config?.Column ?? fieldAst.Name;
@@ -212,21 +212,25 @@ namespace JoinMonster.Language
 
             var column = new SqlColumn(sqlTable, columnName, fieldName, columnAs).WithLocation(fieldAst.SourceLocation);
 
-            column.Arguments = HandleArguments(fieldAst);
+            column.Arguments = HandleArguments(fieldAst, context);
             column.Expression = config?.Expression;
 
             return column;
         }
 
-        private IReadOnlyDictionary<string, object> HandleArguments(Field fieldAst)
+        private IReadOnlyDictionary<string, object> HandleArguments(Field fieldAst, IResolveFieldContext context)
         {
             var arguments = new Dictionary<string, object>();
-            if (fieldAst.Arguments != null)
+            if (fieldAst.Arguments == null) return arguments;
+            foreach (var arg in fieldAst.Arguments)
             {
-                foreach (var arg in fieldAst.Arguments)
+                var value = arg.Value switch
                 {
-                    arguments.Add(arg.Name, arg.Value.Value);
-                }
+                    VariableReference reference => context.GetArgument<object>(reference.Name),
+                    _ => arg.Value.Value
+                };
+
+                arguments.Add(arg.Name, value);
             }
             return arguments;
         }

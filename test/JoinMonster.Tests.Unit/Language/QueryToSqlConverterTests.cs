@@ -4,6 +4,7 @@ using System.Linq;
 using FluentAssertions;
 using GraphQL;
 using GraphQL.Execution;
+using GraphQL.Language.AST;
 using GraphQL.Resolvers;
 using GraphQL.Types;
 using GraphQL.Utilities;
@@ -306,6 +307,32 @@ namespace JoinMonster.Tests.Unit.Language
                 });
         }
 
+
+        [Fact]
+        public void Convert_WhenQueryHasArgumentsVariables_ExpandsAndAddsArgumentsToSqlTable()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Product")
+                    .SqlTable("products", "id");
+            });
+
+            var query = "query ($id: ID) { product(id: $id) { name } }";
+            var context = CreateResolveFieldContext(schema, query, new Variables{ new Variable{ Name = "id", Value = 5} });
+
+            var converter = new QueryToSqlConverter();
+            var node = converter.Convert(context);
+
+            node.Should()
+                .BeOfType<SqlTable>()
+                .Which.Arguments.Should()
+                .SatisfyRespectively(argument =>
+                {
+                    argument.Key.Should().Be("id");
+                    argument.Value.Should().Be(5);
+                });
+        }
+
         [Fact]
         public void Convert_WithNoContext_ThrowsArgumentNullException()
         {
@@ -554,7 +581,7 @@ type Query {
             });
         }
 
-        private static IResolveFieldContext CreateResolveFieldContext(ISchema schema, string query)
+        private static IResolveFieldContext CreateResolveFieldContext(ISchema schema, string query, Variables variables = null)
         {
             var documentBuilder = new GraphQLDocumentBuilder();
             var document = documentBuilder.Build(query);
@@ -565,7 +592,8 @@ type Query {
                 Document = document,
                 Schema = schema,
                 Fragments = document.Fragments,
-                Operation = document.Operations.First()
+                Operation = document.Operations.First(),
+                Variables = variables
             };
 
             var root = new RootExecutionNode(schema.Query)
