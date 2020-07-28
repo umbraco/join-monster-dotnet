@@ -8,7 +8,7 @@ namespace JoinMonster.Tests.Unit.Stubs
     {
         private readonly SqlTable _node;
 
-        public QueryToSqlConverterStub(SqlTable node = null)
+        public QueryToSqlConverterStub(SqlTable node = null) : base(new DefaultAliasGenerator())
         {
             _node = node;
         }

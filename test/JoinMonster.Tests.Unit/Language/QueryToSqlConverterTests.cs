@@ -18,6 +18,9 @@ namespace JoinMonster.Tests.Unit.Language
 {
     public class QueryToSqlConverterTests
     {
+        private static QueryToSqlConverter CreateSUT() =>
+            new QueryToSqlConverter(new DefaultAliasGenerator());
+
         [Fact]
         public void Convert_WithSimpleQuery_ReturnsSqlTableNode()
         {
@@ -26,7 +29,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ product { id, name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should().BeOfType<SqlTable>();
@@ -40,7 +43,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ product { id, name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()
@@ -57,7 +60,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ product { id, name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()
@@ -74,7 +77,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ product { id, name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()
@@ -91,7 +94,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ product { id, name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()
@@ -111,7 +114,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ product { id, productName:name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()
@@ -134,7 +137,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ product { name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()
@@ -159,7 +162,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ product { name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()
@@ -180,7 +183,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ product { name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()
@@ -201,7 +204,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ product { name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()
@@ -222,7 +225,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ product { id, name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()
@@ -244,7 +247,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ product { name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()
@@ -273,7 +276,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ product { name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()
@@ -294,7 +297,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ product(id: \"1\") { name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()
@@ -320,7 +323,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "query ($id: ID) { product(id: $id) { name } }";
             var context = CreateResolveFieldContext(schema, query, new Variables{ new Variable{ Name = "id", Value = 5} });
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()
@@ -336,7 +339,7 @@ namespace JoinMonster.Tests.Unit.Language
         [Fact]
         public void Convert_WithNoContext_ThrowsArgumentNullException()
         {
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
 
             Action action = () => converter.Convert(null);
 
@@ -354,7 +357,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ product { name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             Action action = () => converter.Convert(context);
 
             action.Should()
@@ -388,7 +391,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ product { name, variants { name } } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()
@@ -418,7 +421,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ product { name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()
@@ -449,7 +452,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ product { variants { price(currency: \"DKK\") } } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()
@@ -486,7 +489,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ product { name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()
@@ -514,7 +517,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ node(id: 1) { id, ...on Product { name } } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()
@@ -539,7 +542,7 @@ namespace JoinMonster.Tests.Unit.Language
             var query = "{ node(id: 1) { id, ...ProductName } } fragment ProductName on Product { name }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = CreateSUT();
             var node = converter.Convert(context);
 
             node.Should()

@@ -65,7 +65,7 @@ namespace JoinMonster.Tests.Unit.Data
             var query = "{ product { name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = new QueryToSqlConverter(new DefaultAliasGenerator());
             var compiler = new SqlCompiler(new SqlDialectStub());
 
             var node = converter.Convert(context);
@@ -86,7 +86,7 @@ namespace JoinMonster.Tests.Unit.Data
             var query = "{ product { id, name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = new QueryToSqlConverter(new DefaultAliasGenerator());
             var compiler = new SqlCompiler(new SqlDialectStub());
 
             var node = converter.Convert(context);
@@ -107,7 +107,7 @@ namespace JoinMonster.Tests.Unit.Data
             var query = "{ product { name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = new QueryToSqlConverter(new DefaultAliasGenerator());
             var compiler = new SqlCompiler(new SqlDialectStub());
 
             var node = converter.Convert(context);
@@ -132,7 +132,7 @@ namespace JoinMonster.Tests.Unit.Data
             var query = "{ product { name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = new QueryToSqlConverter(new DefaultAliasGenerator());
             var compiler = new SqlCompiler(new SqlDialectStub());
 
             var node = converter.Convert(context);
@@ -161,7 +161,7 @@ namespace JoinMonster.Tests.Unit.Data
             var query = "{ product(id: \"3\") { name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = new QueryToSqlConverter(new DefaultAliasGenerator());
             var compiler = new SqlCompiler(new SqlDialectStub());
 
             var node = converter.Convert(context);
@@ -195,7 +195,7 @@ namespace JoinMonster.Tests.Unit.Data
             var query = "{ product { name, variants { edges { node { name } } } } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = new QueryToSqlConverter(new DefaultAliasGenerator());
             var compiler = new SqlCompiler(new SqlDialectStub());
 
             var node = converter.Convert(context);
@@ -226,7 +226,7 @@ namespace JoinMonster.Tests.Unit.Data
             var query = "{ product { name, variants { edges { node { name } } } } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = new QueryToSqlConverter(new DefaultAliasGenerator());
             var compiler = new SqlCompiler(new SqlDialectStub());
 
             var node = converter.Convert(context);
@@ -253,7 +253,7 @@ namespace JoinMonster.Tests.Unit.Data
             var query = "{ product { name, relatedProducts { name } } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = new QueryToSqlConverter(new DefaultAliasGenerator());
             var compiler = new SqlCompiler(new SqlDialectStub());
 
             var node = converter.Convert(context);
@@ -281,7 +281,7 @@ namespace JoinMonster.Tests.Unit.Data
             var query = "{ product { name, relatedProducts { name } } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = new QueryToSqlConverter(new DefaultAliasGenerator());
             var compiler = new SqlCompiler(new SqlDialectStub());
 
             var node = converter.Convert(context);
@@ -306,7 +306,7 @@ namespace JoinMonster.Tests.Unit.Data
             var query = "{ products { name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = new QueryToSqlConverter(new DefaultAliasGenerator());
             var compiler = new SqlCompiler(new SqlDialectStub());
 
             var node = converter.Convert(context);
@@ -332,7 +332,7 @@ namespace JoinMonster.Tests.Unit.Data
             var query = "{ products { name } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = new QueryToSqlConverter(new DefaultAliasGenerator());
             var compiler = new SqlCompiler(new SqlDialectStub());
 
             var node = converter.Convert(context);
@@ -365,7 +365,7 @@ namespace JoinMonster.Tests.Unit.Data
             var query = "{ product { name, relatedProducts { name } } }";
             var context = CreateResolveFieldContext(schema, query);
 
-            var converter = new QueryToSqlConverter();
+            var converter = new QueryToSqlConverter(new DefaultAliasGenerator());
             var compiler = new SqlCompiler(new SqlDialectStub());
 
             var node = converter.Convert(context);
@@ -397,7 +397,7 @@ namespace JoinMonster.Tests.Unit.Data
 
             var joinedOneToManyPaginatedSql = "LEFT JOIN LATERAL (\n  SELECT \"variants\".*, COUNT(*) OVER () AS \"$total\"\n  FROM \"productVariants\" \"variants\"\n  WHERE \"products\".\"id\" = \"variants\".\"productId\"\n  ORDER BY \"variants\".\"id\" ASC\n  LIMIT ALL OFFSET 0\n) \"variants\" ON \"products\".\"id\" = \"variants\".\"productId\"";
 
-            var converter = new QueryToSqlConverter();
+            var converter = new QueryToSqlConverter(new DefaultAliasGenerator());
             var dialect = new SqlDialectStub(joinedOneToManyPaginatedSql: joinedOneToManyPaginatedSql);
             var compiler = new SqlCompiler(dialect);
 
@@ -405,6 +405,27 @@ namespace JoinMonster.Tests.Unit.Data
             var sql = compiler.Compile(node, context);
 
             sql.Sql.Should().Be($"SELECT\n  \"product\".\"id\" AS \"id\",\n  \"product\".\"name\" AS \"name\",\n  \"variants\".\"id\" AS \"variants__id\",\n  \"variants\".\"name\" AS \"variants__name\",\n  \"variants\".\"$total\" AS \"variants__$total\"\nFROM \"products\" AS \"product\"\n{joinedOneToManyPaginatedSql}\nORDER BY \"variants\".\"id\" ASC");
+        }
+
+        [Fact]
+        public void Compile_WithMinifyAliasGenerator_SqlHasMinifiedTableAndColumnNames()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Product")
+                    .SqlTable("products", "id");
+            });
+
+            var query = "{ product { id, name } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = new QueryToSqlConverter(new MinifyAliasGenerator());
+            var compiler = new SqlCompiler(new SqlDialectStub());
+
+            var node = converter.Convert(context);
+            var sql = compiler.Compile(node, context);
+
+            sql.Sql.Should().Be("SELECT\n  \"a\".\"id\" AS \"b\",\n  \"a\".\"name\" AS \"c\"\nFROM \"products\" AS \"a\"");
         }
 
         private static ISchema CreateSimpleSchema(Action<SchemaBuilder> configure = null)

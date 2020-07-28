@@ -15,6 +15,17 @@ namespace JoinMonster.Language
     /// </summary>
     public class QueryToSqlConverter
     {
+        private readonly IAliasGenerator _aliasGenerator;
+
+        /// <summary>
+        /// Creates a new instance of <see cref="QueryToSqlConverter"/>.
+        /// </summary>
+        /// <param name="aliasGenerator">The <see cref="IAliasGenerator"/>.</param>
+        public QueryToSqlConverter(IAliasGenerator aliasGenerator)
+        {
+            _aliasGenerator = aliasGenerator ?? throw new ArgumentNullException(nameof(aliasGenerator));
+        }
+
         /// <summary>
         /// Convert the GraphQL Query Ast to SQL Ast.
         /// </summary>
@@ -81,7 +92,7 @@ namespace JoinMonster.Language
         {
             var fieldName = fieldAst.Alias ?? fieldAst.Name;
             var tableName = config.Table;
-            var tableAs = fieldName;
+            var tableAs = _aliasGenerator.GenerateTableAlias(fieldName);
 
             var arguments = HandleArguments(fieldAst, context);
             var grabMany = field.ResolvedType.IsListType();
@@ -103,18 +114,23 @@ namespace JoinMonster.Language
 
             if (config.UniqueKey.Length == 1)
             {
-                sqlTable.Columns.Add(new SqlColumn(sqlTable, config.UniqueKey[0], config.UniqueKey[0], config.UniqueKey[0], true));
+                var alias = _aliasGenerator.GenerateColumnAlias(config.UniqueKey[0]);
+                sqlTable.Columns.Add(new SqlColumn(sqlTable, config.UniqueKey[0], config.UniqueKey[0], alias, true));
             }
             else
             {
                 var clumsyName = string.Join("#", config.UniqueKey);
-                sqlTable.Columns.Add(new SqlComposite(sqlTable, config.UniqueKey, clumsyName, clumsyName, true));
+                var alias = _aliasGenerator.GenerateColumnAlias(clumsyName);
+                sqlTable.Columns.Add(new SqlComposite(sqlTable, config.UniqueKey, clumsyName, alias, true));
             }
 
             if (config.AlwaysFetch != null)
             {
                 foreach (var column in config.AlwaysFetch)
-                    sqlTable.Columns.Add(new SqlColumn(sqlTable, column, column, column));
+                {
+                    var alias = _aliasGenerator.GenerateColumnAlias(column);
+                    sqlTable.Columns.Add(new SqlColumn(sqlTable, column, column, alias));
+                }
             }
 
             HandleSelections(sqlTable, graphType, fieldAst.SelectionSet.Selections, depth, context);
@@ -208,7 +224,7 @@ namespace JoinMonster.Language
         {
             var fieldName = fieldAst.Alias ?? fieldAst.Name;
             var columnName = config?.Column ?? fieldAst.Name;
-            var columnAs = fieldName;
+            var columnAs = _aliasGenerator.GenerateColumnAlias(fieldName);
 
             var column = new SqlColumn(sqlTable, columnName, fieldName, columnAs).WithLocation(fieldAst.SourceLocation);
 
