@@ -1,3 +1,6 @@
+[![Build Status](https://dev.azure.com/umbraco/Umbraco%20Headless/_apis/build/status/umbraco.join-monster-dotnet?branchName=master)](https://dev.azure.com/umbraco/Umbraco%20Headless/_build/latest?definitionId=263&branchName=master)
+[![NuGet version (JoinMonster)](https://img.shields.io/nuget/v/JoinMonster.svg?style=flat-square)](https://www.nuget.org/packages/JoinMonster/)
+
 # Join Monster for .NET
 
 A .Net implementation of the [Join Monster](https://github.com/join-monster/join-monster) NodeJS library.
