@@ -113,7 +113,7 @@ namespace JoinMonster
         /// <param name="sort">The <c>Sort Key</c> builder.</param>
         /// <returns>The <see cref="FieldConfig"/>.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="fieldConfig"/> or <paramref name="sort"/> is <c>NULL</c>.</exception>
-        public static FieldConfig SqlSortKey(FieldConfig fieldConfig, SortKeyDelegate sort)
+        public static FieldConfig SqlSortKey(this FieldConfig fieldConfig, SortKeyDelegate sort)
         {
             if (fieldConfig == null) throw new ArgumentNullException(nameof(fieldConfig));
             if (sort == null) throw new ArgumentNullException(nameof(sort));

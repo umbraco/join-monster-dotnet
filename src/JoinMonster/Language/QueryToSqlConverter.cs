@@ -133,7 +133,8 @@ namespace JoinMonster.Language
                 }
             }
 
-            HandleSelections(sqlTable, graphType, fieldAst.SelectionSet.Selections, depth, context);
+            if (fieldAst.SelectionSet != null)
+                HandleSelections(sqlTable, graphType, fieldAst.SelectionSet.Selections, depth, context);
 
             sqlTable.ColumnExpression = config.ColumnExpression;
 

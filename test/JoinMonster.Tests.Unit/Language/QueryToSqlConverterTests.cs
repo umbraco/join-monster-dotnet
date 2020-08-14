@@ -557,9 +557,6 @@ namespace JoinMonster.Tests.Unit.Language
         {
             var schema = CreateSimpleSchema(builder =>
             {
-                builder.Types.For("Node")
-                    .SqlTable("nodes", "id");
-
                 builder.Types.For("Product")
                     .SqlTable("products", "id");
             });
@@ -581,11 +578,6 @@ namespace JoinMonster.Tests.Unit.Language
         {
             var schema = CreateSimpleSchema(builder =>
             {
-                builder.Types.For("Node")
-                    .SqlTable("nodes", "id");
-
-                builder.Types.For("Product")
-                    .SqlTable("products", "id");
             });
 
             var query = "{ __schema { queryType { name } } }";
@@ -596,6 +588,30 @@ namespace JoinMonster.Tests.Unit.Language
 
             action.Should().Throw<JoinMonsterException>()
                 .Which.Message.Should().Be("Expected node to be of type 'JoinMonster.Language.AST.SqlTable' but was 'JoinMonster.Language.AST.SqlNoop'.");
+        }
+
+        [Fact]
+        public void Convert_WhenQueryingOnlyPageInfoOnConnection_ShouldOnlyContainEdgeTableIdColumn()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Product")
+                    .SqlTable("products", "id");
+
+            });
+
+            var query = "{ productConnection { pageInfo { startCursor } } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = CreateSUT();
+            var node = converter.Convert(context);
+
+            node
+                .Columns.Should()
+                .Contain(x => x.FieldName == "id")
+                .Which.Parent
+                .Should().BeOfType<SqlTable>()
+                .Which.Name.Should().Be("products");
         }
 
         private static ISchema CreateSimpleSchema(Action<SchemaBuilder> configure = null)
@@ -617,7 +633,25 @@ type Product implements Node {
   variants: [ProductVariant]
 }
 
+type ProductConnection {
+  edges: [ProductEdge]!
+  pageInfo: PageInfo!
+}
+
+type ProductEdge {
+  cursor: String!
+  node: Product
+}
+
+type PageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+}
+
 type Query {
+  productConnection: ProductConnection!
   product(id: ID): Product
   node(id: ID!): Node
 }
