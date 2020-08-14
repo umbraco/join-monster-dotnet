@@ -50,7 +50,7 @@ namespace JoinMonster
                 }
             }
 
-            if (!(sqlAst is SqlTable sqlTable))
+            if (!(sqlAst is SqlTable sqlTable) || sqlTable.Paginate == false)
                 return data;
 
             switch (data)
