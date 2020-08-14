@@ -259,6 +259,9 @@ namespace JoinMonster.Language
                 switch (selection)
                 {
                     case Field fieldAst:
+                        if (fieldAst.Name.StartsWith("__"))
+                            continue;
+
                         var field = graphType.GetField(fieldAst.Name);
                         var node = Convert(parent, fieldAst, field, graphType, ++depth, context);
 

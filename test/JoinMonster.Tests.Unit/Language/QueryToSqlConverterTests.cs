@@ -552,6 +552,52 @@ namespace JoinMonster.Tests.Unit.Language
                 .And.Contain(x => x.FieldName == "id");
         }
 
+        [Fact]
+        public void Convert_WhenQueryHasTypenameField_IgnoresField()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Node")
+                    .SqlTable("nodes", "id");
+
+                builder.Types.For("Product")
+                    .SqlTable("products", "id");
+            });
+
+            var query = "{ product(id: 1) { __typename, id } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = CreateSUT();
+            var node = converter.Convert(context);
+
+            node.Should()
+                .BeOfType<SqlTable>()
+                .Which.Columns.Should()
+                .NotContain(x => x.FieldName == "__typename");
+        }
+
+        [Fact]
+        public void Convert_WhenQueryHasIntrospectionQuery_ThrowsException()
+        {
+            var schema = CreateSimpleSchema(builder =>
+            {
+                builder.Types.For("Node")
+                    .SqlTable("nodes", "id");
+
+                builder.Types.For("Product")
+                    .SqlTable("products", "id");
+            });
+
+            var query = "{ __schema { queryType { name } } }";
+            var context = CreateResolveFieldContext(schema, query);
+
+            var converter = CreateSUT();
+            Action action = () => converter.Convert(context);
+
+            action.Should().Throw<JoinMonsterException>()
+                .Which.Message.Should().Be("Expected node to be of type 'JoinMonster.Language.AST.SqlTable' but was 'JoinMonster.Language.AST.SqlNoop'.");
+        }
+
         private static ISchema CreateSimpleSchema(Action<SchemaBuilder> configure = null)
         {
             return Schema.For(@"
