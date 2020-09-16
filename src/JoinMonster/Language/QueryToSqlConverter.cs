@@ -243,7 +243,7 @@ namespace JoinMonster.Language
             {
                 var value = arg.Value switch
                 {
-                    VariableReference reference => context.GetArgument<object>(reference.Name),
+                    VariableReference reference => context.GetArgument<object>(arg.Name),
                     _ => arg.Value.Value
                 };
 
