@@ -13,7 +13,7 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void Ctor_WhenOrderByIsNull_ThrowsException()
         {
-            Action action = () => new ThenOrderByBuilder(null);
+            Action action = () => new ThenOrderByBuilder("products", null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
@@ -24,7 +24,7 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void ThenBy_WhenColumnIsNull_ThrowsException()
         {
-            var builder = new ThenOrderByBuilder(new OrderBy("name", SortDirection.Ascending));
+            var builder = new ThenOrderByBuilder("products", new OrderBy("products", "name", SortDirection.Ascending));
 
             Action action = () => builder.ThenBy(null);
 
@@ -37,7 +37,7 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void ThenByDescending_WhenColumnIsNull_ThrowsException()
         {
-            var builder = new ThenOrderByBuilder(new OrderBy("name", SortDirection.Ascending));
+            var builder = new ThenOrderByBuilder("products", new OrderBy("products", "name", SortDirection.Ascending));
 
             Action action = () => builder.ThenByDescending(null);
 
@@ -50,43 +50,43 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void ThenBy_WithColumnName_SetsThenByOnOrderBy()
         {
-            var orderBy = new OrderBy("name", SortDirection.Ascending);
-            var builder = new ThenOrderByBuilder(orderBy);
+            var orderBy = new OrderBy("products", "name", SortDirection.Ascending);
+            var builder = new ThenOrderByBuilder("products", orderBy);
 
             builder.ThenBy("id");
 
-            orderBy.ThenBy.Should().BeEquivalentTo(new OrderBy("id", SortDirection.Ascending));
+            orderBy.ThenBy.Should().BeEquivalentTo(new OrderBy("products", "id", SortDirection.Ascending));
         }
 
         [Fact]
         public void ThenBy_WithColumnName_SetsOrderByProperty()
         {
-            var builder = new ThenOrderByBuilder(new OrderBy("id", SortDirection.Ascending));
+            var builder = new ThenOrderByBuilder("products", new OrderBy("products", "id", SortDirection.Ascending));
 
             builder.ThenBy("id");
 
-            builder.OrderBy.Should().BeEquivalentTo(new OrderBy("id", SortDirection.Ascending));
+            builder.OrderBy.Should().BeEquivalentTo(new OrderBy("products", "id", SortDirection.Ascending));
         }
 
         [Fact]
         public void ThenByDescending_WithColumnName_SetsThenByOnOrderBy()
         {
-            var orderBy = new OrderBy("name", SortDirection.Ascending);
-            var builder = new ThenOrderByBuilder(orderBy);
+            var orderBy = new OrderBy("products", "name", SortDirection.Ascending);
+            var builder = new ThenOrderByBuilder("products", orderBy);
 
             builder.ThenByDescending("id");
 
-            orderBy.ThenBy.Should().BeEquivalentTo(new OrderBy("id", SortDirection.Descending));
+            orderBy.ThenBy.Should().BeEquivalentTo(new OrderBy("products", "id", SortDirection.Descending));
         }
 
         [Fact]
         public void ThenByDescending_WithColumnName_SetsOrderByColumn()
         {
-            var builder = new ThenOrderByBuilder(new OrderBy("id", SortDirection.Ascending));
+            var builder = new ThenOrderByBuilder("products", new OrderBy("products", "id", SortDirection.Ascending));
 
             builder.ThenByDescending("id");
 
-            builder.OrderBy.Should().BeEquivalentTo(new OrderBy("id", SortDirection.Descending));
+            builder.OrderBy.Should().BeEquivalentTo(new OrderBy("products", "id", SortDirection.Descending));
         }
     }
 }

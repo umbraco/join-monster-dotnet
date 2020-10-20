@@ -648,7 +648,7 @@ interface Node {
 type ProductVariant implements Node {
   id: ID!
   name: String
-  price: Decimal
+  price(currency: String): Decimal
 }
 
 type Product implements Node {

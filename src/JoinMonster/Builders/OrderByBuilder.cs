@@ -1,3 +1,4 @@
+using System;
 using JoinMonster.Configs;
 using JoinMonster.Data;
 using JoinMonster.Language.AST;
@@ -9,10 +10,12 @@ namespace JoinMonster.Builders
     /// </summary>
     public class OrderByBuilder
     {
-        internal OrderByBuilder()
+        internal OrderByBuilder(string table)
         {
+            Table = table ?? throw new ArgumentNullException(nameof(table));
         }
 
+        public string Table { get; }
         internal OrderBy? OrderBy { get; private set; }
 
         /// <summary>
@@ -22,8 +25,8 @@ namespace JoinMonster.Builders
         /// <returns>The <see cref="ThenOrderByBuilder"/>.</returns>
         public ThenOrderByBuilder By(string column)
         {
-            OrderBy = new OrderBy(column, SortDirection.Ascending);
-            return new ThenOrderByBuilder(OrderBy);
+            OrderBy = new OrderBy(Table, column, SortDirection.Ascending);
+            return new ThenOrderByBuilder(Table, OrderBy);
         }
 
         /// <summary>
@@ -33,8 +36,8 @@ namespace JoinMonster.Builders
         /// <returns>The <see cref="ThenOrderByBuilder"/>.</returns>
         public ThenOrderByBuilder ByDescending(string column)
         {
-            OrderBy = new OrderBy(column, SortDirection.Descending);
-            return new ThenOrderByBuilder(OrderBy);
+            OrderBy = new OrderBy(Table, column, SortDirection.Descending);
+            return new ThenOrderByBuilder(Table, OrderBy);
         }
     }
 }

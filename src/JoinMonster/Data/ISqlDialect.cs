@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using GraphQL;
+using JoinMonster.Builders.Clauses;
 using JoinMonster.Language.AST;
 
 namespace JoinMonster.Data
@@ -32,11 +33,11 @@ namespace JoinMonster.Data
         /// <param name="arguments">The arguments.</param>
         /// <param name="context">The context.</param>
         /// <param name="tables">The tables builder.</param>
-        /// <param name="parameters">The sql parameters.</param>
+        /// <param name="compilerContext">The sql compiler context.</param>
         /// <param name="joinCondition">The join condition if any.</param>
         void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
             IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
-            IDictionary<string, object> parameters, string? joinCondition);
+            SqlCompilerContext compilerContext , string? joinCondition);
 
         /// <summary>
         /// Handles pagination at root.
@@ -46,8 +47,11 @@ namespace JoinMonster.Data
         /// <param name="arguments">The arguments.</param>
         /// <param name="context">The context.</param>
         /// <param name="tables">The tables builder.</param>
-        /// <param name="parameters">The sql parameters.</param>
+        /// <param name="compilerContext">The sql compiler context.</param>
         void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
-            IResolveFieldContext context, ICollection<string> tables, IDictionary<string, object> parameters);
+            IResolveFieldContext context, ICollection<string> tables, SqlCompilerContext compilerContext);
+
+        string CompileConditions(IEnumerable<WhereCondition> conditions, SqlCompilerContext context);
+        string CompileOrderBy(OrderBy junctionOrderBy);
     }
 }

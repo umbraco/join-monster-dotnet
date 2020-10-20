@@ -13,7 +13,7 @@ namespace JoinMonster.Configs
         /// </summary>
         /// <param name="table">The table name.</param>
         /// <param name="uniqueKey">The unique key columns.</param>
-        public SqlTableConfig(string table, string[] uniqueKey)
+        public SqlTableConfig(TableExpressionDelegate table, string[] uniqueKey)
         {
             Table = table ?? throw new ArgumentNullException(nameof(table));
             UniqueKey = uniqueKey ?? throw new ArgumentNullException(nameof(uniqueKey));
@@ -22,7 +22,7 @@ namespace JoinMonster.Configs
         /// <summary>
         /// The table name.
         /// </summary>
-        public string Table { get; }
+        public TableExpressionDelegate Table { get; }
 
         /// <summary>
         /// The unique key columns.

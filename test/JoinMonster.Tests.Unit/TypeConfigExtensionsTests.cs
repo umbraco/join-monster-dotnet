@@ -23,7 +23,7 @@ namespace JoinMonster.Tests.Unit
 
             var builder = typeConfig.SqlTable("product", "id");
 
-            builder.SqlTableConfig.Table.Should().Be("product");
+            builder.SqlTableConfig.Table(null, null).Should().Be("product");
         }
 
         [Fact]

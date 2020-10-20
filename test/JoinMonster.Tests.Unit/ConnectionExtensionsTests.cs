@@ -74,7 +74,7 @@ namespace JoinMonster.Tests.Unit
         public void SqlOrder_WithOrder_SetsOrderOnFieldType()
         {
             void Order(OrderByBuilder order, IReadOnlyDictionary<string, object> arguments,
-                IResolveFieldContext context) => order.By("id");
+                IResolveFieldContext context, SqlTable sqlTable) => order.By("id");
 
             var builder = ConnectionBuilder.Create<ObjectGraphType, object>().SqlOrder(Order);
 

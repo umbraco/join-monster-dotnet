@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GraphQL;
+using GraphQL.Execution;
 using GraphQL.Language.AST;
 using GraphQL.Types;
 using JoinMonster.Builders;
@@ -90,11 +91,12 @@ namespace JoinMonster.Language
         private Node HandleTable(Node? parent, Field fieldAst, FieldType field, IComplexGraphType graphType,
             SqlTableConfig config, int depth, IResolveFieldContext context)
         {
+            var arguments = HandleArguments(field, fieldAst, context);
+
             var fieldName = fieldAst.Alias ?? fieldAst.Name;
-            var tableName = config.Table;
+            var tableName = config.Table(arguments, context);
             var tableAs = _aliasGenerator.GenerateTableAlias(fieldName);
 
-            var arguments = HandleArguments(fieldAst, context);
             var grabMany = field.ResolvedType.IsListType();
             var where = field.GetSqlWhere();
             var join = field.GetSqlJoin();
@@ -145,15 +147,15 @@ namespace JoinMonster.Language
 
             if (orderBy != null)
             {
-                var builder = new OrderByBuilder();
-                orderBy(builder, arguments, context);
+                var builder = new OrderByBuilder(sqlTable.As);
+                orderBy(builder, arguments, context, sqlTable);
                 sqlTable.OrderBy = builder.OrderBy;
             }
 
             if (sortKey != null)
             {
-                var builder = new SortKeyBuilder();
-                sortKey(builder, arguments, context);
+                var builder = new SortKeyBuilder(sqlTable.As, _aliasGenerator);
+                sortKey(builder, arguments, context,sqlTable);
                 sqlTable.SortKey = builder.SortKey;
             }
 
@@ -175,15 +177,15 @@ namespace JoinMonster.Language
 
                 if (junction.OrderBy != null)
                 {
-                    var builder = new OrderByBuilder();
-                    junction.OrderBy(builder, arguments, context);
+                    var builder = new OrderByBuilder(tableAs);
+                    junction.OrderBy(builder, arguments, context, sqlTable);
                     sqlTable.Junction.OrderBy = builder.OrderBy;
                 }
 
                 if (junction.SortKey != null)
                 {
-                    var builder = new SortKeyBuilder();
-                    junction.SortKey(builder, arguments, context);
+                    var builder = new SortKeyBuilder(tableAs, _aliasGenerator);
+                    junction.SortKey(builder, arguments, context, sqlTable);
                     sqlTable.Junction.SortKey = builder.SortKey;
                 }
             }
@@ -203,7 +205,7 @@ namespace JoinMonster.Language
 
                 foreach (var column in sortKey.Key)
                 {
-                    var newChild = new SqlColumn(sqlTable, column, column, column);
+                    var newChild = new SqlColumn(sqlTable, column.Key, column.Key, column.Value);
                     if (sqlTable.SortKey == null && sqlTable.Junction != null)
                         newChild.FromOtherTable = sqlTable.Junction.As;
 
@@ -229,27 +231,16 @@ namespace JoinMonster.Language
 
             var column = new SqlColumn(sqlTable, columnName, fieldName, columnAs).WithLocation(fieldAst.SourceLocation);
 
-            column.Arguments = HandleArguments(fieldAst, context);
+            column.Arguments = HandleArguments(field, fieldAst, context);
             column.Expression = config?.Expression;
 
             return column;
         }
 
-        private IReadOnlyDictionary<string, object> HandleArguments(Field fieldAst, IResolveFieldContext context)
+        private IReadOnlyDictionary<string, object> HandleArguments(FieldType fieldType, Field fieldAst, IResolveFieldContext context)
         {
-            var arguments = new Dictionary<string, object>();
-            if (fieldAst.Arguments == null) return arguments;
-            foreach (var arg in fieldAst.Arguments)
-            {
-                var value = arg.Value switch
-                {
-                    VariableReference reference => context.GetArgument<object>(arg.Name),
-                    _ => arg.Value.Value
-                };
-
-                arguments.Add(arg.Name, value);
-            }
-            return arguments;
+            return ExecutionHelper.GetArgumentValues(context.Schema, fieldType.Arguments, fieldAst.Arguments,
+                context.Variables) ?? new Dictionary<string, object>();
         }
 
         private void HandleSelections(SqlTable parent, IComplexGraphType graphType, IEnumerable<ISelection> selections,

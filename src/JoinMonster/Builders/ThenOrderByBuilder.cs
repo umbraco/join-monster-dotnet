@@ -10,11 +10,13 @@ namespace JoinMonster.Builders
     /// </summary>
     public class ThenOrderByBuilder
     {
-        internal ThenOrderByBuilder(OrderBy orderBy)
+        internal ThenOrderByBuilder(string table, OrderBy orderBy)
         {
+            Table = table ?? throw new ArgumentNullException(nameof(table));
             OrderBy = orderBy ?? throw new ArgumentNullException(nameof(orderBy));
         }
 
+        public string Table { get; }
         internal OrderBy OrderBy { get; private set; }
 
         /// <summary>
@@ -24,7 +26,7 @@ namespace JoinMonster.Builders
         /// <returns>The <see cref="ThenOrderByBuilder"/>.</returns>
         public ThenOrderByBuilder ThenBy(string column)
         {
-            OrderBy = OrderBy.ThenBy = new OrderBy(column, SortDirection.Ascending);
+            OrderBy = OrderBy.ThenBy = new OrderBy(Table, column, SortDirection.Ascending);
             return this;
         }
 
@@ -35,7 +37,7 @@ namespace JoinMonster.Builders
         /// <returns>The <see cref="ThenOrderByBuilder"/>.</returns>
         public ThenOrderByBuilder ThenByDescending(string column)
         {
-            OrderBy = OrderBy.ThenBy = new OrderBy(column, SortDirection.Descending);
+            OrderBy = OrderBy.ThenBy = new OrderBy(Table, column, SortDirection.Descending);
             return this;
         }
     }

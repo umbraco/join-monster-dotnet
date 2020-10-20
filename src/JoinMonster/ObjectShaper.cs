@@ -33,9 +33,9 @@ namespace JoinMonster
             {
                 foreach (var key in node.SortKey.Key)
                 {
-                    properties.Add(new Property(key)
+                    properties.Add(new Property(key.Key)
                     {
-                        Column = $"{prefix}{key}",
+                        Column = $"{prefix}{key.Value}",
                     });
                 }
             }

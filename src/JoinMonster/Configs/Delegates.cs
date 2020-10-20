@@ -10,6 +10,14 @@ namespace JoinMonster.Configs
     /// <summary>
     /// Generates a SQL expression.
     /// </summary>
+    /// <param name="arguments">The arguments.</param>
+    /// <param name="context">The context.</param>
+    /// <returns>A RAW SQL expression.</returns>
+    public delegate string TableExpressionDelegate(IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context);
+
+    /// <summary>
+    /// Generates a SQL expression.
+    /// </summary>
     /// <param name="tableAlias">An auto-generated table alias. Already quoted.</param>
     /// <param name="column">The column name. Not quoted.</param>
     /// <param name="arguments">The arguments.</param>
@@ -52,7 +60,8 @@ namespace JoinMonster.Configs
     /// <param name="order">The <see cref="OrderByBuilder"/>.</param>
     /// <param name="arguments">The arguments.</param>
     /// <param name="context">The context.</param>
-    public delegate void OrderByDelegate(OrderByBuilder order, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context);
+    /// <param name="sqlAstNode">The SQL AST node.</param>
+    public delegate void OrderByDelegate(OrderByBuilder order, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, SqlTable sqlAstNode);
 
     /// <summary>
     /// Defines a sort key that is used when doing keyset pagination.
@@ -60,7 +69,8 @@ namespace JoinMonster.Configs
     /// <param name="sort">The <see cref="SortKeyBuilder"/>.</param>
     /// <param name="arguments">The arguments.</param>
     /// <param name="context">The context.</param>
-    public delegate void SortKeyDelegate(SortKeyBuilder sort, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context);
+    /// <param name="sqlAstNode">The SQL AST node.</param>
+    public delegate void SortKeyDelegate(SortKeyBuilder sort, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, SqlTable sqlAstNode);
 
     /// <summary>
     /// Takes the SQL string and the parameters and sends them to a database.

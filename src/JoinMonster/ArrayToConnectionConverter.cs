@@ -68,7 +68,7 @@ namespace JoinMonster
                     var arguments = sqlTable.Arguments;
 
                     // $total was a special column for determining the total number of items
-                    int? arrayLength = dataArr.Count > 0 && dataArr[0].TryGetValue("$total", out var total) ? System.Convert.ToInt32(total) : (int?) null;
+                    var arrayLength = dataArr.Count > 0 && dataArr[0].TryGetValue("$total", out var total) ? System.Convert.ToInt32(total) : (int?) null;
 
                     var sortKey = sqlTable.SortKey ?? sqlTable.Junction?.SortKey;
 
@@ -98,10 +98,10 @@ namespace JoinMonster
 
                     var edges = dataArr.Select(obj =>
                     {
-                        var key = sortKey.Key;
+                        var key = sortKey!.Key;
                         foreach (var column in key)
                         {
-                            cursor[column] = obj[column];
+                            cursor[column.Key] = obj[column.Key];
                         }
 
                         return new Edge<object> {Cursor = ConnectionUtils.ObjectToCursor(cursor), Node = obj};
