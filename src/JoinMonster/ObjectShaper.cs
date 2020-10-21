@@ -29,15 +29,16 @@ namespace JoinMonster
 
             var properties = new Properties();
 
-            if (node.SortKey != null)
+            var sortKey = node.SortKey ?? node.Junction?.SortKey;
+            if (sortKey != null)
             {
-                foreach (var key in node.SortKey.Key)
+                do
                 {
-                    properties.Add(new Property(key.Key)
+                    properties.Add(new Property(sortKey.Column)
                     {
-                        Column = $"{prefix}{key.Value}",
+                        Column = $"{prefix}{sortKey.As}",
                     });
-                }
+                } while ((sortKey = sortKey.ThenBy) != null);
             }
 
             foreach (var child in node.Children)

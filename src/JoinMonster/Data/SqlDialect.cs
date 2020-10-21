@@ -50,9 +50,7 @@ namespace JoinMonster.Data
                 var compiled = CompileCondition(condition, context);
 
                 if (string.IsNullOrEmpty(compiled))
-                {
                     continue;
-                }
 
                 var boolOperator = i == 0 ? "" : condition.IsOr ? " OR " : " AND ";
                 result.AppendFormat("{0}{1}", boolOperator, compiled);
@@ -68,10 +66,11 @@ namespace JoinMonster.Data
 
             var orders = new List<string>();
 
+            var order = orderBy;
             do
             {
-                orders.Add($"{Quote(orderBy.Table)}.{Quote(orderBy.Column)} {(orderBy.Direction == SortDirection.Ascending ? "ASC" : "DESC")}");
-            } while ((orderBy = orderBy.ThenBy) != null);
+                orders.Add($"{Quote(order.Table)}.{Quote(order.Column)} {(order.Direction == SortDirection.Ascending ? "ASC" : "DESC")}");
+            } while ((order = order.ThenBy) != null);
 
             return string.Join(", ", orders);
         }
@@ -116,10 +115,13 @@ namespace JoinMonster.Data
         protected virtual string CompileCondition(RawCondition condition, SqlCompilerContext context)
         {
             var sql = condition.Sql;
-            foreach (var parameter in condition.Parameters)
+            if (condition.Parameters != null)
             {
-                var parameterName = context.AddParameter(parameter.Value);
-                sql = sql.Replace($"@{parameter.Key}", parameterName);
+                foreach (var parameter in condition.Parameters)
+                {
+                    var parameterName = context.AddParameter(parameter.Value);
+                    sql = sql.Replace($"@{parameter.Key}", parameterName);
+                }
             }
 
             return sql;
@@ -238,26 +240,27 @@ namespace JoinMonster.Data
             if (sortTable == null || sortKey == null)
                 throw new JoinMonsterException("Cannot do keyset paging without an SortKey clause.");
 
-            var descending = sortKey.Direction == SortDirection.Descending;
-            if (arguments.ContainsKey("last"))
-                descending = !descending;
-
             var builder = new OrderByBuilder(sortTable);
             ThenOrderByBuilder? thenBy = null;
 
-            foreach (var key in sortKey.Key)
+            var sort = sortKey;
+            do
             {
+                var descending = sort.Direction == SortDirection.Descending;
+                if (arguments.ContainsKey("last"))
+                    descending = !descending;
+
                 if (thenBy == null)
                 {
-                    thenBy = descending ? builder.ByDescending(key.Key) : builder.By(key.Key);
+                    thenBy = descending ? builder.ByDescending(sort.Column) : builder.By(sort.Column);
                 }
                 else
                 {
-                    if (descending) thenBy.ThenByDescending(key.Key);
-                    else thenBy.ThenBy(key.Key);
+                    thenBy = descending ? thenBy.ThenByDescending(sort.Column) : thenBy.ThenBy(sort.Column);
                 }
-            }
+            } while ((sort = sort.ThenBy) != null);
 
+            var isBefore = arguments.ContainsKey("last");
             var order = builder.OrderBy == null ? "" : CompileOrderBy(builder.OrderBy);
             var limit = -1;
             var offset = 0;
@@ -269,13 +272,13 @@ namespace JoinMonster.Data
                 if (arguments.TryGetValue("after", out var after))
                 {
                     var cursorObj = ConnectionUtils.CursorToObject((string) after);
-                    ValidateCursor(cursorObj, sortKey.Key);
-                    whereCondition = SortKeyToWhereCondition(cursorObj, descending, sortTable);
+                    ValidateCursor(cursorObj, GetKeys(sortKey));
+                    whereCondition = SortKeyToWhereCondition(cursorObj, isBefore, sortTable);
+                }
 
-                    if (arguments.ContainsKey("before"))
-                    {
-                        throw new JoinMonsterException("Using 'before' with 'first' is nonsensical.");
-                    }
+                if (arguments.ContainsKey("before"))
+                {
+                    throw new JoinMonsterException("Using 'before' with 'first' is nonsensical.");
                 }
             }
             else if (arguments.TryGetValue("last", out var last))
@@ -284,8 +287,8 @@ namespace JoinMonster.Data
                 if (arguments.TryGetValue("before", out var before))
                 {
                     var cursorObj = ConnectionUtils.CursorToObject((string) before);
-                    ValidateCursor(cursorObj, sortKey.Key);
-                    whereCondition = SortKeyToWhereCondition(cursorObj, descending, sortTable);
+                    ValidateCursor(cursorObj, GetKeys(sortKey));
+                    whereCondition = SortKeyToWhereCondition(cursorObj, isBefore, sortTable);
                 }
 
                 if (arguments.ContainsKey("after"))
@@ -297,14 +300,14 @@ namespace JoinMonster.Data
             return (limit, order, whereCondition);
         }
 
-        // the cursor contains the sort keys. it needs to match the keys specified in the `sortKey` on this field in the schema
-        private void ValidateCursor(IDictionary<string, object> cursorObj, IDictionary<string, string> expectedKeys)
-        {
-            var actualKeys = cursorObj.Keys;
-            var expectedKeySet = new HashSet<string>(expectedKeys.Select(x => x.Key));
-            var actualKeySet = new HashSet<string>(actualKeys);
 
-            foreach (var key in actualKeys)
+        // the cursor contains the sort keys. it needs to match the keys specified in the `sortKey` on this field in the schema
+        private void ValidateCursor(IDictionary<string, object> cursorObj, IEnumerable<string> expectedKeys)
+        {
+            var expectedKeySet = new HashSet<string>(expectedKeys);
+            var actualKeySet = new HashSet<string>(cursorObj.Keys);
+
+            foreach (var key in actualKeySet)
             {
                 if (!expectedKeySet.Contains(key))
                 {
@@ -312,33 +315,42 @@ namespace JoinMonster.Data
                 }
             }
 
-            foreach (var key in expectedKeys)
+            foreach (var key in expectedKeySet)
             {
-                if (!actualKeySet.Contains(key.Key))
+                if (!actualKeySet.Contains(key))
                 {
                     throw new JoinMonsterException($"Invalid cursor. The column '{key}' is not in the cursor.");
                 }
             }
         }
 
-        // take the sort key and translate that for the where clause
-        private WhereCondition SortKeyToWhereCondition(IDictionary<string, object> keyObj, bool descending, string sortTable)
+        private IEnumerable<string> GetKeys(SortKey? sortKey)
         {
-            var sortColumns = new List<string>();
-            var parameters = new Dictionary<string, object>{};
+            if (sortKey == null)
+                return Enumerable.Empty<string>();
+
+            var keys = new List<string>();
+
+            do
+            {
+                keys.Add(sortKey.Column);
+            } while ((sortKey = sortKey.ThenBy) != null);
+
+            return keys;
+        }
+
+        // take the sort key and translate that for the where clause
+        private WhereCondition SortKeyToWhereCondition(IDictionary<string, object> keyObj, bool descending,
+            string sortTable)
+        {
+            var sortColumns = string.Join(", ", keyObj.Keys.Select(x => $"{Quote(sortTable)}.{Quote(x)}"));
+            var parameters = keyObj
+                .Select((kvp, index) => new {kvp, index})
+                .ToDictionary(x => $"p{x.index}", x => PrepareValue(x.kvp.Value));
+
             var op = descending ? "<" : ">";
 
-            foreach (var kvp in keyObj)
-            {
-                var key = kvp.Key;
-                var value = PrepareValue(kvp.Value);
-                var parameterKey = $"p{parameters.Count}";
-
-                sortColumns.Add($"{Quote(sortTable)}.{Quote(key)} {op} @{parameterKey}");
-                parameters.Add(parameterKey, value);
-            }
-
-            return new RawCondition(string.Join(" AND ", sortColumns), parameters);
+            return new RawCondition($"({sortColumns}) {op} ({string.Join(", ", parameters.Keys.Select(x => $"@{x}"))})", parameters);
         }
 
         private static object PrepareValue(object value)
@@ -348,10 +360,18 @@ namespace JoinMonster.Data
                 switch (element.ValueKind)
                 {
                     case JsonValueKind.Array:
+                    {
                         var result = element.EnumerateArray().Select(x => PrepareValue(x)).ToList();
                         return CastArray(result);
+                    }
                     case JsonValueKind.String:
-                        return element.GetString();
+                    {
+                        var result = element.GetString();
+                        if (Guid.TryParse(result, out var guid))
+                            return guid;
+                        return result;
+                    }
+
                     case JsonValueKind.Number:
                         if (element.TryGetInt32(out var intValue))
                             return intValue;
@@ -384,6 +404,7 @@ namespace JoinMonster.Data
                 decimal _ => result.Cast<decimal>().ToList(),
                 DateTime _ => result.Cast<DateTime>().ToList(),
                 bool _ => result.Cast<bool>().ToList(),
+                Guid _ => result.Cast<Guid>().ToList(),
                 _ => result.Cast<string>().ToList()
             };
         }

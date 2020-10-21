@@ -47,14 +47,14 @@ namespace JoinMonster.Builders.Clauses
 
     public class RawCondition : WhereCondition
     {
-        public RawCondition(string sql, IDictionary<string, object> parameters)
+        public RawCondition(string sql, IDictionary<string, object>? parameters)
         {
             Sql = sql ?? throw new ArgumentNullException(nameof(sql));
-            Parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
+            Parameters = parameters;
         }
 
         public string Sql { get; }
-        public IDictionary<string, object> Parameters { get; }
+        public IDictionary<string, object>? Parameters { get; }
     }
 
     public class NestedCondition : WhereCondition

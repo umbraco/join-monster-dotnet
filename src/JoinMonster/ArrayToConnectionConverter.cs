@@ -98,11 +98,11 @@ namespace JoinMonster
 
                     var edges = dataArr.Select(obj =>
                     {
-                        var key = sortKey!.Key;
-                        foreach (var column in key)
+                        var sort = sortKey!;
+                        do
                         {
-                            cursor[column.Key] = obj[column.Key];
-                        }
+                            cursor[sort.Column] = obj[sort.Column];
+                        } while ((sort = sort.ThenBy) != null);
 
                         return new Edge<object> {Cursor = ConnectionUtils.ObjectToCursor(cursor), Node = obj};
                     }).ToList();
@@ -134,7 +134,7 @@ namespace JoinMonster
                         offset = ConnectionUtils.CursorToOffset((string) after);
 
                     // $total was a special column for determining the total number of items
-                    int? arrayLength = dataArr.Count > 0 && dataArr[0].TryGetValue("$total", out var total) ? System.Convert.ToInt32(total) : (int?) null;
+                    var arrayLength = dataArr.Count > 0 && dataArr[0].TryGetValue("$total", out var total) ? System.Convert.ToInt32(total) : (int?) null;
 
                     var connection = ConnectionFromArraySlice(dataArr, arguments, offset, arrayLength);
                     if (arrayLength.HasValue)

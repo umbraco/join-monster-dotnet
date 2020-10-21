@@ -203,14 +203,15 @@ namespace JoinMonster.Language
                 var sortKey = sqlTable.SortKey ?? sqlTable.Junction?.SortKey;
                 if (sortKey == null) return;
 
-                foreach (var column in sortKey.Key)
+                do
                 {
-                    var newChild = new SqlColumn(sqlTable, column.Key, column.Key, column.Value);
+
+                    var newChild = new SqlColumn(sqlTable, sortKey.Column, sortKey.Column, sortKey.As);
                     if (sqlTable.SortKey == null && sqlTable.Junction != null)
                         newChild.FromOtherTable = sqlTable.Junction.As;
 
                     sqlTable.Columns.Add(newChild);
-                }
+                } while ((sortKey = sortKey.ThenBy) != null);
             }
             else if (sqlTable.OrderBy != null || sqlTable.Junction?.OrderBy != null)
             {

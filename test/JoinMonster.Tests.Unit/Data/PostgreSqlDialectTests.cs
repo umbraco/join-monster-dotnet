@@ -90,7 +90,7 @@ namespace JoinMonster.Tests.Unit.Data
             {
                 Join = (join, _, __, ___) => join.On("id", "productId"),
                 OrderBy = new OrderBy("products", "id", SortDirection.Ascending),
-                SortKey = new SortKey("products", new Dictionary<string, string>{{"id", "id"}}, SortDirection.Ascending),
+                SortKey = new SortKey("products", "id", "id", SortDirection.Ascending),
                 Where = (where, _, __, ___) => where.Column("id", 1, "<>")
 
             };
@@ -125,8 +125,7 @@ namespace JoinMonster.Tests.Unit.Data
                 true)
             {
                 Join = (join, _, __, ___) => join.On("id", "productId"),
-                SortKey = new SortKey("products", new Dictionary<string, string> {{"id", "id"}},
-                    SortDirection.Descending),
+                SortKey = new SortKey("products", "id", "id", SortDirection.Descending),
                 Where = (where, _, __, ___) => where.Column("id", 1, "<>")
 
             };
@@ -149,7 +148,7 @@ namespace JoinMonster.Tests.Unit.Data
                     .Contain(@"LEFT JOIN LATERAL (
   SELECT ""variants"".*
   FROM ""variants"" ""variants""
-  WHERE ""products"".""id"" = ""variants"".""productId"" AND ""variants"".""id"" <> @p0 AND ""variants"".""id"" < @p1
+  WHERE ""products"".""id"" = ""variants"".""productId"" AND ""variants"".""id"" <> @p0 AND (""variants"".""id"") > (@p1)
   ORDER BY ""variants"".""id"" DESC
   LIMIT 3
 ) ""variants"" ON ""products"".""id"" = ""variants"".""productId""");
@@ -174,7 +173,7 @@ namespace JoinMonster.Tests.Unit.Data
             {
                 Join = (join, _, __, ____) => join.On("id", "productId"),
                 OrderBy = new OrderBy("products", "id", SortDirection.Ascending),
-                SortKey = new SortKey("products", new Dictionary<string, string>{{"id", "id"}}, SortDirection.Ascending),
+                SortKey = new SortKey("products", "id", "id", SortDirection.Ascending),
                 Where = (where, _, __, ___) => where.Column("id", 1, "<>")
             };
             node.AddColumn("id", "id", "id", true);
@@ -196,7 +195,7 @@ namespace JoinMonster.Tests.Unit.Data
                     .Contain(@"LEFT JOIN LATERAL (
   SELECT ""variants"".*
   FROM ""variants"" ""variants""
-  WHERE ""products"".""id"" = ""variants"".""productId"" AND ""variants"".""id"" <> @p0 AND ""variants"".""id"" < @p1
+  WHERE ""products"".""id"" = ""variants"".""productId"" AND ""variants"".""id"" <> @p0 AND (""variants"".""id"") < (@p1)
   ORDER BY ""variants"".""id"" DESC
   LIMIT 6
 ) ""variants"" ON ""products"".""id"" = ""variants"".""productId""");
@@ -256,8 +255,7 @@ namespace JoinMonster.Tests.Unit.Data
                 true)
             {
                 OrderBy = new OrderBy("products", "id", SortDirection.Ascending),
-                SortKey = new SortKey("products", new Dictionary<string, string> {{"id", "id"}},
-                    SortDirection.Ascending),
+                SortKey = new SortKey("products", "id", "id", SortDirection.Ascending),
                 Where = (where, _, __, ___) => where.Column("id", 1, "<>")
             };
             node.AddColumn("id", "id", "id", true);
@@ -294,7 +292,7 @@ namespace JoinMonster.Tests.Unit.Data
             var compilerContext = new SqlCompilerContext(new SqlCompiler(dialect));
             var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
             {
-                SortKey = new SortKey("products", new Dictionary<string, string>{{"id", "id"}}, SortDirection.Descending),
+                SortKey = new SortKey("products", "id", "id", SortDirection.Descending),
                 Where = (where, _, __, ___) => where.Column("id", 1, "<>")
             };
             node.AddColumn("id", "id", "id", true);
@@ -315,7 +313,7 @@ namespace JoinMonster.Tests.Unit.Data
                     .Contain(@"FROM (
   SELECT ""variants"".*
   FROM variants ""variants""
-  WHERE ""variants"".""id"" < @p0 AND ""variants"".""id"" <> @p1
+  WHERE (""variants"".""id"") > (@p0) AND ""variants"".""id"" <> @p1
   ORDER BY ""variants"".""id"" DESC
   LIMIT 3
 ) ""variants""");
@@ -330,6 +328,52 @@ namespace JoinMonster.Tests.Unit.Data
         }
 
         [Fact]
+        public void HandlePaginationAtRoot_WhenCalledWithKeysetPaginationAndMultipleSortKeysAndFirstAndAfter_ReturnsPagedJoinString()
+        {
+            var dialect = new PostgresSqlDialect();
+            var compilerContext = new SqlCompilerContext(new SqlCompiler(dialect));
+            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
+            {
+                SortKey = new SortKey("products", "price", "price", SortDirection.Descending)
+                {
+                    ThenBy = new SortKey("products", "name", "name", SortDirection.Ascending)
+                },
+                Where = (where, _, __, ___) => where.Column("id", 1, "<>")
+            };
+            node.AddColumn("id", "id", "id", true);
+
+            var arguments = new Dictionary<string, object>
+            {
+                {"first", 2},
+                {"after", Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { price = 199, name = "Jacket" })))}
+            };
+            var context = new ResolveFieldContext();
+            var tables = new List<string>();
+
+            dialect.HandlePaginationAtRoot(null, node, arguments, context, tables, compilerContext);
+
+            using (new AssertionScope())
+            {
+                tables.Should()
+                    .Contain(@"FROM (
+  SELECT ""variants"".*
+  FROM variants ""variants""
+  WHERE (""variants"".""price"", ""variants"".""name"") > (@p0, @p1) AND ""variants"".""id"" <> @p2
+  ORDER BY ""variants"".""price"" DESC, ""variants"".""name"" ASC
+  LIMIT 3
+) ""variants""");
+
+                compilerContext.Parameters.Should()
+                    .BeEquivalentTo(new Dictionary<string, object>
+                    {
+                        {"@p0", 199},
+                        {"@p1", "Jacket"},
+                        {"@p2", 1}
+                    });
+            }
+        }
+
+        [Fact]
         public void HandlePaginationAtRoot_WhenCalledWithKeysetPaginationAndLastAndBefore_ReturnsPagedJoinString()
         {
             var dialect = new PostgresSqlDialect();
@@ -337,7 +381,7 @@ namespace JoinMonster.Tests.Unit.Data
             var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
             {
                 OrderBy = new OrderBy("products", "id", SortDirection.Ascending),
-                SortKey = new SortKey("products", new Dictionary<string, string>{{"id", "id"}}, SortDirection.Ascending),
+                SortKey = new SortKey("products", "id", "id", SortDirection.Ascending),
                 Where = (where, _, __, ___) => where.Column("id", 1, "<>")
             };
             node.AddColumn("id", "id", "id", true);
@@ -358,7 +402,7 @@ namespace JoinMonster.Tests.Unit.Data
                     .Contain(@"FROM (
   SELECT ""variants"".*
   FROM variants ""variants""
-  WHERE ""variants"".""id"" < @p0 AND ""variants"".""id"" <> @p1
+  WHERE (""variants"".""id"") < (@p0) AND ""variants"".""id"" <> @p1
   ORDER BY ""variants"".""id"" DESC
   LIMIT 6
 ) ""variants""");
@@ -370,7 +414,6 @@ namespace JoinMonster.Tests.Unit.Data
                         {"@p1", 1}
                     });
             }
-
         }
     }
 }

@@ -84,7 +84,16 @@ namespace JoinMonster.Builders
         /// <param name="sql">The raw sql condition.</param>
         /// <param name="parameters">The parameters.</param>
         /// <returns>The <see cref="WhereBuilder"/>.</returns>
-        public WhereBuilder Raw(string sql, IDictionary<string, object> parameters) =>
+        public WhereBuilder Raw(string sql, object? parameters = null) =>
+            AddCondition(new RawCondition(sql, parameters?.ToDictionary()));
+
+        /// <summary>
+        /// Compares a column with a value.
+        /// </summary>
+        /// <param name="sql">The raw sql condition.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns>The <see cref="WhereBuilder"/>.</returns>
+        public WhereBuilder Raw(string sql, IDictionary<string, object>? parameters) =>
             AddCondition(new RawCondition(sql, parameters));
 
         private WhereBuilder AddCondition(WhereCondition condition)

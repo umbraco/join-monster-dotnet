@@ -25,32 +25,56 @@ namespace JoinMonster.Builders
         /// Sort the result by the <paramref name="column"/> in ascending order.
         /// </summary>
         /// <param name="column">The column name.</param>
-        public void By(string column) => By(new[] {column});
+        public ThenSortKeyBuilder By(string column) => By(column, SortDirection.Ascending);
 
-        /// <summary>
-        /// Sort the result by the <paramref name="columns"/> in ascending order.
-        /// </summary>
-        /// <param name="columns">The column names.</param>
-        public void By(string[] columns)
-        {
-            if (columns == null) throw new ArgumentNullException(nameof(columns));
-            SortKey = new SortKey(Table, columns.ToDictionary(x => x, _aliasGenerator.GenerateColumnAlias), SortDirection.Ascending);
-        }
 
         /// <summary>
         /// Sort the result by the <paramref name="column"/> in descending order.
         /// </summary>
         /// <param name="column">The column name.</param>
-        public void ByDescending(string column) => ByDescending(new[] {column});
+        public ThenSortKeyBuilder ByDescending(string column) => By(column, SortDirection.Descending);
+
+        private ThenSortKeyBuilder By(string column, SortDirection direction)
+        {
+            SortKey = new SortKey(Table, column, _aliasGenerator.GenerateColumnAlias(column), direction);
+            return new ThenSortKeyBuilder(Table, SortKey, _aliasGenerator);
+        }
+    }
+
+    /// <summary>
+    /// A helper object for fluently creating a <c>Sort Key</c> configuration.
+    /// </summary>
+    public class ThenSortKeyBuilder
+    {
+        private readonly IAliasGenerator _aliasGenerator;
+
+        internal ThenSortKeyBuilder(string table, SortKey sortKey, IAliasGenerator aliasGenerator)
+        {
+            _aliasGenerator = aliasGenerator ?? throw new ArgumentNullException(nameof(aliasGenerator));
+            Table = table ?? throw new ArgumentNullException(nameof(table));
+            SortKey = sortKey ?? throw new ArgumentNullException(nameof(sortKey));
+        }
+
+        public string Table { get; }
+        internal SortKey SortKey { get; private set; }
 
         /// <summary>
-        /// Sort the result by the <paramref name="columns"/> in descending order.
+        /// Sort the result by the <paramref name="column"/> in ascending order.
         /// </summary>
-        /// <param name="columns">The column names.</param>
-        public void ByDescending(string[] columns)
+        /// <param name="column">The column name.</param>
+        public ThenSortKeyBuilder ThenBy(string column) => ThenBy(column, SortDirection.Ascending);
+
+
+        /// <summary>
+        /// Sort the result by the <paramref name="column"/> in descending order.
+        /// </summary>
+        /// <param name="column">The column name.</param>
+        public ThenSortKeyBuilder ThenByDescending(string column) => ThenBy(column, SortDirection.Descending);
+
+        private ThenSortKeyBuilder ThenBy(string column, SortDirection direction)
         {
-            if (columns == null) throw new ArgumentNullException(nameof(columns));
-            SortKey = new SortKey(Table, columns.ToDictionary(x => x, _aliasGenerator.GenerateColumnAlias), SortDirection.Descending);
+            SortKey.ThenBy = new SortKey(Table, column, _aliasGenerator.GenerateColumnAlias(column), direction);
+            return new ThenSortKeyBuilder(Table, SortKey.ThenBy, _aliasGenerator);
         }
     }
 }

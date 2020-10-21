@@ -50,14 +50,14 @@ namespace JoinMonster.Builders
         /// <param name="joinCondition">The raw join condition.</param>
         /// <param name="parameters">The parameters.</param>
         public void Raw(string joinCondition, object? parameters = null) =>
-            Raw(joinCondition, parameters == null ? new Dictionary<string, object>() : parameters.ToDictionary());
+            Raw(joinCondition, parameters?.ToDictionary());
 
         /// <summary>
         /// Defines a raw <c>JOIN</c> condition.
         /// </summary>
         /// <param name="joinCondition">The raw join condition.</param>
         /// <param name="parameters">The parameters.</param>
-        public void Raw(string joinCondition, IDictionary<string, object> parameters)
+        public void Raw(string joinCondition, IDictionary<string, object>? parameters)
         {
             if (joinCondition == null) throw new ArgumentNullException(nameof(joinCondition));
             Condition = new RawCondition(joinCondition, parameters);

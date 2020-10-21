@@ -16,18 +16,24 @@ namespace JoinMonster.Tests.Unit.Builders
 
             builder.By("id");
 
-            builder.SortKey.Should().BeEquivalentTo(new SortKey("products", new Dictionary<string, string> {{ "id", "id"}}, SortDirection.Ascending));
+            builder.SortKey.Should().BeEquivalentTo(new SortKey("products", "id", "id", SortDirection.Ascending));
         }
 
         [Fact]
-        public void By_WithMultipleKeys_SetsColumn()
+        public void By_WithThenByDescending_SetsThenBy()
         {
             var aliasGenerator = new DefaultAliasGenerator();
             var builder = new SortKeyBuilder("products", aliasGenerator);
 
-            builder.By(new [] {"sortOrder", "id"});
+            builder.By("sortOrder").ThenByDescending("id");
 
-            builder.SortKey.Should().BeEquivalentTo(new SortKey("products", new Dictionary<string, string> {{"sortOrder", "sortOrder"},{ "id", "id"}}, SortDirection.Ascending));
+            builder.SortKey.Should()
+                .BeEquivalentTo(
+                    new SortKey("products", "sortOrder", "sortOrder", SortDirection.Ascending)
+                    {
+                        ThenBy = new SortKey("products", "id", "id", SortDirection.Descending)
+
+                    });
         }
 
         [Fact]
@@ -38,18 +44,21 @@ namespace JoinMonster.Tests.Unit.Builders
 
             builder.ByDescending("id");
 
-            builder.SortKey.Should().BeEquivalentTo(new SortKey("products", new Dictionary<string, string> {{ "id", "id"}}, SortDirection.Descending));
+            builder.SortKey.Should().BeEquivalentTo(new SortKey("products", "id", "id", SortDirection.Descending));
         }
 
         [Fact]
-        public void ByDescending_WithMultipleKeys_SetsColumn()
+        public void ByDescending_WithThenBy_SetsColumn()
         {
             var aliasGenerator = new DefaultAliasGenerator();
             var builder = new SortKeyBuilder("products", aliasGenerator);
 
-            builder.ByDescending(new [] {"sortOrder", "id"});
+            builder.ByDescending("sortOrder").ThenBy("id");
 
-            builder.SortKey.Should().BeEquivalentTo(new SortKey("products", new Dictionary<string, string> {{"sortOrder", "sortOrder"},{ "id", "id"}}, SortDirection.Descending));
+            builder.SortKey.Should().BeEquivalentTo(new SortKey("products", "sortOrder", "sortOrder", SortDirection.Descending)
+            {
+                ThenBy = new SortKey("products", "id", "id", SortDirection.Ascending)
+            });
         }
     }
 }
