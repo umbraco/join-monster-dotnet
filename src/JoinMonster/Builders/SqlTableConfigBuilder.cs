@@ -21,7 +21,7 @@ namespace JoinMonster.Builders
         /// <param name="uniqueKey">The unique key columns.</param>
         /// <returns>The <see cref="SqlTableConfigBuilder"/>.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="tableName"/> or <paramref name="uniqueKey"/> is <c>null</c>.</exception>
-        public static SqlTableConfigBuilder Create(string tableName, string[] uniqueKey)
+        public static SqlTableConfigBuilder Create(TableExpressionDelegate tableName, string[] uniqueKey)
         {
             if (tableName == null) throw new ArgumentNullException(nameof(tableName));
             if (uniqueKey == null) throw new ArgumentNullException(nameof(uniqueKey));

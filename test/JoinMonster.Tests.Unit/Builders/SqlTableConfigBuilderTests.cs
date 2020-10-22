@@ -18,9 +18,9 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void Create_WhenUniqueKeyIshNull_ThrowsArgumentNullException()
         {
-            Action action = () => SqlTableConfigBuilder.Create("products", null);
+            Action action = () => SqlTableConfigBuilder.Create((_, __) => "products", null);
 
-            action.Should().Throw<ArgumentNullException>();
+        action.Should().Throw<ArgumentNullException>();
         }
 
         [Fact]
@@ -28,9 +28,9 @@ namespace JoinMonster.Tests.Unit.Builders
         {
             var tableName = "products";
 
-            var builder = SqlTableConfigBuilder.Create(tableName, new[] {"id"});
+            var builder = SqlTableConfigBuilder.Create((_, __) => tableName, new[] {"id"});
 
-            builder.SqlTableConfig.Table.Should().Be(tableName);
+            builder.SqlTableConfig.Table(null, null).Should().Be(tableName);
         }
 
         [Fact]
@@ -38,7 +38,7 @@ namespace JoinMonster.Tests.Unit.Builders
         {
             var uniqueKey = new[] {"id"};
 
-            var builder = SqlTableConfigBuilder.Create("products", uniqueKey);
+            var builder = SqlTableConfigBuilder.Create((_, __) => "products", uniqueKey);
 
             builder.SqlTableConfig.UniqueKey.Should().BeEquivalentTo(uniqueKey);
         }
@@ -46,7 +46,7 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void AlwaysFetch_WithValue_SetsAlwaysFetch()
         {
-            var builder = SqlTableConfigBuilder.Create("products", new[] {"id"})
+            var builder = SqlTableConfigBuilder.Create((_, __) => "products", new[] {"id"})
                 .AlwaysFetch("type", "name");
 
             builder.SqlTableConfig.AlwaysFetch.Should().BeEquivalentTo("type", "name");

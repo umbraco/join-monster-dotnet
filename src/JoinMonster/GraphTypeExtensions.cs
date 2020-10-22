@@ -16,6 +16,36 @@ namespace JoinMonster
         /// Configure the SQL table for the graph type.
         /// </summary>
         /// <param name="graphType">The graph type.</param>
+        /// <param name="table">The table expression.</param>
+        /// <param name="uniqueKey">The unique key column.</param>
+        /// <returns>The <see cref="SqlTableConfigBuilder"/>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="graphType"/>, <paramref name="table"/> or <paramref name="uniqueKey"/> is <c>null</c>.</exception>
+        public static SqlTableConfigBuilder SqlTable(this IGraphType graphType, TableExpressionDelegate table, string uniqueKey) =>
+            SqlTable(graphType, table, new[] {uniqueKey});
+
+        /// <summary>
+        /// Configure the SQL table for the graph type.
+        /// </summary>
+        /// <param name="graphType">The graph type.</param>
+        /// <param name="table">The table expression.</param>
+        /// <param name="uniqueKey">The unique key column.</param>
+        /// <returns>The <see cref="SqlTableConfigBuilder"/>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="graphType"/>, <paramref name="table"/> or <paramref name="uniqueKey"/> is <c>null</c>.</exception>
+        public static SqlTableConfigBuilder SqlTable(this IGraphType graphType, TableExpressionDelegate table, string[] uniqueKey)
+        {
+            if (graphType == null) throw new ArgumentNullException(nameof(graphType));
+            if (table == null) throw new ArgumentNullException(nameof(table));
+            if (uniqueKey == null) throw new ArgumentNullException(nameof(uniqueKey));
+
+            var builder = SqlTableConfigBuilder.Create(table, uniqueKey);
+            graphType.WithMetadata(nameof(SqlTableConfig) ,builder.SqlTableConfig);
+            return builder;
+        }
+
+        /// <summary>
+        /// Configure the SQL table for the graph type.
+        /// </summary>
+        /// <param name="graphType">The graph type.</param>
         /// <param name="tableName">The table name.</param>
         /// <param name="uniqueKey">The unique key column.</param>
         /// <returns>The <see cref="SqlTableConfigBuilder"/>.</returns>
@@ -31,16 +61,8 @@ namespace JoinMonster
         /// <param name="uniqueKey">The unique key column.</param>
         /// <returns>The <see cref="SqlTableConfigBuilder"/>.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="graphType"/>, <paramref name="tableName"/> or <paramref name="uniqueKey"/> is <c>null</c>.</exception>
-        public static SqlTableConfigBuilder SqlTable(this IGraphType graphType, string tableName, string[] uniqueKey)
-        {
-            if (graphType == null) throw new ArgumentNullException(nameof(graphType));
-            if (tableName == null) throw new ArgumentNullException(nameof(tableName));
-            if (uniqueKey == null) throw new ArgumentNullException(nameof(uniqueKey));
-
-            var builder = SqlTableConfigBuilder.Create(tableName, uniqueKey);
-            graphType.WithMetadata(nameof(SqlTableConfig) ,builder.SqlTableConfig);
-            return builder;
-        }
+        public static SqlTableConfigBuilder SqlTable(this IGraphType graphType, string tableName, string[] uniqueKey) =>
+            SqlTable(graphType, (_, __) => tableName, uniqueKey);
 
         /// <summary>
         /// Get the SQL table configuration.

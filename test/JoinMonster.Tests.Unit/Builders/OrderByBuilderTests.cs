@@ -13,7 +13,7 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void By_WhenColumnIsNull_ThrowsException()
         {
-            var builder = new OrderByBuilder();
+            var builder = new OrderByBuilder("table");
 
             Action action = () => builder.By(null);
 
@@ -26,7 +26,7 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void ByDescending_WhenColumnIsNull_ThrowsException()
         {
-            var builder = new OrderByBuilder();
+            var builder = new OrderByBuilder("table");
 
             Action action = () => builder.ByDescending(null);
 
@@ -39,21 +39,21 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void By_WithColumnName_SetsOrderByProperty()
         {
-            var builder = new OrderByBuilder();
+            var builder = new OrderByBuilder("products");
 
             builder.By("id");
 
-            builder.OrderBy.Should().BeEquivalentTo(new OrderBy("id", SortDirection.Ascending));
+            builder.OrderBy.Should().BeEquivalentTo(new OrderBy("products", "id", SortDirection.Ascending));
         }
 
         [Fact]
         public void ByDescending_WithColumnName_SetsOrderByProperty()
         {
-            var builder = new OrderByBuilder();
+            var builder = new OrderByBuilder("products");
 
             builder.ByDescending("id");
 
-            builder.OrderBy.Should().BeEquivalentTo(new OrderBy("id", SortDirection.Descending));
+            builder.OrderBy.Should().BeEquivalentTo(new OrderBy("products", "id", SortDirection.Descending));
         }
     }
 }

@@ -217,7 +217,7 @@ namespace JoinMonster.Tests.Unit.Data
 
                 builder.Types.For("Product")
                     .FieldFor("variants", null)
-                    .SqlJoin((join, _, __, ___) => join.Raw($"LEFT JOIN \"productVariants\" {join.ChildTableAlias} ON {join.ParentTableAlias}.\"id\" = {join.ChildTableAlias}.\"productId\""));
+                    .SqlJoin((join, _, __, ___) => join.Raw($"{join.ParentTableAlias}.\"id\" = {join.ChildTableAlias}.\"productId\""));
 
                 builder.Types.For("ProductVariant")
                     .SqlTable("productVariants", "id");
@@ -300,7 +300,7 @@ namespace JoinMonster.Tests.Unit.Data
 
                 builder.Types.For("Query")
                     .FieldFor("products", null)
-                    .SqlOrder((order, _, __) => order.By("name").ThenByDescending("price"));
+                    .SqlOrder((order, _, __, ___) => order.By("name").ThenByDescending("price"));
             });
 
             var query = "{ products { name } }";
@@ -326,7 +326,7 @@ namespace JoinMonster.Tests.Unit.Data
                 builder.Types.For("Query")
                     .FieldFor("products", null)
                     .SqlWhere((where, _, __, ___) => where.Column("id", 0, "<>"))
-                    .SqlOrder((order, _, __) => order.By("name").ThenByDescending("price"));
+                    .SqlOrder((order, _, __, ___) => order.By("name").ThenByDescending("price"));
             });
 
             var query = "{ products { name } }";
@@ -359,7 +359,7 @@ namespace JoinMonster.Tests.Unit.Data
                     .SqlJunction("productRelations",
                         (join, _, __, ___) => join.On("id", "productId"),
                         (join, _, __, ___) => join.On("relatedProductId", "id"))
-                    .OrderBy((order, _, __) => order.By("productId"));
+                    .OrderBy((order, _, __, ___) => order.By("productId"));
             });
 
             var query = "{ product { name, relatedProducts { name } } }";
@@ -389,7 +389,7 @@ namespace JoinMonster.Tests.Unit.Data
                     .FieldFor("variants", null)
                     .SqlJoin((join, _, __, ___) => join.On("id", "productId"))
                     .SqlPaginate(true)
-                    .SqlOrder((order, _, __) => order.By("id"));
+                    .SqlOrder((order, _, __, ___) => order.By("id"));
             });
 
             var query = "{ product { name, variants { edges { node { name } } } } }";

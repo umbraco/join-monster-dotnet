@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using GraphQL;
 using JoinMonster.Builders;
+using JoinMonster.Builders.Clauses;
 using JoinMonster.Language.AST;
 
 namespace JoinMonster.Data
@@ -40,11 +41,11 @@ namespace JoinMonster.Data
 
             var selections = new List<string>();
             var tables = new List<string>();
-            var wheres = new List<string>();
+            var wheres = new List<WhereCondition>();
             var orders = new List<string>();
-            var parameters = new Dictionary<string, object>();
+            var sqlCompilerContext = new SqlCompilerContext(this);
 
-            StringifySqlAst(null, node, Array.Empty<string>(), context, selections, tables, wheres, orders, parameters);
+            StringifySqlAst(null, node, Array.Empty<string>(), context, selections, tables, wheres, orders, sqlCompilerContext);
 
             var sb = new StringBuilder();
             sb.AppendLine("SELECT");
@@ -55,7 +56,7 @@ namespace JoinMonster.Data
             if (wheres.Count > 0)
             {
                 sb.Append("WHERE ");
-                sb.AppendLine(string.Join(" AND ", wheres));
+                sb.AppendLine(_dialect.CompileConditions(wheres, sqlCompilerContext));
             }
 
             if (orders.Count > 0)
@@ -64,19 +65,19 @@ namespace JoinMonster.Data
                 sb.AppendLine(string.Join(", ", orders));
             }
 
-            return new SqlResult(sb.ToString().Trim(), parameters);
+            return new SqlResult(sb.ToString().Trim(), sqlCompilerContext.Parameters);
         }
 
         private void StringifySqlAst(Node? parent, Node node, IReadOnlyCollection<string> prefix,
             IResolveFieldContext context, ICollection<string> selections, ICollection<string> tables,
-            ICollection<string> wheres, ICollection<string> orders, Dictionary<string, object> parameters)
+            ICollection<WhereCondition> wheres, ICollection<string> orders, SqlCompilerContext compilerContext)
         {
             switch (node)
             {
                 case SqlTable sqlTable:
-                    HandleTable(parent, sqlTable, prefix, context, selections, tables, wheres, orders, parameters);
+                    HandleTable(parent, sqlTable, prefix, context, selections, tables, wheres, orders, compilerContext);
                     foreach (var child in sqlTable.Children)
-                        StringifySqlAst(node, child, new List<string>(prefix) {sqlTable.As}, context, selections, tables, wheres, orders, parameters);
+                        StringifySqlAst(node, child, new List<string>(prefix) {sqlTable.As}, context, selections, tables, wheres, orders, compilerContext);
                     break;
                 case SqlColumn sqlColumn:
                 {
@@ -122,7 +123,7 @@ namespace JoinMonster.Data
 
         private void HandleTable(Node? parent, SqlTable node, IEnumerable<string> prefix,
             IResolveFieldContext context, ICollection<string> selections, ICollection<string> tables,
-            ICollection<string> wheres, ICollection<string> orders, Dictionary<string, object> parameters)
+            ICollection<WhereCondition> wheres, ICollection<string> orders, SqlCompilerContext compilerContext)
         {
             var arguments = node.Arguments;
 
@@ -131,39 +132,44 @@ namespace JoinMonster.Data
             {
                 if (node.Junction?.Where != null)
                 {
-                    var whereBuilder = new WhereBuilder(_dialect, _dialect.Quote(node.Junction.As), wheres, parameters);
-                    node.Junction?.Where?.Invoke(whereBuilder, arguments, context, node);
+                    var whereBuilder = new WhereBuilder(_dialect.Quote(node.Junction.As), wheres);
+                    node.Junction.Where.Invoke(whereBuilder, arguments, context, node);
                 }
 
                 // only add the where clause if there's no join or the join is not paginated
                 if (node.Where != null)
                 {
-                    var whereBuilder = new WhereBuilder(_dialect, _dialect.Quote(node.As), wheres, parameters);
-                    node.Where?.Invoke(whereBuilder, arguments, context, node);
+                    var whereBuilder = new WhereBuilder(_dialect.Quote(node.As), wheres);
+                    node.Where.Invoke(whereBuilder, arguments, context, node);
                 }
             }
 
-            HandleOrderBy(node.Junction?.OrderBy, node.As, orders);
-            HandleOrderBy(node.OrderBy, node.As, orders);
+            if (node.Junction?.OrderBy != null)
+            {
+                var junctionOrderBy = _dialect.CompileOrderBy(node.Junction.OrderBy);
+                orders.Add(junctionOrderBy);
+            }
+
+            if (node.OrderBy != null)
+            {
+                var orderBy = _dialect.CompileOrderBy(node.OrderBy);
+                orders.Add(orderBy);
+            }
 
             if (parent is SqlTable parentTable)
             {
                 if (node.Join != null)
                 {
-                    var join = new JoinBuilder(_dialect, _dialect.Quote(parentTable.As), _dialect.Quote(node.As));
+                    var join = new JoinBuilder(_dialect.Quote(parentTable.As), _dialect.Quote(node.As));
                     node.Join(join, arguments, context, node);
 
                     if (node.Paginate)
                     {
-                        _dialect.HandleJoinedOneToManyPaginated(parentTable, node, arguments, context, tables, parameters, join.Condition);
+                        _dialect.HandleJoinedOneToManyPaginated(parentTable, node, arguments, context, tables, compilerContext, join.Condition == null ? null : _dialect.CompileConditions(new[] {join.Condition}, compilerContext));
                     }
                     else if(join.Condition != null)
                     {
-                        tables.Add($"LEFT JOIN {_dialect.Quote(node.Name)} {_dialect.Quote(node.As)} ON {join.Condition}");
-                    }
-                    else if (join.RawCondition != null)
-                    {
-                        tables.Add(join.RawCondition);
+                        tables.Add($"LEFT JOIN {_dialect.Quote(node.Name)} {_dialect.Quote(node.As)} ON {_dialect.CompileConditions(new[] {join.Condition}, compilerContext)}");
                     }
 
                     return;
@@ -172,8 +178,8 @@ namespace JoinMonster.Data
                 if (node.Junction != null)
                 {
                     // TODO: Handle batching and paging
-                    var fromParentJoin = new JoinBuilder(_dialect, _dialect.Quote(parentTable.As), _dialect.Quote(node.Junction.As));
-                    var toChildJoin = new JoinBuilder(_dialect, _dialect.Quote(node.Junction.As), _dialect.Quote(node.As));
+                    var fromParentJoin = new JoinBuilder( _dialect.Quote(parentTable.As), _dialect.Quote(node.Junction.As));
+                    var toChildJoin = new JoinBuilder( _dialect.Quote(node.Junction.As), _dialect.Quote(node.As));
                     node.Junction.FromParent(fromParentJoin, arguments, context, node);
                     node.Junction.ToChild(toChildJoin, arguments, context, node);
 
@@ -182,29 +188,19 @@ namespace JoinMonster.Data
                     if (toChildJoin.Condition == null)
                         throw new JoinMonsterException($"The 'toChild' join condition on table '{node.Name}' for junction '{node.Junction.Table}' cannot be null.");
 
-                    tables.Add($"LEFT JOIN {_dialect.Quote(node.Junction.Table)} {_dialect.Quote(node.Junction.As)} ON {fromParentJoin.Condition}");
-                    tables.Add($"LEFT JOIN {_dialect.Quote(node.Name)} {_dialect.Quote(node.As)} ON {toChildJoin.Condition}");
+                    tables.Add($"LEFT JOIN {_dialect.Quote(node.Junction.Table)} {_dialect.Quote(node.Junction.As)} ON {_dialect.CompileConditions(new []{fromParentJoin.Condition}, compilerContext)}");
+                    tables.Add($"LEFT JOIN {_dialect.Quote(node.Name)} {_dialect.Quote(node.As)} ON {_dialect.CompileConditions(new[] {toChildJoin.Condition}, compilerContext)}");
 
                     return;
                 }
             }
             else if (node.Paginate)
             {
-                _dialect.HandlePaginationAtRoot(parent, node, arguments, context, tables, parameters);
+                _dialect.HandlePaginationAtRoot(parent, node, arguments, context, tables, compilerContext);
                 return;
             }
 
             tables.Add($"FROM {_dialect.Quote(node.Name)} AS {_dialect.Quote(node.As)}");
-        }
-
-        private void HandleOrderBy(OrderBy? orderBy, string tableAlias, ICollection<string> orders)
-        {
-            if (orderBy == null) return;
-
-            do
-            {
-                orders.Add($"{_dialect.Quote(tableAlias)}.{_dialect.Quote(orderBy.Column)} {(orderBy.Direction == SortDirection.Ascending ? "ASC" : "DESC")}");
-            } while ((orderBy = orderBy.ThenBy) != null);
         }
 
         private static string JoinPrefix(IEnumerable<string> prefix) =>

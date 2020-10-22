@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using JoinMonster.Builders.Clauses;
 using JoinMonster.Data;
 
 namespace JoinMonster.Builders
@@ -8,17 +10,13 @@ namespace JoinMonster.Builders
     /// </summary>
     public class JoinBuilder
     {
-        private readonly ISqlDialect _dialect;
-
-        internal JoinBuilder(ISqlDialect dialect, string parentTable, string childTable)
+        internal JoinBuilder(string parentTable, string childTable)
         {
-            _dialect = dialect ?? throw new ArgumentNullException(nameof(dialect));
             ParentTableAlias = parentTable ?? throw new ArgumentNullException(nameof(parentTable));
             ChildTableAlias = childTable ?? throw new ArgumentNullException(nameof(childTable));
         }
 
-        internal string? Condition { get; private set; }
-        internal string? RawCondition { get; private set; }
+        internal WhereCondition? Condition { get; private set; }
 
         /// <summary>
         /// An auto-generated table alias for the parent table. Already quoted.
@@ -43,22 +41,26 @@ namespace JoinMonster.Builders
             if (childColumn == null) throw new ArgumentNullException(nameof(childColumn));
             if (op == null) throw new ArgumentNullException(nameof(op));
 
-            var parent = parentColumn.IndexOf(ParentTableAlias, StringComparison.Ordinal) == -1 ?
-                $"{ParentTableAlias}.{_dialect.Quote(parentColumn)}" : parentColumn;
-
-            var child = childColumn.IndexOf(ChildTableAlias, StringComparison.Ordinal) == -1 ?
-                $"{ChildTableAlias}.{_dialect.Quote(childColumn)}" : childColumn;
-
-            Condition = $"{parent} {op} {child}";
+            Condition = new CompareColumnsCondition(ParentTableAlias, parentColumn, op, ChildTableAlias, childColumn);
         }
 
         /// <summary>
         /// Defines a raw <c>JOIN</c> condition.
         /// </summary>
         /// <param name="joinCondition">The raw join condition.</param>
-        public void Raw(string joinCondition)
+        /// <param name="parameters">The parameters.</param>
+        public void Raw(string joinCondition, object? parameters = null) =>
+            Raw(joinCondition, parameters?.ToDictionary());
+
+        /// <summary>
+        /// Defines a raw <c>JOIN</c> condition.
+        /// </summary>
+        /// <param name="joinCondition">The raw join condition.</param>
+        /// <param name="parameters">The parameters.</param>
+        public void Raw(string joinCondition, IDictionary<string, object>? parameters)
         {
-            RawCondition = joinCondition ?? throw new ArgumentNullException(nameof(joinCondition));
+            if (joinCondition == null) throw new ArgumentNullException(nameof(joinCondition));
+            Condition = new RawCondition(joinCondition, parameters);
         }
     }
 }

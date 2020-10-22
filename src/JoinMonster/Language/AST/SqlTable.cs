@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using GraphQL.Language.AST;
+using GraphQL.Types;
 using JoinMonster.Configs;
 
 namespace JoinMonster.Language.AST

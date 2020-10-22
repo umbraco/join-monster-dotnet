@@ -1,6 +1,9 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using GraphQL;
+using JoinMonster.Builders.Clauses;
 using JoinMonster.Language.AST;
 
 namespace JoinMonster.Data
@@ -18,6 +21,29 @@ namespace JoinMonster.Data
         /// <returns>The compiled SQL.</returns>
         /// <exception cref="ArgumentNullException">If <c>node</c> or <c>context</c> is null.</exception>
         SqlResult Compile(Node node, IResolveFieldContext context);
+    }
+
+    public class SqlCompilerContext
+    {
+        private readonly Dictionary<string, object> _parameters;
+
+        public SqlCompilerContext(SqlCompiler compiler)
+        {
+            Compiler = compiler ?? throw new ArgumentNullException(nameof(compiler));
+            _parameters = new Dictionary<string, object>();
+        }
+
+        public ISqlCompiler Compiler { get; }
+        public IReadOnlyDictionary<string, object> Parameters => new ReadOnlyDictionary<string, object>(_parameters);
+
+        public string AddParameter(object value)
+        {
+            var parameterName = $"@p{_parameters.Count}";
+
+            _parameters.Add(parameterName, value);
+
+            return parameterName;
+        }
     }
 
     public class SqlResult

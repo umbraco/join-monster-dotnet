@@ -283,7 +283,7 @@ namespace JoinMonster.Tests.Unit
         public void SqlOrder_WithOrderByDelegate_AddsOrderByDelegateToMetadata()
         {
             void OrderBy(OrderByBuilder order, IReadOnlyDictionary<string, object> arguments,
-                IResolveFieldContext context) => order.By("name");
+                IResolveFieldContext context, SqlTable sqlTable) => order.By("name");
 
             var fieldType = new FieldType();
             fieldType.SqlOrder(OrderBy);

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using JoinMonster.Data;
+using JoinMonster.Builders.Clauses;
 
 namespace JoinMonster.Builders
 {
@@ -9,17 +9,53 @@ namespace JoinMonster.Builders
     /// </summary>
     public class WhereBuilder
     {
-        private readonly ISqlDialect _dialect;
-        private readonly string _parentTable;
-        private readonly ICollection<string> _whereConditions;
-        private readonly IDictionary<string, object> _parameters;
+        private readonly ICollection<WhereCondition> _whereConditions;
 
-        internal WhereBuilder(ISqlDialect dialect, string table,  ICollection<string> whereConditions, IDictionary<string, object> parameters)
+        private bool _not;
+        private bool _or;
+
+        internal WhereBuilder(string table, ICollection<WhereCondition> whereConditions)
         {
-            _dialect = dialect ?? throw new ArgumentNullException(nameof(dialect));
-            _parentTable = table ?? throw new ArgumentNullException(nameof(table));
+            Table = table ?? throw new ArgumentNullException(nameof(table));
             _whereConditions = whereConditions ?? throw new ArgumentNullException(nameof(whereConditions));
-            _parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
+        }
+
+        /// <summary>
+        /// The table name, already quoted.
+        /// </summary>
+        public string Table { get; }
+
+        public WhereBuilder And()
+        {
+            _or = false;
+            return this;
+        }
+
+        public WhereBuilder Or()
+        {
+            _or = true;
+            return this;
+        }
+
+        public WhereBuilder Not()
+        {
+            _not = true;
+            return this;
+        }
+
+        public WhereBuilder Grouped(Action<WhereBuilder> where)
+        {
+            if (where == null) throw new ArgumentNullException(nameof(where));
+
+            var conditions = new List<WhereCondition>();
+            var nestedCondition = new NestedCondition(conditions);
+            var nestedBuilder = new WhereBuilder(Table, conditions);
+
+            AddCondition(nestedCondition);
+
+            where(nestedBuilder);
+
+            return this;
         }
 
         /// <summary>
@@ -29,11 +65,8 @@ namespace JoinMonster.Builders
         /// <param name="second">The second column.</param>
         /// <param name="op">The compare operator.</param>
         /// <returns>The <see cref="WhereBuilder"/>.</returns>
-        public WhereBuilder Columns(string first, string second, string op = "=")
-        {
-            _whereConditions.Add($"{_parentTable}.{_dialect.Quote(first)} {op} {_parentTable}.{_dialect.Quote(second)}");
-            return this;
-        }
+        public WhereBuilder Columns(string first, string second, string op = "=") =>
+            AddCondition(new CompareColumnsCondition(Table, first, op, Table, second));
 
         /// <summary>
         /// Compares a column with a value.
@@ -42,11 +75,37 @@ namespace JoinMonster.Builders
         /// <param name="value">The value.</param>
         /// <param name="op">The compare operator.</param>
         /// <returns>The <see cref="WhereBuilder"/>.</returns>
-        public WhereBuilder Column(string column, object value, string op = "=")
+        public WhereBuilder Column(string column, object value, string op = "=") =>
+            AddCondition(new CompareCondition(Table, column, op, value));
+
+        /// <summary>
+        /// Compares a column with a value.
+        /// </summary>
+        /// <param name="sql">The raw sql condition.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns>The <see cref="WhereBuilder"/>.</returns>
+        public WhereBuilder Raw(string sql, object? parameters = null) =>
+            AddCondition(new RawCondition(sql, parameters?.ToDictionary()));
+
+        /// <summary>
+        /// Compares a column with a value.
+        /// </summary>
+        /// <param name="sql">The raw sql condition.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns>The <see cref="WhereBuilder"/>.</returns>
+        public WhereBuilder Raw(string sql, IDictionary<string, object>? parameters) =>
+            AddCondition(new RawCondition(sql, parameters));
+
+        private WhereBuilder AddCondition(WhereCondition condition)
         {
-            var parameterName = $"@p{_parameters.Count}";
-            _parameters.Add(parameterName, value);
-            _whereConditions.Add($"{_parentTable}.{_dialect.Quote(column)} {op} {parameterName}");
+            condition.IsNot = _not;
+            condition.IsOr = _or;
+
+            _or = false;
+            _not = false;
+
+            _whereConditions.Add(condition);
+
             return this;
         }
     }

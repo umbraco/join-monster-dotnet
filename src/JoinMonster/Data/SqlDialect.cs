@@ -1,12 +1,17 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Text.Json;
 using GraphQL;
 using JoinMonster.Builders;
+using JoinMonster.Builders.Clauses;
 using JoinMonster.Language.AST;
 
 namespace JoinMonster.Data
 {
+    /// <inheritdoc />
     public abstract class SqlDialect : ISqlDialect
     {
         /// <summary>
@@ -15,7 +20,7 @@ namespace JoinMonster.Data
         protected virtual string MaxLimit { get; } = "-1";
 
         /// <inheritdoc />
-        public virtual string Quote(string str) => $"\"{str}\"";
+        public virtual string Quote(string str) => str.Contains("\"") ? str : $"\"{str}\"";
 
         /// <inheritdoc />
         public abstract string CompositeKey(string parentTable, IEnumerable<string> keys);
@@ -23,15 +28,109 @@ namespace JoinMonster.Data
         /// <inheritdoc />
         public abstract void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
             IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
-            IDictionary<string, object> parameters, string? joinCondition);
+            SqlCompilerContext compilerContext, string? joinCondition);
 
         /// <inheritdoc />
         public abstract void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
-            IResolveFieldContext context, ICollection<string> tables, IDictionary<string, object> parameters);
+            IResolveFieldContext context, ICollection<string> tables, SqlCompilerContext compilerContext);
 
-        protected virtual string KeysetPagingSelect(string table, IEnumerable<string> pagingWhereCondition, string order,
-            int limit, string @as, string? joinCondition, string? joinType) {
-            var whereCondition = string.Join(" AND ", pagingWhereCondition);
+        public virtual string CompileConditions(IEnumerable<WhereCondition> conditions, SqlCompilerContext context)
+        {
+            if (conditions == null) throw new ArgumentNullException(nameof(conditions));
+            if (context == null) throw new ArgumentNullException(nameof(context));
+
+            var result = new StringBuilder();
+
+            using var enumerator = conditions.GetEnumerator();
+            var i = 0;
+            while (enumerator.MoveNext())
+            {
+                var condition = enumerator.Current;
+
+                var compiled = CompileCondition(condition, context);
+
+                if (string.IsNullOrEmpty(compiled))
+                    continue;
+
+                var boolOperator = i == 0 ? "" : condition.IsOr ? " OR " : " AND ";
+                result.AppendFormat("{0}{1}", boolOperator, compiled);
+                i++;
+            }
+
+            return result.ToString();
+        }
+
+        public virtual string CompileOrderBy(OrderBy orderBy)
+        {
+            if (orderBy == null) throw new ArgumentNullException(nameof(orderBy));
+
+            var orders = new List<string>();
+
+            var order = orderBy;
+            do
+            {
+                orders.Add($"{Quote(order.Table)}.{Quote(order.Column)} {(order.Direction == SortDirection.Ascending ? "ASC" : "DESC")}");
+            } while ((order = order.ThenBy) != null);
+
+            return string.Join(", ", orders);
+        }
+
+        protected virtual string CompileCondition(WhereCondition condition, SqlCompilerContext context)
+        {
+            return condition switch
+            {
+                CompareColumnsCondition compareColumnsCondition => CompileCondition(compareColumnsCondition, context),
+                CompareCondition compareCondition => CompileCondition(compareCondition, context),
+                NestedCondition nestedCondition => CompileCondition(nestedCondition, context),
+                RawCondition rawCondition => CompileCondition(rawCondition, context),
+                _ => throw new ArgumentOutOfRangeException(nameof(condition))
+            };
+        }
+
+        protected virtual string CompileCondition(CompareCondition condition, SqlCompilerContext context)
+        {
+            var table = condition.Table;
+            var column = condition.Column;
+            var value = condition.Value;
+            var @operator = condition.Operator;
+
+            var parameterName = context.AddParameter(value);
+            var sql = $"{Quote(table)}.{Quote(column)} {@operator} {parameterName}";
+            return condition.IsNot ? $"NOT({sql})" : sql;
+
+        }
+
+        protected virtual string CompileCondition(CompareColumnsCondition condition, SqlCompilerContext context)
+        {
+            var sql = $"{Quote(condition.Table)}.{Quote(condition.First)} {condition.Operator} {Quote(condition.SecondTable)}.{Quote(condition.Second)}";
+            return condition.IsNot ? $"NOT({sql})" : sql;
+        }
+
+        protected virtual string CompileCondition(NestedCondition condition, SqlCompilerContext context)
+        {
+            var sql = CompileConditions(condition.Conditions, context);
+            return condition.IsNot ? $"(NOT({sql}))" : $"({sql})";
+        }
+
+        protected virtual string CompileCondition(RawCondition condition, SqlCompilerContext context)
+        {
+            var sql = condition.Sql;
+            if (condition.Parameters != null)
+            {
+                foreach (var parameter in condition.Parameters)
+                {
+                    var parameterName = context.AddParameter(parameter.Value);
+                    sql = sql.Replace($"@{parameter.Key}", parameterName);
+                }
+            }
+
+            return sql;
+        }
+
+        protected virtual string KeysetPagingSelect(string table, IEnumerable<WhereCondition> pagingWhereConditions, string order,
+            int limit, string @as, string? joinCondition, string? joinType, SqlCompilerContext compilerContext) {
+
+            var whereCondition = CompileConditions(pagingWhereConditions, compilerContext);
             if (string.IsNullOrEmpty(whereCondition))
                 whereCondition = "TRUE";
 
@@ -54,10 +153,11 @@ namespace JoinMonster.Data
 
         }
 
-        protected virtual string OffsetPagingSelect(string table, IEnumerable<string> pagingWhereConditions, string order,
-            int limit, int offset, string @as, string? joinCondition, string? joinType, object? extraJoin = null)
+        protected virtual string OffsetPagingSelect(string table, IEnumerable<WhereCondition> pagingWhereConditions, string order,
+            int limit, int offset, string @as, string? joinCondition, string? joinType, SqlCompilerContext compilerContext,
+            object? extraJoin = null)
         {
-            var whereCondition = string.Join(" AND ", pagingWhereConditions);
+            var whereCondition = CompileConditions(pagingWhereConditions, compilerContext);
             if (string.IsNullOrEmpty(whereCondition))
                 whereCondition = "TRUE";
 
@@ -81,20 +181,6 @@ namespace JoinMonster.Data
 ) {Quote(@as)} ON {joinCondition}";
         }
 
-        protected virtual string OrderColumnsToString(OrderBy? orderBy, string tableAlias)
-        {
-            var orders = new List<string>();
-
-            if (orderBy == null) return "";
-
-            do
-            {
-                orders.Add($"{Quote(tableAlias)}.{Quote(orderBy.Column)} {(orderBy.Direction == SortDirection.Ascending ? "ASC" : "DESC")}");
-            } while ((orderBy = orderBy.ThenBy) != null);
-
-            return string.Join(", ", orders);
-        }
-
         protected virtual (int limit, int offset, string order) InterpretForOffsetPaging(SqlTable node,
             IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context)
         {
@@ -102,21 +188,18 @@ namespace JoinMonster.Data
                 throw new JoinMonsterException(
                     "Backward pagination not supported with offsets. Consider using keyset pagination instead");
 
-            string? orderTable = null;
             OrderBy? orderColumns = null;
 
             if (node.OrderBy != null)
             {
-                orderTable = node.As;
                 orderColumns = node.OrderBy;
             }
             else if (node.Junction != null)
             {
-                orderTable = node.Junction.As;
                 orderColumns = node.Junction.OrderBy;
             }
 
-            if (orderTable == null || orderColumns == null)
+            if (orderColumns == null)
                 throw new JoinMonsterException("Cannot do offset paging without an OrderBy clause.");
 
             var limit = -1;
@@ -132,12 +215,12 @@ namespace JoinMonster.Data
                     offset = ConnectionUtils.CursorToOffset((string) after);
             }
 
-            var order = OrderColumnsToString(orderColumns, orderTable);
+            var order = CompileOrderBy(orderColumns);
 
             return (limit, offset, order);
         }
 
-        protected (int limit, string order, string? whereCondition) InterpretForKeysetPaging(SqlTable node,
+        protected (int limit, string order, WhereCondition? whereCondition) InterpretForKeysetPaging(SqlTable node,
             IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context)
         {
             string? sortTable = null;
@@ -157,30 +240,31 @@ namespace JoinMonster.Data
             if (sortTable == null || sortKey == null)
                 throw new JoinMonsterException("Cannot do keyset paging without an SortKey clause.");
 
-            var descending = sortKey.Direction == SortDirection.Descending;
-            if (arguments.ContainsKey("last"))
-                descending = !descending;
-
-            var orderBy = new OrderByBuilder();
+            var builder = new OrderByBuilder(sortTable);
             ThenOrderByBuilder? thenBy = null;
 
-            foreach (var key in sortKey.Key)
+            var sort = sortKey;
+            do
             {
+                var descending = sort.Direction == SortDirection.Descending;
+                if (arguments.ContainsKey("last"))
+                    descending = !descending;
+
                 if (thenBy == null)
                 {
-                    thenBy = descending ? orderBy.ByDescending(key) : orderBy.By(key);
+                    thenBy = descending ? builder.ByDescending(sort.Column) : builder.By(sort.Column);
                 }
                 else
                 {
-                    if (descending) thenBy.ThenByDescending(key);
-                    else thenBy.ThenBy(key);
+                    thenBy = descending ? thenBy.ThenByDescending(sort.Column) : thenBy.ThenBy(sort.Column);
                 }
-            }
+            } while ((sort = sort.ThenBy) != null);
 
-            var order = OrderColumnsToString(orderBy.OrderBy, sortTable);
+            var isBefore = arguments.ContainsKey("last");
+            var order = builder.OrderBy == null ? "" : CompileOrderBy(builder.OrderBy);
             var limit = -1;
             var offset = 0;
-            string? whereCondition = null;
+            WhereCondition? whereCondition = null;
 
             if (arguments.TryGetValue("first", out var first))
             {
@@ -188,13 +272,13 @@ namespace JoinMonster.Data
                 if (arguments.TryGetValue("after", out var after))
                 {
                     var cursorObj = ConnectionUtils.CursorToObject((string) after);
-                    ValidateCursor(cursorObj, sortKey.Key);
-                    whereCondition = SortKeyToWhereCondition(cursorObj, descending, sortTable);
+                    ValidateCursor(cursorObj, GetKeys(sortKey));
+                    whereCondition = SortKeyToWhereCondition(cursorObj, isBefore, sortTable);
+                }
 
-                    if (arguments.ContainsKey("before"))
-                    {
-                        throw new JoinMonsterException("Using 'before' with 'first' is nonsensical.");
-                    }
+                if (arguments.ContainsKey("before"))
+                {
+                    throw new JoinMonsterException("Using 'before' with 'first' is nonsensical.");
                 }
             }
             else if (arguments.TryGetValue("last", out var last))
@@ -203,8 +287,8 @@ namespace JoinMonster.Data
                 if (arguments.TryGetValue("before", out var before))
                 {
                     var cursorObj = ConnectionUtils.CursorToObject((string) before);
-                    ValidateCursor(cursorObj, sortKey.Key);
-                    whereCondition = SortKeyToWhereCondition(cursorObj, descending, sortTable);
+                    ValidateCursor(cursorObj, GetKeys(sortKey));
+                    whereCondition = SortKeyToWhereCondition(cursorObj, isBefore, sortTable);
                 }
 
                 if (arguments.ContainsKey("after"))
@@ -216,14 +300,14 @@ namespace JoinMonster.Data
             return (limit, order, whereCondition);
         }
 
-        // the cursor contains the sort keys. it needs to match the keys specified in the `sortKey` on this field in the schema
-        private void ValidateCursor(IDictionary<string, object> cursorObj, string[] expectedKeys)
-        {
-            var actualKeys = cursorObj.Keys;
-            var expectedKeySet = new HashSet<string>(expectedKeys);
-            var actualKeySet = new HashSet<string>(actualKeys);
 
-            foreach (var key in actualKeys)
+        // the cursor contains the sort keys. it needs to match the keys specified in the `sortKey` on this field in the schema
+        private void ValidateCursor(IDictionary<string, object> cursorObj, IEnumerable<string> expectedKeys)
+        {
+            var expectedKeySet = new HashSet<string>(expectedKeys);
+            var actualKeySet = new HashSet<string>(cursorObj.Keys);
+
+            foreach (var key in actualKeySet)
             {
                 if (!expectedKeySet.Contains(key))
                 {
@@ -231,7 +315,7 @@ namespace JoinMonster.Data
                 }
             }
 
-            foreach (var key in expectedKeys)
+            foreach (var key in expectedKeySet)
             {
                 if (!actualKeySet.Contains(key))
                 {
@@ -240,26 +324,93 @@ namespace JoinMonster.Data
             }
         }
 
-        // take the sort key and translate that for the where clause
-        private string SortKeyToWhereCondition(IDictionary<string, object> keyObj, bool descending, string sortTable)
+        private IEnumerable<string> GetKeys(SortKey? sortKey)
         {
-            var sortColumns = new List<string>();
-            var sortValues = new List<string>();
-            foreach (var kvp in keyObj)
-            {
-                var key = kvp.Key;
-                var value = kvp.Value;
+            if (sortKey == null)
+                return Enumerable.Empty<string>();
 
-                sortColumns.Add($"{Quote(sortTable)}.{Quote(key)}");
-                sortValues.Add(MaybeQuote(value));
-            }
+            var keys = new List<string>();
+
+            do
+            {
+                keys.Add(sortKey.Column);
+            } while ((sortKey = sortKey.ThenBy) != null);
+
+            return keys;
+        }
+
+        // take the sort key and translate that for the where clause
+        private WhereCondition SortKeyToWhereCondition(IDictionary<string, object> keyObj, bool descending,
+            string sortTable)
+        {
+            var sortColumns = string.Join(", ", keyObj.Keys.Select(x => $"{Quote(sortTable)}.{Quote(x)}"));
+            var parameters = keyObj
+                .Select((kvp, index) => new {kvp, index})
+                .ToDictionary(x => $"p{x.index}", x => PrepareValue(x.kvp.Value));
 
             var op = descending ? "<" : ">";
 
-            return $"{string.Join(", ", sortColumns)} {op} ({string.Join(", ", sortValues)})";
+            return new RawCondition($"({sortColumns}) {op} ({string.Join(", ", parameters.Keys.Select(x => $"@{x}"))})", parameters);
         }
 
-        protected virtual string MaybeQuote(object value)
+        private static object PrepareValue(object value)
+        {
+            if (value is JsonElement element)
+            {
+                switch (element.ValueKind)
+                {
+                    case JsonValueKind.Array:
+                    {
+                        var result = element.EnumerateArray().Select(x => PrepareValue(x)).ToList();
+                        return CastArray(result);
+                    }
+                    case JsonValueKind.String:
+                    {
+                        var result = element.GetString();
+                        if (Guid.TryParse(result, out var guid))
+                            return guid;
+                        return result;
+                    }
+
+                    case JsonValueKind.Number:
+                        if (element.TryGetInt32(out var intValue))
+                            return intValue;
+                        if (element.TryGetInt64(out var longValue))
+                            return longValue;
+                        return element.GetDecimal();
+                    case JsonValueKind.True:
+                    case JsonValueKind.False:
+                        return element.GetBoolean();
+                    case JsonValueKind.Undefined:
+                    case JsonValueKind.Object:
+                    case JsonValueKind.Null:
+                        throw new NotSupportedException("Cannot cast 'Undefined', 'Object' or 'Null'.");
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+
+            return value;
+        }
+
+        private static object CastArray(IReadOnlyList<object> result)
+        {
+            var firstValue = result[0];
+
+            return firstValue switch
+            {
+                int _ => result.Cast<int>().ToList(),
+                long _ => result.Cast<long>().ToList(),
+                decimal _ => result.Cast<decimal>().ToList(),
+                DateTime _ => result.Cast<DateTime>().ToList(),
+                bool _ => result.Cast<bool>().ToList(),
+                Guid _ => result.Cast<Guid>().ToList(),
+                _ => result.Cast<string>().ToList()
+            };
+        }
+
+
+        protected virtual string MaybeQuote(object? value)
         {
             if (value == null)
                 return "NULL";

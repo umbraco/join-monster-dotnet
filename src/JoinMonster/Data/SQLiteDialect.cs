@@ -24,10 +24,10 @@ namespace JoinMonster.Data
         /// <inheritdoc />
         public override void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
             IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
-            IDictionary<string, object> parameters, string? joinCondition) => throw new NotSupportedException();
+            SqlCompilerContext compilerContext, string? joinCondition) => throw new NotSupportedException();
 
         /// <inheritdoc />
         public override void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context,
-            ICollection<string> tables, IDictionary<string, object> parameters) => throw new NotSupportedException();
+            ICollection<string> tables, SqlCompilerContext compilerContext) => throw new NotSupportedException();
     }
 }
