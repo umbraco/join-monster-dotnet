@@ -217,7 +217,7 @@ namespace JoinMonster.Tests.Unit.Data
 
                 builder.Types.For("Product")
                     .FieldFor("variants", null)
-                    .SqlJoin((join, _, __, ___) => join.Raw($"{join.ParentTableAlias}.\"id\" = {join.ChildTableAlias}.\"productId\""));
+                    .SqlJoin((join, _, __, ___) => join.Raw($"{join.ParentTableAlias}.\"id\" = {@join.ChildTableAlias}.\"productId\"", @from: $"LEFT JOIN {join.ChildTableName} {join.ChildTableAlias}"));
 
                 builder.Types.For("ProductVariant")
                     .SqlTable("productVariants", "id");
