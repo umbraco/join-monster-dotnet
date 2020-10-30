@@ -160,12 +160,18 @@ namespace JoinMonster.Data
             {
                 if (node.Join != null)
                 {
-                    var join = new JoinBuilder(_dialect.Quote(parentTable.As), _dialect.Quote(node.As));
+                    var join = new JoinBuilder(_dialect.Quote(parentTable.Name), _dialect.Quote(parentTable.As),
+                        _dialect.Quote(node.Name), _dialect.Quote(node.As));
                     node.Join(join, arguments, context, node);
 
                     if (node.Paginate)
                     {
-                        _dialect.HandleJoinedOneToManyPaginated(parentTable, node, arguments, context, tables, compilerContext, join.Condition == null ? null : _dialect.CompileConditions(new[] {join.Condition}, compilerContext));
+                        _dialect.HandleJoinedOneToManyPaginated(parentTable, node, arguments, context, tables, compilerContext,
+                            join.Condition == null ? null : _dialect.CompileConditions(new[] {join.Condition}, compilerContext));
+                    }
+                    else if (join.Condition is RawCondition)
+                    {
+                        tables.Add($"{join.From} ON {_dialect.CompileConditions(new[] {join.Condition}, compilerContext)}");
                     }
                     else if(join.Condition != null)
                     {
@@ -178,8 +184,8 @@ namespace JoinMonster.Data
                 if (node.Junction != null)
                 {
                     // TODO: Handle batching and paging
-                    var fromParentJoin = new JoinBuilder( _dialect.Quote(parentTable.As), _dialect.Quote(node.Junction.As));
-                    var toChildJoin = new JoinBuilder( _dialect.Quote(node.Junction.As), _dialect.Quote(node.As));
+                    var fromParentJoin = new JoinBuilder(_dialect.Quote(parentTable.Name), _dialect.Quote(parentTable.As), _dialect.Quote(node.Junction.Table), _dialect.Quote(node.Junction.As));
+                    var toChildJoin = new JoinBuilder(_dialect.Quote(parentTable.Name), _dialect.Quote(node.Junction.As), _dialect.Quote(node.Name), _dialect.Quote(node.As));
                     node.Junction.FromParent(fromParentJoin, arguments, context, node);
                     node.Junction.ToChild(toChildJoin, arguments, context, node);
 
@@ -188,8 +194,23 @@ namespace JoinMonster.Data
                     if (toChildJoin.Condition == null)
                         throw new JoinMonsterException($"The 'toChild' join condition on table '{node.Name}' for junction '{node.Junction.Table}' cannot be null.");
 
-                    tables.Add($"LEFT JOIN {_dialect.Quote(node.Junction.Table)} {_dialect.Quote(node.Junction.As)} ON {_dialect.CompileConditions(new []{fromParentJoin.Condition}, compilerContext)}");
-                    tables.Add($"LEFT JOIN {_dialect.Quote(node.Name)} {_dialect.Quote(node.As)} ON {_dialect.CompileConditions(new[] {toChildJoin.Condition}, compilerContext)}");
+                    if (fromParentJoin.Condition is RawCondition)
+                    {
+                        tables.Add($"{fromParentJoin.From} ON {_dialect.CompileConditions(new[] {fromParentJoin.Condition}, compilerContext)}");
+                    }
+                    else
+                    {
+                        tables.Add($"LEFT JOIN {_dialect.Quote(node.Junction.Table)} {_dialect.Quote(node.Junction.As)} ON {_dialect.CompileConditions(new[] {fromParentJoin.Condition}, compilerContext)}");
+                    }
+
+                    if (toChildJoin.Condition is RawCondition)
+                    {
+                        tables.Add($"{toChildJoin.From} ON {_dialect.CompileConditions(new[] {toChildJoin.Condition}, compilerContext)}");
+                    }
+                    else
+                    {
+                        tables.Add($"LEFT JOIN {_dialect.Quote(node.Name)} {_dialect.Quote(node.As)} ON {_dialect.CompileConditions(new[] {toChildJoin.Condition}, compilerContext)}");
+                    }
 
                     return;
                 }

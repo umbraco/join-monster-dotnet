@@ -54,7 +54,7 @@ namespace JoinMonster.Data
             if (node.Join == null)
                 throw new JoinMonsterException($"{nameof(node)}.{nameof(node.Join)} on table '{node.Name}' cannot be null.");
 
-            var join = new JoinBuilder(Quote(parent.As), Quote(node.As));
+            var join = new JoinBuilder(Quote(parent.Name), Quote(parent.As), Quote(node.Name), Quote(node.As));
             node.Join(join, arguments, context, node);
 
             if(join.Condition == null)

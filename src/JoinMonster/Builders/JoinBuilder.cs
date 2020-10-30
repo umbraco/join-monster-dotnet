@@ -10,18 +10,34 @@ namespace JoinMonster.Builders
     /// </summary>
     public class JoinBuilder
     {
-        internal JoinBuilder(string parentTable, string childTable)
+        internal JoinBuilder(string parentTableName, string parentTableAlias, string childTableName, string childTableAlias)
         {
-            ParentTableAlias = parentTable ?? throw new ArgumentNullException(nameof(parentTable));
-            ChildTableAlias = childTable ?? throw new ArgumentNullException(nameof(childTable));
+            ParentTableName = parentTableName ?? throw new ArgumentNullException(nameof(parentTableName));
+            ParentTableAlias = parentTableAlias ?? throw new ArgumentNullException(nameof(parentTableAlias));
+            ChildTableName = childTableName ?? throw new ArgumentNullException(nameof(childTableName));
+            ChildTableAlias = childTableAlias ?? throw new ArgumentNullException(nameof(childTableAlias));
+
+            From = $"LEFT JOIN {ChildTableName} AS {ChildTableAlias}";
         }
 
+        internal string From { get; private set; }
+
         internal WhereCondition? Condition { get; private set; }
+
+        /// <summary>
+        /// The parent table name. Already quoted.
+        /// </summary>
+        public string ParentTableName { get; }
 
         /// <summary>
         /// An auto-generated table alias for the parent table. Already quoted.
         /// </summary>
         public string ParentTableAlias { get; }
+
+        /// <summary>
+        /// The parent child name. Already quoted.
+        /// </summary>
+        public string ChildTableName { get; }
 
         /// <summary>
         /// An auto-generated table alias for the child table. Already quoted.
@@ -47,19 +63,24 @@ namespace JoinMonster.Builders
         /// <summary>
         /// Defines a raw <c>JOIN</c> condition.
         /// </summary>
-        /// <param name="joinCondition">The raw join condition.</param>
+        /// <param name="joinCondition">The join condition.</param>
         /// <param name="parameters">The parameters.</param>
-        public void Raw(string joinCondition, object? parameters = null) =>
-            Raw(joinCondition, parameters?.ToDictionary());
+        /// <param name="from">E.g. LEFT JOIN {join.ChildTableName} AS {join.ChildTableAlias}.</param>
+        public void Raw(string joinCondition, object? parameters = null, string from = null!) =>
+            Raw(joinCondition, parameters?.ToDictionary(), from);
 
         /// <summary>
         /// Defines a raw <c>JOIN</c> condition.
         /// </summary>
-        /// <param name="joinCondition">The raw join condition.</param>
+        /// <param name="joinCondition">The join condition.</param>
         /// <param name="parameters">The parameters.</param>
-        public void Raw(string joinCondition, IDictionary<string, object>? parameters)
+        /// <param name="from">E.g. LEFT JOIN {join.ChildTableName} AS {join.ChildTableAlias}.</param>
+        public void Raw(string joinCondition, IDictionary<string, object>? parameters, string? from = null)
         {
             if (joinCondition == null) throw new ArgumentNullException(nameof(joinCondition));
+            if (@from != null)
+                From = @from;
+
             Condition = new RawCondition(joinCondition, parameters);
         }
     }
