@@ -274,7 +274,7 @@ namespace JoinMonster.Data
                 {
                     var cursorObj = ConnectionUtils.CursorToObject((string) after);
                     ValidateCursor(cursorObj, GetKeys(sortKey));
-                    whereCondition = SortKeyToWhereCondition(cursorObj, isBefore, sortTable);
+                    whereCondition = SortKeyToWhereCondition(sortKey, cursorObj, isBefore, sortTable);
                 }
 
                 if (arguments.ContainsKey("before"))
@@ -289,7 +289,7 @@ namespace JoinMonster.Data
                 {
                     var cursorObj = ConnectionUtils.CursorToObject((string) before);
                     ValidateCursor(cursorObj, GetKeys(sortKey));
-                    whereCondition = SortKeyToWhereCondition(cursorObj, isBefore, sortTable);
+                    whereCondition = SortKeyToWhereCondition(sortKey, cursorObj, isBefore, sortTable);
                 }
 
                 if (arguments.ContainsKey("after"))
@@ -341,17 +341,28 @@ namespace JoinMonster.Data
         }
 
         // take the sort key and translate that for the where clause
-        private WhereCondition SortKeyToWhereCondition(IDictionary<string, object> keyObj, bool descending,
+        private WhereCondition SortKeyToWhereCondition(SortKey sortKey, IDictionary<string, object> keyObj,
+            bool isBefore,
             string sortTable)
         {
-            var sortColumns = string.Join(", ", keyObj.Keys.Select(x => $"{Quote(sortTable)}.{Quote(x)}"));
-            var parameters = keyObj
-                .Select((kvp, index) => new {kvp, index})
-                .ToDictionary(x => $"p{x.index}", x => PrepareValue(x.kvp.Value));
+            var conditions = new List<WhereCondition>();
+            var where = new WhereBuilder(sortTable, conditions);
 
-            var op = descending ? "<" : ">";
+            var sort = sortKey;
+            do
+            {
+                var descending = sort.Direction == SortDirection.Descending;
+                if (isBefore)
+                    descending = !descending;
 
-            return new RawCondition($"({sortColumns}) {op} ({string.Join(", ", parameters.Keys.Select(x => $"@{x}"))})", parameters);
+                var op = descending ? "<" : ">";
+
+                var value = PrepareValue(keyObj[sort.Column]);
+                where.Column(sort.WhereColumn ?? sort.Column, value, op);
+
+            } while ((sort = sort.ThenBy) != null);
+
+            return new NestedCondition(conditions);
         }
 
         private static object PrepareValue(object value)

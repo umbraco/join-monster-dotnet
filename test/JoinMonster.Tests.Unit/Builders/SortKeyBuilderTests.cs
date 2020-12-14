@@ -16,7 +16,7 @@ namespace JoinMonster.Tests.Unit.Builders
 
             builder.By("id");
 
-            builder.SortKey.Should().BeEquivalentTo(new SortKey("products", "id", "id", SortDirection.Ascending));
+            builder.SortKey.Should().BeEquivalentTo(new SortKey("products", "id", "id", "id", SortDirection.Ascending));
         }
 
         [Fact]
@@ -29,9 +29,9 @@ namespace JoinMonster.Tests.Unit.Builders
 
             builder.SortKey.Should()
                 .BeEquivalentTo(
-                    new SortKey("products", "sortOrder", "sortOrder", SortDirection.Ascending)
+                    new SortKey("products", "sortOrder", "sortOrder", "sortOrder", SortDirection.Ascending)
                     {
-                        ThenBy = new SortKey("products", "id", "id", SortDirection.Descending)
+                        ThenBy = new SortKey("products", "id", "id", "id", SortDirection.Descending)
 
                     });
         }
@@ -44,7 +44,7 @@ namespace JoinMonster.Tests.Unit.Builders
 
             builder.ByDescending("id");
 
-            builder.SortKey.Should().BeEquivalentTo(new SortKey("products", "id", "id", SortDirection.Descending));
+            builder.SortKey.Should().BeEquivalentTo(new SortKey("products", "id", "id", "id", SortDirection.Descending));
         }
 
         [Fact]
@@ -55,9 +55,9 @@ namespace JoinMonster.Tests.Unit.Builders
 
             builder.ByDescending("sortOrder").ThenBy("id");
 
-            builder.SortKey.Should().BeEquivalentTo(new SortKey("products", "sortOrder", "sortOrder", SortDirection.Descending)
+            builder.SortKey.Should().BeEquivalentTo(new SortKey("products", "sortOrder", "sortOrder", "sortOrder", SortDirection.Descending)
             {
-                ThenBy = new SortKey("products", "id", "id", SortDirection.Ascending)
+                ThenBy = new SortKey("products", "id", "id", "id", SortDirection.Ascending)
             });
         }
     }
