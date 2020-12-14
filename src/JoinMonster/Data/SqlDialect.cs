@@ -1,6 +1,6 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
@@ -8,6 +8,7 @@ using GraphQL;
 using JoinMonster.Builders;
 using JoinMonster.Builders.Clauses;
 using JoinMonster.Language.AST;
+using SortKey = JoinMonster.Language.AST.SortKey;
 
 namespace JoinMonster.Data
 {
@@ -355,6 +356,7 @@ namespace JoinMonster.Data
 
         private static object PrepareValue(object value)
         {
+            // TODO: would it be better to add the type when serializing and use that when converting the value back?
             if (value is JsonElement element)
             {
                 switch (element.ValueKind)
@@ -369,6 +371,8 @@ namespace JoinMonster.Data
                         var result = element.GetString();
                         if (Guid.TryParse(result, out var guid))
                             return guid;
+                        if(DateTime.TryParse(result, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dateTime))
+                            return dateTime;
                         return result;
                     }
 
