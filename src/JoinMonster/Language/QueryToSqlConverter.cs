@@ -206,7 +206,7 @@ namespace JoinMonster.Language
                 do
                 {
 
-                    var newChild = new SqlColumn(sqlTable, sortKey.Column, sortKey.Column, sortKey.As);
+                    var newChild = new SqlColumn(sqlTable, sortKey.WhereColumn, sortKey.Column, sortKey.As);
                     if (sqlTable.SortKey == null && sqlTable.Junction != null)
                         newChild.FromOtherTable = sqlTable.Junction.As;
 
