@@ -19,7 +19,7 @@ namespace JoinMonster.Tests.Unit
             var variantsTable = node.AddTable(null, "variants", "variants", "variants", new Dictionary<string, object>(), true);
             variantsTable.AddColumn("id", "id", "id", true);
             variantsTable.AddColumn("name", "name", "name");
-            variantsTable.SortKey = new SortKey("products", "sortOrder", "sortOrder", "sortOrder", SortDirection.Ascending);
+            variantsTable.SortKey = new SortKey("products", "sortOrder", "sortOrder", typeof(int), SortDirection.Ascending);
             var colorsTable = variantsTable.AddTable(null, "colors", "color", "color", new Dictionary<string, object>(), true);
             colorsTable.AddColumn("id", "id", "id", true);
             colorsTable.AddColumn("color", "color", "color");
