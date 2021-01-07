@@ -123,5 +123,70 @@ namespace JoinMonster.Data
                     null, compilerContext));
             }
         }
+
+        /// <inheritdoc />
+        public override string CompileOrderBy(OrderBy orderBy)
+        {
+            if (orderBy == null) throw new ArgumentNullException(nameof(orderBy));
+
+            var orders = new List<string>();
+
+            var order = orderBy;
+            do
+            {
+                orders.Add($"{Quote(order.Table)}.{Quote(order.Column.Replace("->>", "->"))} {(order.Direction == SortDirection.Ascending ? "ASC" : "DESC")}");
+            } while ((order = order.ThenBy) != null);
+
+            return string.Join(", ", orders);
+        }
+
+        /// <inheritdoc />
+        protected override void HandleSortKeyWhere(WhereBuilder where, string column, object value, string op, Type type)
+        {
+            var col = $"{Quote(where.Table)}.{Quote(column)}";
+
+            // cast column if it's a JSON field
+            if (col.Contains("->"))
+            {
+                var isArray = type.IsArray && type.HasElementType;
+                var postFix = isArray ? "[]" : "";
+                if (isArray) type = type.GetElementType()!;
+
+                if (type == typeof(string))
+                {
+                    col = $"CAST({column} AS text{postFix})";
+                }
+                else if (type == typeof(Guid))
+                {
+                    col = $"CAST({column} AS uuid{postFix})";
+                }
+                else if (type == typeof(DateTime))
+                {
+                    col = $"CAST({column} AS timestamp without time zone{postFix})";
+                }
+                else if (type == typeof(byte))
+                {
+                    col = $"CAST({column} AS smallint{postFix})";
+                }
+                else if (type == typeof(int))
+                {
+                    col = $"CAST({column} AS integer{postFix})";
+                }
+                else if (type == typeof(long))
+                {
+                    col = $"CAST({column} AS bigint{postFix})";
+                }
+                else if (type == typeof(decimal) || type == typeof(double))
+                {
+                    col = $"CAST({column} AS numeric{postFix})";
+                }
+                else if (type == typeof(bool))
+                {
+                    col = $"CAST({column} AS bool{postFix})";
+                }
+            }
+
+            where.Raw($"{col} {op} @value", new {value});
+        }
     }
 }

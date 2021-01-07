@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using JoinMonster.Builders;
@@ -14,9 +15,9 @@ namespace JoinMonster.Tests.Unit.Builders
             var aliasGenerator = new DefaultAliasGenerator();
             var builder = new SortKeyBuilder("products", aliasGenerator);
 
-            builder.By("id");
+            builder.By("id", typeof(Guid));
 
-            builder.SortKey.Should().BeEquivalentTo(new SortKey("products", "id", "id", "id", SortDirection.Ascending));
+            builder.SortKey.Should().BeEquivalentTo(new SortKey("products", "id", "id", typeof(Guid), SortDirection.Ascending));
         }
 
         [Fact]
@@ -25,14 +26,13 @@ namespace JoinMonster.Tests.Unit.Builders
             var aliasGenerator = new DefaultAliasGenerator();
             var builder = new SortKeyBuilder("products", aliasGenerator);
 
-            builder.By("sortOrder").ThenByDescending("id");
+            builder.By("sortOrder", typeof(int)).ThenByDescending("id", typeof(Guid));
 
             builder.SortKey.Should()
                 .BeEquivalentTo(
-                    new SortKey("products", "sortOrder", "sortOrder", "sortOrder", SortDirection.Ascending)
+                    new SortKey("products", "sortOrder", "sortOrder", typeof(int), SortDirection.Ascending)
                     {
-                        ThenBy = new SortKey("products", "id", "id", "id", SortDirection.Descending)
-
+                        ThenBy = new SortKey("products", "id", "id", typeof(Guid), SortDirection.Descending)
                     });
         }
 
@@ -42,9 +42,9 @@ namespace JoinMonster.Tests.Unit.Builders
             var aliasGenerator = new DefaultAliasGenerator();
             var builder = new SortKeyBuilder("products", aliasGenerator);
 
-            builder.ByDescending("id");
+            builder.ByDescending("id", typeof(Guid));
 
-            builder.SortKey.Should().BeEquivalentTo(new SortKey("products", "id", "id", "id", SortDirection.Descending));
+            builder.SortKey.Should().BeEquivalentTo(new SortKey("products", "id", "id", typeof(Guid), SortDirection.Descending));
         }
 
         [Fact]
@@ -53,11 +53,11 @@ namespace JoinMonster.Tests.Unit.Builders
             var aliasGenerator = new DefaultAliasGenerator();
             var builder = new SortKeyBuilder("products", aliasGenerator);
 
-            builder.ByDescending("sortOrder").ThenBy("id");
+            builder.ByDescending("sortOrder", typeof(int)).ThenBy("id", typeof(Guid));
 
-            builder.SortKey.Should().BeEquivalentTo(new SortKey("products", "sortOrder", "sortOrder", "sortOrder", SortDirection.Descending)
+            builder.SortKey.Should().BeEquivalentTo(new SortKey("products", "sortOrder", "sortOrder", typeof(int), SortDirection.Descending)
             {
-                ThenBy = new SortKey("products", "id", "id", "id", SortDirection.Ascending)
+                ThenBy = new SortKey("products", "id", "id", typeof(Guid), SortDirection.Ascending)
             });
         }
     }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using GraphQL;
 using GraphQL.Types.Relay.DataObjects;
@@ -88,7 +89,7 @@ namespace JoinMonster
                         if (dataArr.Count > System.Convert.ToInt32(last))
                         {
                             hasPreviousPage = true;
-                            dataArr.RemoveAt(0);
+                            dataArr.RemoveAt(dataArr.Count - 1);
                         }
 
                         dataArr.Reverse();
@@ -101,7 +102,21 @@ namespace JoinMonster
                         var sort = sortKey!;
                         do
                         {
-                            cursor[sort.Column] = obj[sort.Column];
+                            var value = obj[sort.Column];
+                            if (sort.Type != null)
+                            {
+                                if (sort.Type == typeof(DateTime) && value is string strVal)
+                                {
+                                    // TODO: is this needed?
+                                    value = DateTime.Parse(strVal, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
+                                }
+                                else
+                                {
+                                    value = System.Convert.ChangeType(value, sort.Type, CultureInfo.InvariantCulture);
+                                }
+                            }
+
+                            cursor[sort.As] = value;
                         } while ((sort = sort.ThenBy) != null);
 
                         return new Edge<object> {Cursor = ConnectionUtils.ObjectToCursor(cursor), Node = obj};

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -243,13 +244,13 @@ namespace JoinMonster.Data
 
             var builder = new OrderByBuilder(sortTable);
             ThenOrderByBuilder? thenBy = null;
+            var isBefore = arguments.ContainsKey("last");
 
             var sort = sortKey;
             do
             {
                 var descending = sort.Direction == SortDirection.Descending;
-                if (arguments.ContainsKey("last"))
-                    descending = !descending;
+                if (isBefore) descending = !descending;
 
                 if (thenBy == null)
                 {
@@ -261,7 +262,6 @@ namespace JoinMonster.Data
                 }
             } while ((sort = sort.ThenBy) != null);
 
-            var isBefore = arguments.ContainsKey("last");
             var order = builder.OrderBy == null ? "" : CompileOrderBy(builder.OrderBy);
             var limit = -1;
             var offset = 0;
@@ -334,47 +334,118 @@ namespace JoinMonster.Data
 
             do
             {
-                keys.Add(sortKey.Column);
+                keys.Add(sortKey.As);
             } while ((sortKey = sortKey.ThenBy) != null);
 
             return keys;
         }
 
-        // take the sort key and translate that for the where clause
+        // Returns the SQL implementation of the sort key cursor WHERE conditions
+        // Note: This operation compares the first key, then the second key, then the third key, etc, in order and independently.
+        // It's not a A > B AND C > D because C and D should only be compared of A and B are equal. If there are many sortKeys,
+        // then we need to implement the hierarchical comparison between them.
+        // See https://engineering.shopify.com/blogs/engineering/pagination-relative-cursors for an explanation of what this is doing
         private WhereCondition SortKeyToWhereCondition(SortKey sortKey, IDictionary<string, object> keyObj,
-            bool isBefore,
-            string sortTable)
+            bool isBefore, string sortTable)
         {
-            var conditions = new List<WhereCondition>();
-            var where = new WhereBuilder(sortTable, conditions);
+            WhereCondition Condition(SortKey ordering, string? op = null)
+            {
+                var descending = ordering.Direction == SortDirection.Descending;
+                if (isBefore) descending = !descending;
+                op ??= descending ? "<" : ">";
+
+                var conditions = new List<WhereCondition>();
+                var where = new WhereBuilder(sortTable, conditions);
+
+                var value = keyObj[ordering.As];
+                var preparedValue = PrepareValue(value, ordering.Type);
+
+                HandleSortKeyWhere(where, ordering.Column, preparedValue, op, ordering.Type ?? preparedValue.GetType());
+
+                return conditions.Count == 1 ? conditions[0] : new NestedCondition(conditions);
+            }
+
+            var sortKeys = new Stack<SortKey>();
 
             var sort = sortKey;
             do
             {
-                var descending = sort.Direction == SortDirection.Descending;
-                if (isBefore)
-                    descending = !descending;
-
-                var op = descending ? "<" : ">";
-
-                var value = PrepareValue(keyObj[sort.Column]);
-                where.Column(sort.WhereColumn ?? sort.Column, value, op);
-
+                sortKeys.Push(sort);
             } while ((sort = sort.ThenBy) != null);
 
-            return new NestedCondition(conditions);
+            return sortKeys
+                .Aggregate(Condition(sortKeys.Pop()),
+                    (agg, ordering) =>
+                        new NestedCondition(
+                            new[]
+                            {
+                                Condition(ordering),
+                                new NestedCondition(new[] {Condition(ordering, "="), agg})
+                                {
+                                    IsOr = true
+                                }
+                            })
+                );
         }
 
-        private static object PrepareValue(object value)
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="where">The where builder</param>
+        /// <param name="column">The column name.</param>
+        /// <param name="value">The value.</param>
+        /// <param name="op">The operator.</param>
+        /// <param name="type">The value type.</param>
+        protected virtual void HandleSortKeyWhere(WhereBuilder where, string column, object value, string op, Type type)
         {
-            // TODO: would it be better to add the type when serializing and use that when converting the value back?
+            where.Column(column, value, op);
+        }
+
+        private static object PrepareValue(object value, Type? type)
+        {
             if (value is JsonElement element)
             {
+                if (type != null)
+                {
+                    if (type.IsArray && type.HasElementType)
+                    {
+                        var elementType = type.GetElementType();
+                        var list = (IList) Activator.CreateInstance(type, element.GetArrayLength());
+
+                        var i = -1;
+                        foreach (var child in element.EnumerateArray())
+                            list[++i] = PrepareValue(child, elementType);
+
+                        return list;
+                    }
+
+                    if (type == typeof(DateTime))
+                        return element.GetDateTime();
+                    if (type == typeof(Guid))
+                        return element.GetGuid();
+                    if (type == typeof(byte))
+                        return element.GetInt16();
+                    if (type == typeof(int))
+                        return element.GetInt32();
+                    if (type == typeof(long))
+                        return element.GetInt64();
+                    if (type == typeof(double))
+                        return element.GetDouble();
+                    if (type == typeof(decimal) || type == typeof(float))
+                        return element.GetDecimal();
+                    if (type == typeof(bool))
+                        return element.GetBoolean();
+                    if (type == typeof(string))
+                        return element.GetString();
+
+                    throw new NotSupportedException($"Type '{type}' is not supported.");
+                }
+
                 switch (element.ValueKind)
                 {
                     case JsonValueKind.Array:
                     {
-                        var result = element.EnumerateArray().Select(x => PrepareValue(x)).ToList();
+                        var result = element.EnumerateArray().Select(x => PrepareValue(x, null)).ToList();
                         return CastArray(result);
                     }
                     case JsonValueKind.String:
@@ -382,7 +453,7 @@ namespace JoinMonster.Data
                         var result = element.GetString();
                         if (Guid.TryParse(result, out var guid))
                             return guid;
-                        if(DateTime.TryParse(result, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dateTime))
+                        if (DateTime.TryParse(result, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out var dateTime))
                             return dateTime;
                         return result;
                     }
@@ -414,8 +485,10 @@ namespace JoinMonster.Data
 
             return firstValue switch
             {
+                byte _ => result.Cast<byte>().ToList(),
                 int _ => result.Cast<int>().ToList(),
                 long _ => result.Cast<long>().ToList(),
+                double _ => result.Cast<double>().ToList(),
                 decimal _ => result.Cast<decimal>().ToList(),
                 DateTime _ => result.Cast<DateTime>().ToList(),
                 bool _ => result.Cast<bool>().ToList(),
@@ -423,7 +496,6 @@ namespace JoinMonster.Data
                 _ => result.Cast<string>().ToList()
             };
         }
-
 
         protected virtual string MaybeQuote(object? value)
         {
