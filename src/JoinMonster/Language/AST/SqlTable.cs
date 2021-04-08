@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using GraphQL.Execution;
 using GraphQL.Language.AST;
 using GraphQL.Types;
 using JoinMonster.Configs;
 
 namespace JoinMonster.Language.AST
 {
+    [DebuggerDisplay("{GetType().Name} ({Name})")]
     public class SqlTable : Node
     {
         public SqlTable(Node? parent, SqlTableConfig? config, string name, string fieldName, string @as,
@@ -31,6 +34,7 @@ namespace JoinMonster.Language.AST
         public ICollection<SqlColumnBase> Columns { get; }
         public ICollection<SqlTable> Tables { get; }
         public SqlJunction? Junction { get; set; }
+        public SqlBatch? Batch { get; set; }
         public WhereDelegate? Where { get; set; }
         public JoinDelegate? Join { get; set; }
         public OrderBy? OrderBy { get; set; }
@@ -40,6 +44,14 @@ namespace JoinMonster.Language.AST
         public SqlColumn AddColumn(string name, string fieldName, string @as, bool isId = false)
         {
             var column = new SqlColumn(this, name, fieldName, @as, isId);
+            Columns.Add(column);
+            return column;
+        }
+
+        public SqlColumn AddColumn(SqlColumn column)
+        {
+            if (column.Parent != this) throw new InvalidOperationError("Cannot change column parent");
+
             Columns.Add(column);
             return column;
         }

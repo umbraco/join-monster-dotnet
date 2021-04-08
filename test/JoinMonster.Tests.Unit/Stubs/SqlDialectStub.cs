@@ -10,11 +10,16 @@ namespace JoinMonster.Tests.Unit.Stubs
     {
         private readonly string _joinedOneToManyPaginatedSql;
         private readonly string _paginatedAtRootSql;
+        private readonly string _batchedOneToManyPaginatedSql;
+        private readonly string _batchedManyToManyPaginatedSql;
 
-        public SqlDialectStub(string joinedOneToManyPaginatedSql = null, string paginatedAtRootSql = null)
+        public SqlDialectStub(string joinedOneToManyPaginatedSql = null, string paginatedAtRootSql = null,
+            string batchedOneToManyPaginatedSql = null, string batchedManyToManyPaginatedSql = null)
         {
             _joinedOneToManyPaginatedSql = joinedOneToManyPaginatedSql;
             _paginatedAtRootSql = paginatedAtRootSql;
+            _batchedOneToManyPaginatedSql = batchedOneToManyPaginatedSql;
+            _batchedManyToManyPaginatedSql = batchedManyToManyPaginatedSql;
         }
 
         public override string CompositeKey(string parentTable, IEnumerable<string> keys)
@@ -35,6 +40,19 @@ namespace JoinMonster.Tests.Unit.Stubs
             SqlCompilerContext compilerContext)
         {
             tables.Add(_paginatedAtRootSql);
+        }
+
+        public override void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
+            IResolveFieldContext resolveFieldContext, ICollection<string> tables, IEnumerable<object> batchScope, SqlCompilerContext compilerContext)
+        {
+            tables.Add(_batchedOneToManyPaginatedSql);
+        }
+
+        public override void HandleBatchedManyToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
+            IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> enumerable, SqlCompilerContext compilerContext,
+            string joinCondition)
+        {
+            tables.Add(_batchedManyToManyPaginatedSql);
         }
     }
 }

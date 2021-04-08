@@ -37,7 +37,7 @@ namespace JoinMonster.Data
         /// <param name="joinCondition">The join condition if any.</param>
         void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
             IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
-            SqlCompilerContext compilerContext , string? joinCondition);
+            SqlCompilerContext compilerContext, string? joinCondition);
 
         /// <summary>
         /// Handles pagination at root.
@@ -50,6 +50,14 @@ namespace JoinMonster.Data
         /// <param name="compilerContext">The sql compiler context.</param>
         void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
             IResolveFieldContext context, ICollection<string> tables, SqlCompilerContext compilerContext);
+
+        void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string,object> arguments,
+            IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope,
+            SqlCompilerContext compilerContext);
+
+        void HandleBatchedManyToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string,object> arguments,
+            IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope,
+            SqlCompilerContext compilerContext, string joinCondition);
 
         string CompileConditions(IEnumerable<WhereCondition> conditions, SqlCompilerContext context);
         string CompileOrderBy(OrderBy junctionOrderBy);

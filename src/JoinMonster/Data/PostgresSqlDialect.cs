@@ -124,6 +124,131 @@ namespace JoinMonster.Data
             }
         }
 
+        public override void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
+            IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope, SqlCompilerContext compilerContext)
+        {
+            if (node == null) throw new ArgumentNullException(nameof(node));
+            if (arguments == null) throw new ArgumentNullException(nameof(arguments));
+            if (context == null) throw new ArgumentNullException(nameof(context));
+            if (tables == null) throw new ArgumentNullException(nameof(tables));
+            if (batchScope == null) throw new ArgumentNullException(nameof(batchScope));
+            if (compilerContext == null) throw new ArgumentNullException(nameof(compilerContext));
+
+            if (node.Batch == null)
+                throw new InvalidOperationException("node.Batchcannot be null.");
+
+            var thisKeyOperand = $"${node.As}.{node.Batch.ThisKey.Name}";
+
+            var whereConditions = new List<WhereCondition>
+            {
+                new RawCondition($"{thisKeyOperand} = temp.\"{node.Batch.ParentKey.Name}\"", null)
+            };
+
+            if (node.Where != null)
+            {
+                var whereBuilder = new WhereBuilder(node.As, whereConditions);
+
+                node.Where(whereBuilder, arguments, context, node);
+            }
+
+            var tempTable =
+                $"FROM (VALUES {string.Join("", batchScope.Select(val => $"({val})"))}) temp(\"{node.Batch.ParentKey.Name}\")";
+            tables.Add(tempTable);
+
+            var lateralJoinCondition = $"{thisKeyOperand} = temp.\"{node.Batch.ParentKey.Name}\"";
+
+            if (node.SortKey != null) {
+                var (limit, order, whereCondition) = InterpretForKeysetPaging(node, arguments, context);
+                whereConditions.Add(whereCondition);
+
+                tables.Add(KeysetPagingSelect(node.Name, whereConditions, order, limit, node.As, lateralJoinCondition,
+                    null, compilerContext));
+
+            }
+            else if (node.OrderBy != null)
+            {
+                var (limit, offset, order) = InterpretForOffsetPaging(node, arguments, context);
+
+                tables.Add(OffsetPagingSelect(node.Name, whereConditions, order, limit, offset,
+                    node.As, lateralJoinCondition, null, compilerContext));
+            }
+        }
+
+        public override void HandleBatchedManyToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
+            IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope, SqlCompilerContext compilerContext,
+            string joinCondition)
+        {
+            if (node == null) throw new ArgumentNullException(nameof(node));
+            if (arguments == null) throw new ArgumentNullException(nameof(arguments));
+            if (context == null) throw new ArgumentNullException(nameof(context));
+            if (tables == null) throw new ArgumentNullException(nameof(tables));
+            if (batchScope == null) throw new ArgumentNullException(nameof(batchScope));
+            if (compilerContext == null) throw new ArgumentNullException(nameof(compilerContext));
+            if (joinCondition == null) throw new ArgumentNullException(nameof(joinCondition));
+
+            if (node.Junction == null)
+                throw new InvalidOperationException("node.Junction cannot be null.");
+
+            if (node.Junction.Batch == null)
+                throw new InvalidOperationException("node.Junction.Batch cannot be null.");
+
+            // var thisKeyOperand = GenerateCastExpressionFromValueType(
+            //     $"${node.Junction.As}.{node.Junction.Batch.ThisKey.Name}",
+            //     batchScope.ElementAtOrDefault(0)
+            // );
+            var thisKeyOperand = $"${node.Junction.As}.{node.Junction.Batch.ThisKey.Name}";
+
+            var whereConditions = new List<WhereCondition>
+            {
+                new RawCondition($"{thisKeyOperand} = temp.\"{node.Junction.Batch.ParentKey.Name}\"", null)
+            };
+
+            if (node.Junction.Where != null)
+            {
+                var whereBuilder = new WhereBuilder(node.Junction.As, whereConditions);
+                node.Junction.Where(whereBuilder, arguments, context, node);
+            }
+
+            if (node.Where != null)
+            {
+                var whereBuilder = new WhereBuilder(node.As, whereConditions);
+
+                node.Where(whereBuilder, arguments, context, node);
+            }
+
+            var tempTable =
+                $"FROM (VALUES {string.Join("", batchScope.Select(val => $"({val})"))}) temp(\"{node.Junction.Batch.ParentKey.Name}\")";
+
+            tables.Add(tempTable);
+            var lateralJoinCondition = $"{thisKeyOperand} = temp.\"{node.Junction.Batch.ParentKey.Name}\"";
+
+            string? extraJoin = null;
+
+            if (node.Where != null || node.OrderBy != null)
+            {
+                extraJoin = $"LEFT JOIN {node.Name} {Quote(node.As)} ON {joinCondition}";
+            }
+
+            if (node.SortKey != null || node.Junction.SortKey != null)
+            {
+                var (limit, order, whereCondition) = InterpretForKeysetPaging(node, arguments, context);
+                whereConditions.Add(whereCondition);
+
+                tables.Add(KeysetPagingSelect(node.Junction.Table, whereConditions, order, limit, node.Junction.As,
+                    lateralJoinCondition, "LEFT", compilerContext));
+
+            }
+            else if (node.OrderBy != null || node.Junction.OrderBy != null)
+            {
+                var (limit, offset, order) = InterpretForOffsetPaging(node, arguments, context);
+
+                tables.Add(OffsetPagingSelect(node.Junction.Table, whereConditions, order, limit, offset,
+                    node.Junction.As, joinCondition, "LEFT", compilerContext, extraJoin));
+            }
+
+            tables.Add($"LEFT JOIN {node.Name} AS \"{node.As}\" ON {joinCondition}");
+        }
+
         /// <inheritdoc />
         public override string CompileOrderBy(OrderBy orderBy)
         {

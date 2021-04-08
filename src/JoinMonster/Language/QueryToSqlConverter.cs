@@ -101,6 +101,7 @@ namespace JoinMonster.Language
             var where = field.GetSqlWhere();
             var join = field.GetSqlJoin();
             var junction = field.GetSqlJunction();
+            var batch = field.GetSqlBatch();
             var orderBy = field.GetSqlOrder();
             var sortKey = field.GetSqlSortKey();
             var paginate = false;
@@ -167,8 +168,7 @@ namespace JoinMonster.Language
             }
             else if (junction != null)
             {
-                sqlTable.Junction =
-                    new SqlJunction(sqlTable, junction.Table, junction.Table, junction.FromParent, junction.ToChild);
+                sqlTable.Junction = new SqlJunction(sqlTable, junction.Table, _aliasGenerator.GenerateTableAlias(junction.Table));
 
                 if (junction.Where != null)
                 {
@@ -188,6 +188,49 @@ namespace JoinMonster.Language
                     junction.SortKey(builder, arguments, context, sqlTable);
                     sqlTable.Junction.SortKey = builder.SortKey;
                 }
+                var batchConfig = junction.BatchConfig;
+
+                if (junction.FromParent != null && junction.ToChild != null)
+                {
+                    sqlTable.Junction.FromParent = junction.FromParent;
+                    sqlTable.Junction.ToChild = junction.ToChild;
+                }
+                else if (batchConfig != null)
+                {
+                    sqlTable.Junction.Batch = new SqlBatch(
+                        new SqlColumn(sqlTable, batchConfig.ThisKey, batchConfig.ThisKey,
+                            _aliasGenerator.GenerateColumnAlias(batchConfig.ThisKey))
+                        {
+                            FromOtherTable = sqlTable.Junction.As,
+                            Expression = batchConfig.ThisKeyExpression
+                        },
+                        new SqlColumn(sqlTable, batchConfig.ParentKey, fieldName,
+                            _aliasGenerator.GenerateColumnAlias(batchConfig.ParentKey))
+                        {
+                            Expression = batchConfig.ParentKeyExpression
+                        }
+                    )
+                    {
+                        Join = batchConfig.Join,
+                        Where = batchConfig.Where
+                    };
+                }
+            }
+            else if (batch != null)
+            {
+                sqlTable.Batch = new SqlBatch(
+                    new SqlColumn(sqlTable, batch.ThisKey, batch.ThisKey, _aliasGenerator.GenerateColumnAlias(batch.ThisKey))
+                    {
+                        Expression = batch.ThisKeyExpression
+                    },
+                    new SqlColumn(sqlTable, batch.ParentKey, batch.ParentKey, _aliasGenerator.GenerateColumnAlias(batch.ParentKey))
+                    {
+                        Expression = batch.ParentKeyExpression
+                    }
+                )
+                {
+                    Where = batch.Where
+                };
             }
 
             if (paginate)

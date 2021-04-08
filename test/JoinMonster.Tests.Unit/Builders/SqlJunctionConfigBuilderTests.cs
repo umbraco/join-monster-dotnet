@@ -96,5 +96,21 @@ namespace JoinMonster.Tests.Unit.Builders
 
             builder.SqlJunctionConfig.Where.Should().Be((WhereDelegate) Where);
         }
+
+        [Fact]
+        public void Create_WithBatchConfiguration_SetsBatchConfig()
+        {
+            void Join(JoinBuilder join, IReadOnlyDictionary<string, object> _, IResolveFieldContext __, SqlTable ___)
+            {
+            }
+
+            var builder = SqlJunctionConfigBuilder.Create("friends", new[] {"characterId", "friendId"}, "friendId", "id", Join);
+
+            builder.SqlJunctionConfig.BatchConfig.Should()
+                .BeEquivalentTo(new SqlBatchConfig("friendId", "id")
+                {
+                    Join = Join
+                });
+        }
     }
 }

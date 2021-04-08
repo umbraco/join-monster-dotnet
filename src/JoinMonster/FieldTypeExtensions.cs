@@ -56,7 +56,7 @@ namespace JoinMonster
         /// Set a method that resolves the WHERE condition.
         /// </summary>
         /// <param name="fieldType">The field type.</param>
-        /// <param name="where">The WHERE condition condition.</param>
+        /// <param name="where">The WHERE condition.</param>
         /// <returns>The <see cref="FieldType"/>.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="fieldType"/> or <paramref name="where"/> is <c>null</c>.</exception>
         public static FieldType SqlWhere(this FieldType fieldType, WhereDelegate where)
@@ -130,6 +130,30 @@ namespace JoinMonster
         }
 
         /// <summary>
+        /// Create a new instance of the <see cref="SqlJunctionConfigBuilder"/> configured for batching the many-to-many query.
+        /// </summary>
+        /// <param name="fieldType">The <see cref="FieldType"/>.</param>
+        /// <param name="tableName">The junction table name.</param>
+        /// <param name="uniqueKey">The unique key columns.</param>
+        /// <param name="thisKey">The column to match on the current table.</param>
+        /// <param name="parentKey">The column to match in the parent table.</param>
+        /// <param name="join">The JOIN condition when joining from the junction table to the related table.</param>
+        /// <returns>The <see cref="SqlJunctionConfigBuilder"/>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="fieldType"/>, <paramref name="tableName"/>, <paramref name="uniqueKey"/>, <paramref name="thisKey"/>, <paramref name="parentKey"/> or <paramref name="join"/> is <c>null</c>.</exception>
+        public static SqlJunctionConfigBuilder SqlJunction(this FieldType fieldType, string tableName, string[] uniqueKey, string thisKey, string parentKey, JoinDelegate join)
+        {
+            if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
+            if (tableName == null) throw new ArgumentNullException(nameof(tableName));
+            if (thisKey == null) throw new ArgumentNullException(nameof(thisKey));
+            if (parentKey == null) throw new ArgumentNullException(nameof(parentKey));
+            if (join == null) throw new ArgumentNullException(nameof(join));
+
+            var builder = SqlJunctionConfigBuilder.Create(tableName, uniqueKey, thisKey, parentKey, join);
+            fieldType.WithMetadata(nameof(SqlJunctionConfig), builder.SqlJunctionConfig);
+            return builder;
+        }
+
+        /// <summary>
         /// Get the SQL Junction config.
         /// </summary>
         /// <param name="fieldType">The field type.</param>
@@ -140,6 +164,38 @@ namespace JoinMonster
             if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
 
             return fieldType.GetMetadata<SqlJunctionConfig>(nameof(SqlJunctionConfig));
+        }
+
+        /// <summary>
+        /// Configure one to many SQL batching.
+        /// </summary>
+        /// <param name="fieldType">The field type.</param>
+        /// <param name="thisKey">The column in this table.</param>
+        /// <param name="parentKey">The column in the other table.</param>
+        /// <returns>The <see cref="SqlBatchConfigBuilder"/>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="fieldType"/> is <c>null</c>.</exception>
+        public static SqlBatchConfigBuilder SqlBatch(this FieldType fieldType, string thisKey, string parentKey)
+        {
+            if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
+
+            var builder = SqlBatchConfigBuilder.Create(thisKey, parentKey);
+            fieldType.WithMetadata(nameof(SqlBatchConfig), builder.SqlBatchConfig);
+            fieldType.Resolver ??= DictionaryFieldResolver.Instance;
+
+            return builder;
+        }
+
+        /// <summary>
+        /// Get the SQL Batch config.
+        /// </summary>
+        /// <param name="fieldType">The field type.</param>
+        /// <returns>A <see cref="SqlBatchConfig"/> if one is set, otherwise <c>null</c>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="fieldType"/> is <c>null</c>.</exception>
+        public static SqlBatchConfig? GetSqlBatch(this FieldType fieldType)
+        {
+            if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
+
+            return fieldType.GetMetadata<SqlBatchConfig>(nameof(SqlBatchConfig));
         }
 
         /// <summary>

@@ -24,7 +24,6 @@ namespace JoinMonster.Builders
         /// <param name="tableName">The junction table name.</param>
         /// <param name="fromParent">The JOIN condition when joining from the parent table to the junction table.</param>
         /// <param name="toChild">The JOIN condition when joining from the junction table to the child table.</param>
-        /// <returns>The <see cref="SqlJunctionConfig"/>.</returns>
         /// <returns>The <see cref="SqlJunctionConfigBuilder"/>.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="tableName"/>, <paramref name="fromParent"/> or <paramref name="toChild"/> is <c>null</c>.</exception>
         public static SqlJunctionConfigBuilder Create(string tableName, JoinDelegate fromParent, JoinDelegate toChild)
@@ -34,6 +33,32 @@ namespace JoinMonster.Builders
             if (toChild == null) throw new ArgumentNullException(nameof(toChild));
 
             var config = new SqlJunctionConfig(tableName, fromParent, toChild);
+
+            return new SqlJunctionConfigBuilder(config);
+        }
+
+        /// <summary>
+        /// Create a new instance of the <see cref="SqlJunctionConfigBuilder"/> configured for batching the many-to-many query.
+        /// </summary>
+        /// <param name="tableName">The junction table name.</param>
+        /// <param name="uniqueKey">The unique key columns.</param>
+        /// <param name="thisKey">The column to match on the current table.</param>
+        /// <param name="parentKey">The column to match in the parent table.</param>
+        /// <param name="join">The JOIN condition when joining from the junction table to the related table.</param>
+        /// <returns>The <see cref="SqlJunctionConfigBuilder"/>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="tableName"/>, <paramref name="uniqueKey"/>, <paramref name="thisKey"/>, <paramref name="parentKey"/> or <paramref name="join"/> is <c>null</c>.</exception>
+        public static SqlJunctionConfigBuilder Create(string tableName, string[] uniqueKey, string thisKey, string parentKey, JoinDelegate join)
+        {
+            if (tableName == null) throw new ArgumentNullException(nameof(tableName));
+            if (thisKey == null) throw new ArgumentNullException(nameof(thisKey));
+            if (parentKey == null) throw new ArgumentNullException(nameof(parentKey));
+            if (join == null) throw new ArgumentNullException(nameof(join));
+
+            var sqlBatchBuilder = SqlBatchConfigBuilder
+                .Create(thisKey, parentKey)
+                .Join(join);
+
+            var config = new SqlJunctionConfig(tableName, uniqueKey, sqlBatchBuilder.SqlBatchConfig);
 
             return new SqlJunctionConfigBuilder(config);
         }

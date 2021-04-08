@@ -29,5 +29,13 @@ namespace JoinMonster.Data
         /// <inheritdoc />
         public override void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context,
             ICollection<string> tables, SqlCompilerContext compilerContext) => throw new NotSupportedException();
+
+        public override void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
+            IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope, SqlCompilerContext compilerContext) =>
+            throw new NotSupportedException();
+
+        public override void HandleBatchedManyToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
+            IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope, SqlCompilerContext compilerContext,
+            string joinCondition) => throw new NotSupportedException();
     }
 }

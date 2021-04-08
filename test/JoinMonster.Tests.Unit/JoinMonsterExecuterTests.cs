@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using GraphQL;
@@ -13,7 +14,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void Ctor_WhenConverterIsNull_ThrowsException()
         {
-            Action action = () => new JoinMonsterExecuter(null, null, null);
+            Action action = () => new JoinMonsterExecuter(null, null, null, null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
@@ -24,7 +25,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void Ctor_WhenCompilerIsNull_ThrowsException()
         {
-            Action action = () => new JoinMonsterExecuter(new QueryToSqlConverterStub(), null, null);
+            Action action = () => new JoinMonsterExecuter(new QueryToSqlConverterStub(), null, null, null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
@@ -33,9 +34,20 @@ namespace JoinMonster.Tests.Unit
         }
 
         [Fact]
+        public void Ctor_WhenBatchPlannerIsNull_ThrowsException()
+        {
+            Action action = () => new JoinMonsterExecuter(new QueryToSqlConverterStub(), new SqlCompilerStub(), null, null);
+
+            action.Should()
+                .Throw<ArgumentNullException>()
+                .Which.ParamName.Should()
+                .Be("batchPlanner");
+        }
+
+        [Fact]
         public void Ctor_WhenHydratorIsNull_ThrowsException()
         {
-            Action action = () => new JoinMonsterExecuter(new QueryToSqlConverterStub(), new SqlCompilerStub(), null);
+            Action action = () => new JoinMonsterExecuter(new QueryToSqlConverterStub(), new SqlCompilerStub(), new BatchPlannerStub(), null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
@@ -46,9 +58,9 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void Execute_WhenContextIsNull_ThrowsException()
         {
-            var sut = new JoinMonsterExecuter(new QueryToSqlConverterStub(), new SqlCompilerStub(), new Hydrator());
+            var sut = new JoinMonsterExecuter(new QueryToSqlConverterStub(), new SqlCompilerStub(), new BatchPlannerStub(), new Hydrator());
 
-            Func<Task> action = () => sut.ExecuteAsync(null, null);
+            Func<Task> action = () => sut.ExecuteAsync(null, null, CancellationToken.None);
 
             action.Should()
                 .Throw<ArgumentNullException>()
@@ -59,9 +71,9 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void Execute_WhenDatabaseCallIsNull_ThrowsException()
         {
-            var sut = new JoinMonsterExecuter(new QueryToSqlConverterStub(), new SqlCompilerStub(), new Hydrator());
+            var sut = new JoinMonsterExecuter(new QueryToSqlConverterStub(), new SqlCompilerStub(), new BatchPlannerStub(), new Hydrator());
 
-            Func<Task> action = () => sut.ExecuteAsync(new ResolveFieldContext(), null);
+            Func<Task> action = () => sut.ExecuteAsync(new ResolveFieldContext(), null, CancellationToken.None);
 
             action.Should()
                 .Throw<ArgumentNullException>()

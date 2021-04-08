@@ -1,5 +1,7 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Threading.Tasks;
 using GraphQL;
 using JoinMonster.Builders;
@@ -44,6 +46,16 @@ namespace JoinMonster.Configs
     /// <param name="sqlAstNode">The SQL AST node.</param>
     public delegate void WhereDelegate(WhereBuilder where, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, SqlTable sqlAstNode);
 
+    /// <summary>
+    /// Generates a <c>WHERE</c> condition.
+    /// </summary>
+    /// <param name="where">The <see cref="WhereBuilder"/>.</param>
+    /// <param name="column">The column.</param>
+    /// <param name="values">The values.</param>
+    /// <param name="arguments">The arguments.</param>
+    /// <param name="context">The context.</param>
+    /// <param name="sqlAstNode">The SQL AST node.</param>
+    public delegate void BatchWhereDelegate(WhereBuilder where, string column, IEnumerable values, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, SqlTable sqlAstNode);
 
     /// <summary>
     /// Generates a <c>JOIN</c> condition.
@@ -77,7 +89,7 @@ namespace JoinMonster.Configs
     /// </summary>
     /// <param name="sql">The SQL query to execute.</param>
     /// <param name="parameters">The SQL parameters.</param>
-    /// <returns>A <see cref="IDataReader"/> that is used to fetch the data from the database.</returns>
+    /// <returns>A <see cref="DbDataReader"/> that is used to fetch the data from the database.</returns>
     /// <remarks>JoinMonster is responsible for closing the <see cref="IDataReader"/>.</remarks>
-    public delegate Task<IDataReader> DatabaseCallDelegate(string sql, IReadOnlyDictionary<string, object> parameters);
+    public delegate Task<DbDataReader> DatabaseCallDelegate(string sql, IReadOnlyDictionary<string, object> parameters);
 }

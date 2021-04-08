@@ -36,6 +36,15 @@ namespace JoinMonster.Data
         public abstract void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
             IResolveFieldContext context, ICollection<string> tables, SqlCompilerContext compilerContext);
 
+        /// <inheritdoc />
+        public abstract void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
+            IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope, SqlCompilerContext compilerContext);
+
+        /// <inheritdoc />
+        public abstract void HandleBatchedManyToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
+            IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope, SqlCompilerContext compilerContext, string joinCondition);
+
+        /// <inheritdoc />
         public virtual string CompileConditions(IEnumerable<WhereCondition> conditions, SqlCompilerContext context)
         {
             if (conditions == null) throw new ArgumentNullException(nameof(conditions));
@@ -62,6 +71,7 @@ namespace JoinMonster.Data
             return result.ToString();
         }
 
+        /// <inheritdoc />
         public virtual string CompileOrderBy(OrderBy orderBy)
         {
             if (orderBy == null) throw new ArgumentNullException(nameof(orderBy));
@@ -83,6 +93,7 @@ namespace JoinMonster.Data
             {
                 CompareColumnsCondition compareColumnsCondition => CompileCondition(compareColumnsCondition, context),
                 CompareCondition compareCondition => CompileCondition(compareCondition, context),
+                InCondition inCondition => CompileCondition(inCondition, context),
                 NestedCondition nestedCondition => CompileCondition(nestedCondition, context),
                 RawCondition rawCondition => CompileCondition(rawCondition, context),
                 _ => throw new ArgumentOutOfRangeException(nameof(condition))
@@ -105,6 +116,13 @@ namespace JoinMonster.Data
         protected virtual string CompileCondition(CompareColumnsCondition condition, SqlCompilerContext context)
         {
             var sql = $"{Quote(condition.Table)}.{Quote(condition.First)} {condition.Operator} {Quote(condition.SecondTable)}.{Quote(condition.Second)}";
+            return condition.IsNot ? $"NOT({sql})" : sql;
+        }
+
+        protected virtual string CompileCondition(InCondition condition, SqlCompilerContext context)
+        {
+            var parameterName = context.AddParameter(PrepareValue(condition.Values, null));
+            var sql = $"{Quote(condition.Table)}.{Quote(condition.Column)} = ANY({parameterName})";
             return condition.IsNot ? $"NOT({sql})" : sql;
         }
 
@@ -167,7 +185,7 @@ namespace JoinMonster.Data
             {
                 return $@"FROM (
   SELECT {Quote(@as)}.*, COUNT(*) OVER () AS {Quote("$total")}
-  FROM {Quote(table)} {Quote(@as)}
+  FROM {Quote(table)} {Quote(@as)}{(extraJoin == null ? null : $"\n{extraJoin}")}
   WHERE {whereCondition}
   ORDER BY {order}
   LIMIT {(limit == -1 ? MaxLimit : (object) limit)} OFFSET {offset}
@@ -401,7 +419,7 @@ namespace JoinMonster.Data
             where.Column(column, value, op);
         }
 
-        private static object PrepareValue(object value, Type? type)
+        internal static object PrepareValue(object value, Type? type)
         {
             if (value is JsonElement element)
             {
@@ -479,8 +497,11 @@ namespace JoinMonster.Data
             return value;
         }
 
-        private static object CastArray(IReadOnlyList<object> result)
+        public static IEnumerable CastArray(IReadOnlyList<object> result)
         {
+            if (result.Count == 0)
+                return result;
+
             var firstValue = result[0];
 
             return firstValue switch

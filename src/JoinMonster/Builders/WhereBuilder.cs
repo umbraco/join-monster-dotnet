@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using JoinMonster.Builders.Clauses;
 
@@ -79,7 +80,16 @@ namespace JoinMonster.Builders
             AddCondition(new CompareCondition(Table, column, op, value));
 
         /// <summary>
-        /// Compares a column with a value.
+        /// Compares a column with multiple values.
+        /// </summary>
+        /// <param name="column">The column.</param>
+        /// <param name="values">The values.</param>
+        /// <returns>The <see cref="WhereBuilder"/>.</returns>
+        public WhereBuilder In(string column, IEnumerable values) =>
+            AddCondition(new InCondition(Table, column, values));
+
+        /// <summary>
+        /// Adds a raw SQL condition.
         /// </summary>
         /// <param name="sql">The raw sql condition.</param>
         /// <param name="parameters">The parameters.</param>
@@ -88,7 +98,7 @@ namespace JoinMonster.Builders
             AddCondition(new RawCondition(sql, parameters?.ToDictionary()));
 
         /// <summary>
-        /// Compares a column with a value.
+        /// Adds a raw SQL condition.
         /// </summary>
         /// <param name="sql">The raw sql condition.</param>
         /// <param name="parameters">The parameters.</param>

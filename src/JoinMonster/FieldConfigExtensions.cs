@@ -78,7 +78,7 @@ namespace JoinMonster
         /// <param name="tableName">The table name.</param>
         /// <param name="fromParent">The JOIN condition when joining from the parent table to the junction table.</param>
         /// <param name="toChild">The JOIN condition when joining from the junction table to the child table.</param>
-        /// <returns>The <see cref="SqlJunctionConfig"/>.</returns>
+        /// <returns>The <see cref="SqlJunctionConfigBuilder"/>.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="fieldConfig"/> is <c>null</c>.</exception>
         public static SqlJunctionConfigBuilder SqlJunction(this FieldConfig fieldConfig, string tableName, JoinDelegate fromParent, JoinDelegate toChild)
         {
@@ -86,6 +86,25 @@ namespace JoinMonster
 
             var builder = SqlJunctionConfigBuilder.Create(tableName, fromParent, toChild);
             fieldConfig.WithMetadata(nameof(SqlJunctionConfig), builder.SqlJunctionConfig);
+            fieldConfig.Resolver ??= DictionaryFieldResolver.Instance;
+
+            return builder;
+        }
+
+        /// <summary>
+        /// Configure one to many SQL batching.
+        /// </summary>
+        /// <param name="fieldConfig">The field config.</param>
+        /// <param name="thisKey">The column in this table.</param>
+        /// <param name="parentKey">The column in the other table.</param>
+        /// <returns>The <see cref="SqlBatchConfigBuilder"/>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="fieldConfig"/> is <c>null</c>.</exception>
+        public static SqlBatchConfigBuilder SqlBatch(this FieldConfig fieldConfig, string thisKey, string parentKey)
+        {
+            if (fieldConfig == null) throw new ArgumentNullException(nameof(fieldConfig));
+
+            var builder = SqlBatchConfigBuilder.Create(thisKey, parentKey);
+            fieldConfig.WithMetadata(nameof(SqlBatchConfig), builder.SqlBatchConfig);
             fieldConfig.Resolver ??= DictionaryFieldResolver.Instance;
 
             return builder;
