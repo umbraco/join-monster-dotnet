@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using GraphQL;
 using JoinMonster.Builders.Clauses;
@@ -15,14 +16,9 @@ namespace JoinMonster.Tests.Unit.Stubs
             _sql = sql;
         }
 
-        public SqlResult Compile(Node node, IResolveFieldContext context)
+        public SqlResult Compile(Node node, IResolveFieldContext context, IEnumerable? batchScope = null)
         {
             return new SqlResult(_sql, new Dictionary<string, object>());
-        }
-
-        public string CompileConditions(IEnumerable<WhereCondition> conditions, SqlCompilerContext context)
-        {
-            throw new System.NotImplementedException();
         }
     }
 }

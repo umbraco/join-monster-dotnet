@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
+using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using GraphQL;
 using JoinMonster.Configs;
@@ -18,6 +19,7 @@ namespace JoinMonster
     {
         private readonly QueryToSqlConverter _converter;
         private readonly ISqlCompiler _compiler;
+        private readonly IBatchPlanner _batchPlanner;
         private readonly Hydrator _hydrator;
         private readonly ObjectShaper _objectShaper;
         private readonly ArrayToConnectionConverter _arrayToConnectionConverter;
@@ -27,11 +29,13 @@ namespace JoinMonster
         /// </summary>
         /// <param name="converter">The <see cref="QueryToSqlConverter"/>.</param>
         /// <param name="compiler">The <see cref="ISqlCompiler"/>.</param>
+        /// <param name="batchPlanner">The <see cref="IBatchPlanner"/>.</param>
         /// <param name="hydrator">The <see cref="Hydrator"/>.</param>
-        public JoinMonsterExecuter(QueryToSqlConverter converter, ISqlCompiler compiler, Hydrator hydrator)
+        public JoinMonsterExecuter(QueryToSqlConverter converter, ISqlCompiler compiler, IBatchPlanner batchPlanner, Hydrator hydrator)
         {
             _converter = converter ?? throw new ArgumentNullException(nameof(converter));
             _compiler = compiler ?? throw new ArgumentNullException(nameof(compiler));
+            _batchPlanner = batchPlanner ?? throw new ArgumentNullException(nameof(batchPlanner));
             _hydrator = hydrator ?? throw new ArgumentNullException(nameof(hydrator));
 
             _objectShaper = new ObjectShaper(new SqlAstValidator());
@@ -43,9 +47,10 @@ namespace JoinMonster
         /// </summary>
         /// <param name="context">The <see cref="IResolveFieldContext"/>.</param>
         /// <param name="databaseCall">A <see cref="DatabaseCallDelegate"/> that is passed the compiled SQL and calls the database and returns a <see cref="IDataReader"/>.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>The correctly nested data from the database.</returns>
         /// <exception cref="ArgumentNullException">If <c>context</c> or <c>databaseCall</c> is null.</exception>
-        public async Task<object?> ExecuteAsync(IResolveFieldContext context, DatabaseCallDelegate databaseCall)
+        public async Task<object?> ExecuteAsync(IResolveFieldContext context, DatabaseCallDelegate databaseCall, CancellationToken cancellationToken)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
             if (databaseCall == null) throw new ArgumentNullException(nameof(databaseCall));
@@ -53,16 +58,19 @@ namespace JoinMonster
             var sqlAst = _converter.Convert(context);
             var sqlResult = _compiler.Compile(sqlAst, context);
 
-            // TODO: Run batches
             using var reader = await databaseCall(sqlResult.Sql, sqlResult.Parameters).ConfigureAwait(false);
 
             var data = new List<Dictionary<string, object?>>();
-            while (reader.Read())
+            while (await reader.ReadAsync(cancellationToken))
             {
                 var item = new Dictionary<string, object?>();
                 for (var i = 0; i < reader.FieldCount; ++i)
                 {
-                    item[reader.GetName(i)] = reader.IsDBNull(i) ? null : reader.GetValue(i);
+                    var value = await reader.IsDBNullAsync(i, cancellationToken)
+                        ? null
+                        : await reader.GetFieldValueAsync<object>(i, cancellationToken);
+
+                    item[reader.GetName(i)] = value;
                 }
 
                 data.Add(item);
@@ -73,6 +81,8 @@ namespace JoinMonster
             var nested = _hydrator.Nest(data, objectShape);
             var result = _arrayToConnectionConverter.Convert(nested, sqlAst, context);
 #pragma warning restore 8620
+
+            await _batchPlanner.NextBatch(sqlAst, result, databaseCall, context, cancellationToken).ConfigureAwait(false);
 
             return result;
         }

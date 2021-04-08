@@ -18,9 +18,10 @@ namespace JoinMonster.Data
         /// </summary>
         /// <param name="node">The <see cref="Node"/>.</param>
         /// <param name="context">The <see cref="IResolveFieldContext"/>.</param>
+        /// <param name="batchScope">The batch scope.</param>
         /// <returns>The compiled SQL.</returns>
         /// <exception cref="ArgumentNullException">If <c>node</c> or <c>context</c> is null.</exception>
-        SqlResult Compile(Node node, IResolveFieldContext context);
+        SqlResult Compile(Node node, IResolveFieldContext context, IEnumerable? batchScope = null);
     }
 
     public class SqlCompilerContext

@@ -28,6 +28,23 @@ namespace JoinMonster
             };
         }
 
+        public object Convert(IDictionary<string, object?> data, Node sqlAst, IResolveFieldContext context)
+        {
+            if (data == null) throw new ArgumentNullException(nameof(data));
+            if (sqlAst == null) throw new ArgumentNullException(nameof(sqlAst));
+            if (context == null) throw new ArgumentNullException(nameof(context));
+
+            var converted = ConvertInternal(data, sqlAst, context);
+            return converted switch
+            {
+                IDictionary<string, object?> enumerable => enumerable.FirstOrDefault(),
+                Connection<object> connection => connection,
+                null => throw new JoinMonsterException("Expected result to not be null."),
+                _ => throw new JoinMonsterException(
+                    $"Expected result to be of type '{typeof(IEnumerable<IDictionary<string, object?>>)}' or '{typeof(Connection<object>)}' but was '{converted.GetType()}'")
+            };
+        }
+
         private object? ConvertInternal(object? data, Node sqlAst, IResolveFieldContext context)
         {
             foreach (var astChild in sqlAst.Children)

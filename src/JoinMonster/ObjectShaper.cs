@@ -53,14 +53,24 @@ namespace JoinMonster
                         });
                         break;
                     case SqlTable sqlTable:
-                        var childProperties = DefineObjectShape(node, prefix, sqlTable);
-                        IProperty property;
-                        if (sqlTable.GrabMany)
-                            property = new PropertyArray(sqlTable.FieldName, childProperties);
-                        else
-                            property = new PropertyObject(sqlTable.FieldName, childProperties);
+                        if (sqlTable.Batch == null)
+                        {
+                            var childProperties = DefineObjectShape(node, prefix, sqlTable);
+                            IProperty property;
+                            if (sqlTable.GrabMany)
+                                property = new PropertyArray(sqlTable.FieldName, childProperties);
+                            else
+                                property = new PropertyObject(sqlTable.FieldName, childProperties);
 
-                        properties.Add(property);
+                            properties.Add(property);
+                        }
+                        else
+                        {
+                            IProperty property = new Property(sqlTable.Batch.ParentKey.FieldName, $"{prefix}{sqlTable.Batch.ParentKey.As}");
+
+                            properties.Add(property);
+                        }
+
                         break;
                     case SqlJunction _:
                     case SqlNoop _:

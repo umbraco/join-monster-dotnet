@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace JoinMonster.Builders.Clauses
@@ -65,5 +66,17 @@ namespace JoinMonster.Builders.Clauses
         }
 
         public IEnumerable<WhereCondition> Conditions { get; }
+    }
+
+    public class InCondition : WhereCondition
+    {
+        public InCondition(string table, string column, IEnumerable values) : base(table)
+        {
+            Column = column ?? throw new ArgumentNullException(nameof(column));
+            Values = values ?? throw new ArgumentNullException(nameof(values));
+        }
+
+        public string Column { get; }
+        public IEnumerable Values { get; }
     }
 }
