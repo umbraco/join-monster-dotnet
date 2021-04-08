@@ -20,10 +20,13 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
-- task: GitVersion@5
-  displayName: GitVersion
+- task: gitversion/setup@0
+  displayName: Install GitVersion
   inputs:
-    runtime: 'core'
+    versionSpec: '5.x'
+
+- task: gitversion/execute@0
+  displayName: Determine Version
     
 - task: DotNetCoreCLI@2
   displayName: Restore
