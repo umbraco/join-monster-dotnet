@@ -514,7 +514,7 @@ namespace JoinMonster.Data
                 DateTime _ => result.Cast<DateTime>().ToList(),
                 bool _ => result.Cast<bool>().ToList(),
                 Guid _ => result.Cast<Guid>().ToList(),
-                _ => result.Cast<string>().ToList()
+                _ => result.Select(x => x.ToString()).ToList()
             };
         }
 
