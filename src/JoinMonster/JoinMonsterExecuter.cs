@@ -50,7 +50,8 @@ namespace JoinMonster
         /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>The correctly nested data from the database.</returns>
         /// <exception cref="ArgumentNullException">If <c>context</c> or <c>databaseCall</c> is null.</exception>
-        public async Task<object?> ExecuteAsync(IResolveFieldContext context, DatabaseCallDelegate databaseCall, CancellationToken cancellationToken)
+        public async Task<object?> ExecuteAsync(IResolveFieldContext context, DatabaseCallDelegate databaseCall,
+            CancellationToken cancellationToken)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
             if (databaseCall == null) throw new ArgumentNullException(nameof(databaseCall));
@@ -81,6 +82,8 @@ namespace JoinMonster
             var nested = _hydrator.Nest(data, objectShape);
             var result = _arrayToConnectionConverter.Convert(nested, sqlAst, context);
 #pragma warning restore 8620
+
+            if (result == null) return null;
 
             await _batchPlanner.NextBatch(sqlAst, result, databaseCall, context, cancellationToken).ConfigureAwait(false);
 

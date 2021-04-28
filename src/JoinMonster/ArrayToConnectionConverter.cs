@@ -10,7 +10,7 @@ namespace JoinMonster
 {
     internal class ArrayToConnectionConverter
     {
-        public object Convert(IEnumerable<IDictionary<string, object?>> data, Node sqlAst, IResolveFieldContext context)
+        public object? Convert(IEnumerable<IDictionary<string, object?>> data, Node sqlAst, IResolveFieldContext context)
         {
             if (data == null) throw new ArgumentNullException(nameof(data));
             if (sqlAst == null) throw new ArgumentNullException(nameof(sqlAst));
