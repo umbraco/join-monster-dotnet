@@ -497,24 +497,25 @@ namespace JoinMonster.Data
             return value;
         }
 
-        public static IEnumerable CastArray(IReadOnlyList<object> result)
+        internal static IEnumerable CastArray(IReadOnlyList<object> result)
         {
-            if (result.Count == 0)
-                return result;
+            var values = result.Where(x => x != null).ToList();
+            if (values.Count == 0)
+                return values;
 
-            var firstValue = result[0];
+            var firstValue = values[0];
 
             return firstValue switch
             {
-                byte _ => result.Cast<byte>().ToList(),
-                int _ => result.Cast<int>().ToList(),
-                long _ => result.Cast<long>().ToList(),
-                double _ => result.Cast<double>().ToList(),
-                decimal _ => result.Cast<decimal>().ToList(),
-                DateTime _ => result.Cast<DateTime>().ToList(),
-                bool _ => result.Cast<bool>().ToList(),
-                Guid _ => result.Cast<Guid>().ToList(),
-                _ => result.Select(x => x.ToString()).ToList()
+                byte _ => values.Cast<byte>().ToList(),
+                int _ => values.Cast<int>().ToList(),
+                long _ => values.Cast<long>().ToList(),
+                double _ => values.Cast<double>().ToList(),
+                decimal _ => values.Cast<decimal>().ToList(),
+                DateTime _ => values.Cast<DateTime>().ToList(),
+                bool _ => values.Cast<bool>().ToList(),
+                Guid _ => values.Cast<Guid>().ToList(),
+                _ => values.Select(x => x.ToString()).ToList()
             };
         }
 
