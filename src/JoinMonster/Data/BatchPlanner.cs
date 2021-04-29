@@ -101,6 +101,11 @@ namespace JoinMonster.Data
                         switch (value)
                         {
                             case JsonElement element:
+                                if (element.ValueKind == JsonValueKind.Undefined
+                                    || element.ValueKind == JsonValueKind.Null
+                                    || element.ValueKind == JsonValueKind.Object)
+                                    break;
+
                                 batchScope.AddRange(((IEnumerable) SqlDialect.PrepareValue(element, null))
                                     .Cast<object>());
                                 break;
@@ -145,6 +150,10 @@ namespace JoinMonster.Data
                             switch (obj)
                             {
                                 case JsonElement element:
+                                    if (element.ValueKind == JsonValueKind.Undefined
+                                        || element.ValueKind == JsonValueKind.Null
+                                        || element.ValueKind == JsonValueKind.Object)
+                                        break;
                                     values.AddRange(((IEnumerable) SqlDialect.PrepareValue(element, null)).Cast<object>());
                                     break;
                                 case null:
