@@ -104,6 +104,8 @@ namespace JoinMonster.Data
                                 batchScope.AddRange(((IEnumerable) SqlDialect.PrepareValue(element, null))
                                     .Cast<object>());
                                 break;
+                            case null:
+                                break;;
                             default:
                                 batchScope.Add(value);
                                 break;
@@ -144,6 +146,8 @@ namespace JoinMonster.Data
                             {
                                 case JsonElement element:
                                     values.AddRange(((IEnumerable) SqlDialect.PrepareValue(element, null)).Cast<object>());
+                                    break;
+                                case null:
                                     break;
                                 default:
                                     values.Add(obj);
