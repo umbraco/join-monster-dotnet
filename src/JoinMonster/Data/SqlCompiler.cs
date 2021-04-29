@@ -324,7 +324,7 @@ namespace JoinMonster.Data
                         columnName = $"{_dialect.Quote(parentTable.As)}.{_dialect.Quote(node.Batch.ParentKey.Name)}";
                     }
 
-                    selections.Add($"{columnName} AS {_dialect.Quote(JoinPrefix(prefix) + _dialect.Quote(node.Batch.ParentKey.As))}");
+                    selections.Add($"{columnName} AS {_dialect.Quote(JoinPrefix(prefix) + node.Batch.ParentKey.As)}");
                 }
                 else if (node.Paginate)
                 {
