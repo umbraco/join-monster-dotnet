@@ -47,7 +47,9 @@ namespace JoinMonster.Data
             if (sqlAst.Paginate)
             {
                 if (data is Connection<object> connection)
+                {
                     data = connection.Edges.Select(x => (IDictionary<string, object?>) x.Node).ToList();
+                }
             }
 
             if (data is IEnumerable<IDictionary<string, object?>> entries && entries.Any() == false)
@@ -65,7 +67,9 @@ namespace JoinMonster.Data
             var fieldName = sqlTable.FieldName;
 
             if (data is List<object> objList)
+            {
                 data = objList.Select(x => (IDictionary<string, object?>) x);
+            }
 
             // see if any begin a new batch
             if (sqlTable.Batch != null || sqlTable.Junction?.Batch != null)
@@ -97,25 +101,8 @@ namespace JoinMonster.Data
 
                     foreach (var entry in entryList)
                     {
-                        var value = entry[parentKey];
-                        switch (value)
-                        {
-                            case JsonElement element:
-                                if (element.ValueKind == JsonValueKind.Undefined
-                                    || element.ValueKind == JsonValueKind.Null
-                                    || element.ValueKind == JsonValueKind.Object)
-                                    break;
-
-                                batchScope.AddRange(((IEnumerable) SqlDialect.PrepareValue(element, null))
-                                    .Cast<object>());
-                                break;
-                            case null:
-                                break;;
-                            default:
-                                batchScope.Add(value);
-                                break;
-                        }
-
+                        var values = PrepareValues(entry, parentKey);
+                        batchScope.AddRange(values);
                     }
 
                     if (batchScope.Count == 0) return;
@@ -126,6 +113,7 @@ namespace JoinMonster.Data
 
                     // grab the data
                     var newData = await HandleDatabaseCall(databaseCall, sqlResult, objectShape, cancellationToken);
+
                     // group the rows by the key so we can match them with the previous batch
                     var newDataGrouped = newData.GroupBy(x => x[thisKey])
                         .ToDictionary(x => x.Key, x => x.ToList());
@@ -145,27 +133,16 @@ namespace JoinMonster.Data
                     {
                         foreach (var entry in entryList)
                         {
-                            var values = new List<object>();
-                            var obj = entry[parentKey];
-                            switch (obj)
-                            {
-                                case JsonElement element:
-                                    if (element.ValueKind == JsonValueKind.Undefined
-                                        || element.ValueKind == JsonValueKind.Null
-                                        || element.ValueKind == JsonValueKind.Object)
-                                        break;
-                                    values.AddRange(((IEnumerable) SqlDialect.PrepareValue(element, null)).Cast<object>());
-                                    break;
-                                case null:
-                                    break;
-                                default:
-                                    values.Add(obj);
-                                    break;
-                            }
+                            var values = PrepareValues(entry, parentKey);
 
                             var res = new List<Dictionary<string, object?>>();
                             foreach (var value in values)
-                                res.AddRange(newDataGrouped[value]);
+                            {
+                                if (newDataGrouped.TryGetValue(value, out var obj))
+                                {
+                                    res.AddRange(obj);
+                                }
+                            }
 
                             entry[fieldName] = res;
                         }
@@ -175,18 +152,17 @@ namespace JoinMonster.Data
                         var matchedData = new List<object>();
                         foreach (var entry in entryList)
                         {
-                            var ob = newDataGrouped[entry[parentKey]];
-                            if (ob != null)
+                            if (entry.TryGetValue(parentKey, out var key))
                             {
-                                entry[fieldName] =
-                                    _arrayToConnectionConverter.Convert(newDataGrouped[entry[parentKey]][0], sqlTable,
-                                        context);
-
-                                matchedData.Add(entry);
-                            }
-                            else
-                            {
-                                entry[fieldName] = null;
+                                if (newDataGrouped.TryGetValue(key, out var list) && list.Count > 0)
+                                {
+                                    entry[fieldName] = _arrayToConnectionConverter.Convert(list[0], sqlTable, context);
+                                    matchedData.Add(entry);
+                                }
+                                else
+                                {
+                                    entry[fieldName] = null;
+                                }
                             }
                         }
 
@@ -200,19 +176,27 @@ namespace JoinMonster.Data
                         {
                             var nextLevelData = list
                                 .Where(x => x.Count > 0)
-                                .Select(x => (List<Dictionary<string, object?>>) x[fieldName])
-                                .Where(x => x.Count > 0)
+                                .Select(x =>
+                                {
+                                    if (x.TryGetValue(fieldName, out var value)
+                                        && value is List<Dictionary<string, object?>> dict)
+                                    {
+                                        return dict;
+                                    }
+
+                                    return null;
+                                })
+                                .Where(x => x is {Count: > 0})
                                 .SelectMany(x => x)
                                 .Select(x => x.ToDictionary())
-                                .AsEnumerable();
+                                .ToList();
 
                             await NextBatch(sqlTable, nextLevelData, databaseCall, context, cancellationToken);
                             return;
                         }
                         case List<object> objects:
                         {
-                            var nextLevelData = objects
-                                .Where(x => x != null);
+                            var nextLevelData = objects.Where(x => x != null);
 
                             await NextBatch(sqlTable, nextLevelData, databaseCall, context, cancellationToken);
                             return;
@@ -224,19 +208,7 @@ namespace JoinMonster.Data
                 {
                     case IDictionary<string, object?> dict:
                     {
-                        var batchScope = new List<object>();
-
-                        var o = dict[parentKey];
-                        switch (o)
-                        {
-                            case JsonElement element:
-                                batchScope.AddRange(((IEnumerable) SqlDialect.PrepareValue(element, null))
-                                    .Cast<object>());
-                                break;
-                            default:
-                                batchScope.Add(o);
-                                break;
-                        }
+                        var batchScope = PrepareValues(dict, parentKey);
 
                         if (batchScope.Count == 0) return;
 
@@ -263,24 +235,36 @@ namespace JoinMonster.Data
 
                             dict[fieldName] = res;
                         }
-                        else
+                        else if (newDataGrouped.TryGetValue(parentKey, out var obj) && obj.Count > 0)
                         {
-                            var targets = newDataGrouped[parentKey];
-                            dict[fieldName] = targets[0];
+                            dict[fieldName] = obj[0];
                         }
 
-                        await NextBatch(sqlTable, dict[fieldName], databaseCall, context, cancellationToken);
+                        if (dict.TryGetValue(fieldName, out var newDataObj) && newDataObj is not null)
+                        {
+                            await NextBatch(sqlTable, newDataObj, databaseCall, context, cancellationToken);
+                        }
+
                         break;
                     }
                     case IEnumerable<IDictionary<string, object?>> list:
                     {
                         var nextLevelData = list
                             .Where(x => x.Count > 0)
-                            .Select(x => (List<Dictionary<string, object?>>) x[fieldName])
-                            .Where(x => x.Count > 0)
+                            .Select(x =>
+                            {
+                                if (x.TryGetValue(fieldName, out var value)
+                                    && value is List<Dictionary<string, object?>> dict)
+                                {
+                                    return dict;
+                                }
+
+                                return null;
+                            })
+                            .Where(x => x is {Count: > 0})
                             .SelectMany(x => x)
                             .Select(x => x.ToDictionary())
-                            .AsEnumerable();
+                            .ToList();
 
                         await NextBatch(sqlTable, nextLevelData, databaseCall, context, cancellationToken);
                         break;
@@ -289,13 +273,50 @@ namespace JoinMonster.Data
                     {
                         if (data is IDictionary<string, object?> obj)
                         {
-                            await NextBatch(sqlTable, obj[fieldName], databaseCall, context, cancellationToken);
+                            if (obj.TryGetValue(fieldName, out var newData) && newData is not null)
+                            {
+                                await NextBatch(sqlTable, newData, databaseCall, context, cancellationToken);
+                            }
                         }
 
                         break;
                     }
                 }
             }
+        }
+
+        private static List<object> PrepareValues(IDictionary<string, object?> dict, string parentKey)
+        {
+            var batchScope = new List<object>();
+
+            if (dict.TryGetValue(parentKey, out var obj))
+            {
+                switch (obj)
+                {
+                    case JsonElement element:
+                        if (element.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null or JsonValueKind.Object)
+                            break;
+
+                        var preparedValue = SqlDialect.PrepareValue(element, null);
+                        if (preparedValue is IEnumerable enumerable and not string)
+                        {
+                            batchScope.AddRange(enumerable.Cast<object>());
+                        }
+                        else
+                        {
+                            batchScope.Add(preparedValue);
+                        }
+
+                        break;
+                    case null:
+                        break;
+                    default:
+                        batchScope.Add(obj);
+                        break;
+                }
+            }
+
+            return batchScope;
         }
 
         // TODO: Refactor to share code with JoinMonsterExecuter
