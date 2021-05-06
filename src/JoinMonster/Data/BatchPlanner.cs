@@ -55,8 +55,8 @@ namespace JoinMonster.Data
             if (data is IEnumerable<IDictionary<string, object?>> entries && entries.Any() == false)
                 return;
 
-            var tasks = sqlAst.Tables.Select(child =>
-                NextBatchChild(child, data, databaseCall, context, cancellationToken));
+            var tasks = sqlAst.Tables
+                .Select(child => NextBatchChild(child, data, databaseCall, context, cancellationToken));
 
             await Task.WhenAll(tasks);
         }
@@ -66,9 +66,14 @@ namespace JoinMonster.Data
         {
             var fieldName = sqlTable.FieldName;
 
+
             if (data is List<object> objList)
             {
                 data = objList.Select(x => (IDictionary<string, object?>) x);
+            }
+            else if (data is Connection<object> connection)
+            {
+                data = connection.Items.Select(x => (IDictionary<string, object?>) x);
             }
 
             // see if any begin a new batch
@@ -281,6 +286,33 @@ namespace JoinMonster.Data
 
                         break;
                     }
+                }
+            }
+            else switch (data)
+            {
+                case IEnumerable<IDictionary<string, object?>> entries:
+                {
+                    var tasks = new List<Task>();
+                    foreach (var entry in entries)
+                    {
+                        if (entry.TryGetValue(sqlTable.FieldName, out var newData))
+                        {
+                            tasks.AddRange(sqlTable.Tables
+                                .Select(child =>
+                                    NextBatchChild(child, newData, databaseCall, context, cancellationToken)));
+                        }
+                    }
+
+                    await Task.WhenAll(tasks);
+                    break;
+                }
+                case IDictionary<string, object?> entry when entry.TryGetValue(sqlTable.FieldName, out var newData):
+                {
+                    var tasks = (sqlTable.Tables
+                        .Select(child =>
+                            NextBatchChild(child, newData, databaseCall, context, cancellationToken)));
+                    await Task.WhenAll(tasks);
+                    break;
                 }
             }
         }
