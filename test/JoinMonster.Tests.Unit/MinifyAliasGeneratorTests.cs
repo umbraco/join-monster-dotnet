@@ -74,13 +74,20 @@ namespace JoinMonster.Tests.Unit
         {
             var generator = CreateSUT();
 
+            var names = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ#$";
+
+            foreach (var name in names)
+            {
+                generator.GenerateColumnAlias(name.ToString());
+            }
+
             var columnAlias1 = generator.GenerateColumnAlias("id");
             var columnAlias2 = generator.GenerateColumnAlias("name");
             var columnAlias3 = generator.GenerateColumnAlias("id");
 
-            columnAlias1.Should().Be("a");
-            columnAlias2.Should().Be("b");
-            columnAlias3.Should().Be("a");
+            columnAlias1.Should().Be("aa");
+            columnAlias2.Should().Be("ab");
+            columnAlias3.Should().Be("aa");
         }
     }
 }

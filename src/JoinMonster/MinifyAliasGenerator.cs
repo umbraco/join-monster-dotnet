@@ -55,12 +55,11 @@ namespace JoinMonster
             }
 
             using var enumerator = CreateEnumerator();
-            do
+            while (enumerator.MoveNext())
             {
                 foreach (var c in _chars)
                     yield return enumerator.Current + c;
-
-            } while (enumerator.MoveNext());
+            }
         }
 
         /// <inheritdoc />
