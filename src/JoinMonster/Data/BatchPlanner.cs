@@ -66,15 +66,12 @@ namespace JoinMonster.Data
         {
             var fieldName = sqlTable.FieldName;
 
-
-            if (data is List<object> objList)
+            data = data switch
             {
-                data = objList.Select(x => (IDictionary<string, object?>) x);
-            }
-            else if (data is Connection<object> connection)
-            {
-                data = connection.Items.Select(x => (IDictionary<string, object?>) x);
-            }
+                List<object> objList => objList.Select(x => (IDictionary<string, object?>) x),
+                Connection<object> connection => connection.Items.Select(x => (IDictionary<string, object?>) x),
+                _ => data
+            };
 
             // see if any begin a new batch
             if (sqlTable.Batch != null || sqlTable.Junction?.Batch != null)
@@ -157,17 +154,15 @@ namespace JoinMonster.Data
                         var matchedData = new List<object>();
                         foreach (var entry in entryList)
                         {
-                            if (entry.TryGetValue(parentKey, out var key))
+                            if (entry.TryGetValue(parentKey, out var key) == false) continue;
+                            if (newDataGrouped.TryGetValue(key, out var list) && list.Count > 0)
                             {
-                                if (newDataGrouped.TryGetValue(key, out var list) && list.Count > 0)
-                                {
-                                    entry[fieldName] = _arrayToConnectionConverter.Convert(list[0], sqlTable, context);
-                                    matchedData.Add(entry);
-                                }
-                                else
-                                {
-                                    entry[fieldName] = null;
-                                }
+                                entry[fieldName] = _arrayToConnectionConverter.Convert(list[0], sqlTable, context);
+                                matchedData.Add(entry);
+                            }
+                            else
+                            {
+                                entry[fieldName] = null;
                             }
                         }
 
@@ -235,7 +230,8 @@ namespace JoinMonster.Data
                             var res = new List<object>();
                             foreach (var value in batchScope)
                             {
-                                res.AddRange(newDataGrouped[value]);
+                                if (newDataGrouped.TryGetValue(value, out var resultValue))
+                                    res.AddRange(resultValue);
                             }
 
                             dict[fieldName] = res;
