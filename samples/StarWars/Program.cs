@@ -27,10 +27,13 @@ namespace StarWars
 
             await PopulateDatabase(connection);
 
+            var compiler = new SqlCompiler(new SQLiteDialect());
+            var hydrator = new Hydrator();
             var joinMonster = new JoinMonsterExecuter(
                 new QueryToSqlConverter(new DefaultAliasGenerator()),
-                new SqlCompiler(new SQLiteDialect()),
-                new Hydrator()
+                compiler,
+                new BatchPlanner(compiler, hydrator),
+                hydrator
             );
 
             var serviceProvider = new FuncServiceProvider(type =>
@@ -67,7 +70,6 @@ namespace StarWars
             var documentExecuter = new DocumentExecuter();
             var data = await documentExecuter.ExecuteAsync(options =>
             {
-                options.ExposeExceptions = true;
                 options.Schema = schema;
                 options.FieldMiddleware.Use<InstrumentFieldsMiddleware>();
                 options.EnableMetrics = true;

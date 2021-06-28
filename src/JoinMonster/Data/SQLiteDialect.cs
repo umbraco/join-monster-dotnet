@@ -12,7 +12,10 @@ namespace JoinMonster.Data
     public class SQLiteDialect : SqlDialect
     {
         /// <inheritdoc />
-        public override string Quote(string str) => $@"""{str}""";
+        public override string Quote(string str)
+        {
+            return str.Contains("\"") ? str : $@"""{str}""";
+        }
 
         /// <inheritdoc />
         public override string CompositeKey(string parentTable, IEnumerable<string> keys)

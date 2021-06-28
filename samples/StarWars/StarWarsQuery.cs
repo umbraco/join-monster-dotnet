@@ -1,6 +1,7 @@
 using System;
 using System.Data;
 using System.Data.Common;
+using System.Threading;
 using GraphQL;
 using GraphQL.StarWars.Types;
 using GraphQL.Types;
@@ -33,7 +34,7 @@ namespace StarWars
                     }
 
                     return await command.ExecuteReaderAsync();
-                });
+                }, CancellationToken.None);
 
             Field<CharacterInterface>("hero", resolve: Resolve)
                 .SqlWhere((where, _, __, ___) => where.Column("id", 3));
@@ -51,7 +52,7 @@ namespace StarWars
                     resolve: Resolve
                 )
                 .SqlWhere((where, args, _, __) => where.Column("type", "Human"))
-                .SqlOrder((order, _, __) => order.By("name"));
+                .SqlOrder((order, _, __, ___) => order.By("name"));
 
             Field<DroidType>(
                 "droid",

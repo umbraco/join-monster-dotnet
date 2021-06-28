@@ -10,8 +10,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="GraphQL" Version="3.0.0-preview-1648" />
-      <PackageReference Include="GraphQL.SystemTextJson" Version="3.0.0-preview-1648" />
+      <PackageReference Include="GraphQL.SystemTextJson" Version="3.3.2" />
       <PackageReference Include="System.Data.SQLite" Version="1.0.112" />
     </ItemGroup>
 
