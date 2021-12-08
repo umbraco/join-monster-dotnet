@@ -227,14 +227,15 @@ namespace JoinMonster.Data
                         }
                         else if (sqlTable.GrabMany)
                         {
-                            var res = new List<object>();
+                            var res = new List<Dictionary<string, object?>>();
                             foreach (var value in batchScope)
                             {
                                 if (newDataGrouped.TryGetValue(value, out var resultValue))
                                     res.AddRange(resultValue);
                             }
 
-                            dict[fieldName] = res;
+                            // ensure that any child connection is resolved
+                            dict[fieldName] = _arrayToConnectionConverter.Convert(res, sqlTable, context);
                         }
                         else if (newDataGrouped.TryGetValue(parentKey, out var obj) && obj.Count > 0)
                         {
