@@ -59,10 +59,10 @@ namespace JoinMonster
             var sqlAst = _converter.Convert(context);
             var sqlResult = _compiler.Compile(sqlAst, context);
 
+            var data = new List<Dictionary<string, object?>>();
+            
             using (var reader = await databaseCall(sqlResult.Sql, sqlResult.Parameters).ConfigureAwait(false))
             {
-                var data = new List<Dictionary<string, object?>>();
-                
                 while (await reader.ReadAsync(cancellationToken))
                 {
                     var item = new Dictionary<string, object?>();
