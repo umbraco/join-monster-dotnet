@@ -59,24 +59,27 @@ namespace JoinMonster
             var sqlAst = _converter.Convert(context);
             var sqlResult = _compiler.Compile(sqlAst, context);
 
-            using var reader = await databaseCall(sqlResult.Sql, sqlResult.Parameters).ConfigureAwait(false);
-
-            var data = new List<Dictionary<string, object?>>();
-            while (await reader.ReadAsync(cancellationToken))
+            using (var reader = await databaseCall(sqlResult.Sql, sqlResult.Parameters).ConfigureAwait(false))
             {
-                var item = new Dictionary<string, object?>();
-                for (var i = 0; i < reader.FieldCount; ++i)
+                var data = new List<Dictionary<string, object?>>();
+                
+                while (await reader.ReadAsync(cancellationToken))
                 {
-                    var value = await reader.IsDBNullAsync(i, cancellationToken)
-                        ? null
-                        : await reader.GetFieldValueAsync<object>(i, cancellationToken);
+                    var item = new Dictionary<string, object?>();
+                    
+                    for (var i = 0; i < reader.FieldCount; ++i)
+                    {
+                        var value = await reader.IsDBNullAsync(i, cancellationToken)
+                            ? null
+                            : await reader.GetFieldValueAsync<object>(i, cancellationToken);
 
-                    item[reader.GetName(i)] = value;
+                        item[reader.GetName(i)] = value;
+                    }
+
+                    data.Add(item);
                 }
-
-                data.Add(item);
             }
-
+            
             var objectShape = _objectShaper.DefineObjectShape(sqlAst);
 #pragma warning disable 8620
             var nested = _hydrator.Nest(data, objectShape);
@@ -89,6 +92,5 @@ namespace JoinMonster
 
             return result;
         }
-
     }
 }
