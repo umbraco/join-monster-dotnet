@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using GraphQL;
 using GraphQL.Execution;
-using GraphQL.Language.AST;
 using GraphQL.Types;
+using GraphQLParser;
+using GraphQLParser.AST;
 using JoinMonster.Builders;
 using JoinMonster.Configs;
 using JoinMonster.Language.AST;
@@ -48,14 +49,14 @@ namespace JoinMonster.Language
             throw new JoinMonsterException($"Expected node to be of type '{typeof(SqlTable)}' but was '{node.GetType()}'.");
         }
 
-        private Node Convert(SqlTable? sqlTable, Field fieldAst, FieldType field, IGraphType parentType, int depth,
+        private Node Convert(SqlTable? sqlTable, GraphQLField fieldAst, FieldType field, IGraphType parentType, int depth,
             IResolveFieldContext context)
         {
             var sqlColumnConfig = field.GetSqlColumnConfig();
             if (sqlColumnConfig?.Ignored == true)
                 return new SqlNoop();
 
-            var gqlType = field.ResolvedType.GetNamedType();
+            var gqlType = field.ResolvedType?.GetNamedType();
 
             if (gqlType is IComplexGraphType complexGraphType)
             {
@@ -88,12 +89,12 @@ namespace JoinMonster.Language
             // return new SqlNoop();
         }
 
-        private Node HandleTable(Node? parent, Field fieldAst, FieldType field, IComplexGraphType graphType,
+        private Node HandleTable(Node? parent, GraphQLField fieldAst, FieldType field, IComplexGraphType graphType,
             SqlTableConfig config, int depth, IResolveFieldContext context)
         {
             var arguments = HandleArguments(field, fieldAst, context);
 
-            var fieldName = fieldAst.Alias ?? fieldAst.Name;
+            var fieldName = fieldAst.Alias?.Name.StringValue ?? field.Name;
             var tableName = config.Table(arguments, context);
             var tableAs = _aliasGenerator.GenerateTableAlias(fieldName);
 
@@ -113,7 +114,7 @@ namespace JoinMonster.Language
             }
 
             var sqlTable = new SqlTable(parent, config, tableName, fieldName, tableAs, arguments, grabMany)
-                .WithLocation(fieldAst.SourceLocation);
+                .WithLocation(fieldAst.Location);
 
             if (config.UniqueKey.Length == 1)
             {
@@ -265,14 +266,14 @@ namespace JoinMonster.Language
             }
         }
 
-        private Node HandleColumn(SqlTable sqlTable, Field fieldAst, FieldType field, IGraphType graphType,
+        private Node HandleColumn(SqlTable sqlTable, GraphQLField fieldAst, FieldType field, IGraphType graphType,
             SqlColumnConfig? config, int depth, IResolveFieldContext context)
         {
-            var fieldName = fieldAst.Alias ?? fieldAst.Name;
-            var columnName = config?.Column ?? fieldAst.Name;
+            var fieldName = fieldAst.Alias?.Name.StringValue ?? field.Name;
+            var columnName = config?.Column ?? field.Name;
             var columnAs = _aliasGenerator.GenerateColumnAlias(fieldName);
 
-            var column = new SqlColumn(sqlTable, columnName, fieldName, columnAs).WithLocation(fieldAst.SourceLocation);
+            var column = new SqlColumn(sqlTable, columnName, fieldName, columnAs).WithLocation(fieldAst.Location);
 
             column.Arguments = HandleArguments(field, fieldAst, context);
             column.Expression = config?.Expression;
@@ -280,21 +281,21 @@ namespace JoinMonster.Language
             return column;
         }
 
-        private IReadOnlyDictionary<string, object> HandleArguments(FieldType fieldType, Field fieldAst, IResolveFieldContext context)
+        private IReadOnlyDictionary<string, ArgumentValue> HandleArguments(FieldType fieldType, GraphQLField fieldAst, IResolveFieldContext context)
         {
-            return ExecutionHelper.GetArgumentValues(context.Schema, fieldType.Arguments, fieldAst.Arguments,
-                context.Variables) ?? new Dictionary<string, object>();
+            return ExecutionHelper.GetArguments(fieldType.Arguments, fieldAst.Arguments, context.Variables) ??
+                   new Dictionary<string, ArgumentValue>();
         }
 
-        private void HandleSelections(SqlTable parent, IComplexGraphType graphType, IEnumerable<ISelection> selections,
+        private void HandleSelections(SqlTable parent, IComplexGraphType graphType, IEnumerable<ASTNode> selections,
             int depth, IResolveFieldContext context)
         {
             foreach (var selection in selections)
             {
                 switch (selection)
                 {
-                    case Field fieldAst:
-                        if (fieldAst.Name.StartsWith("__"))
+                    case GraphQLField fieldAst:
+                        if (fieldAst.Name.StringValue.StartsWith("__"))
                             continue;
 
                         var field = graphType.GetField(fieldAst.Name);
@@ -303,7 +304,7 @@ namespace JoinMonster.Language
                         switch (node)
                         {
                             case SqlColumnBase sqlColumn:
-                                var fieldName = fieldAst.Alias ?? fieldAst.Name;
+                                var fieldName = fieldAst.Alias?.Name.StringValue ?? field.Name;
                                 var existing = parent.Columns.Any(x => x.FieldName == fieldName);
 
                                 if (existing)
@@ -321,10 +322,10 @@ namespace JoinMonster.Language
                         }
 
                         break;
-                    case InlineFragment inlineFragment:
+                    case GraphQLInlineFragment inlineFragment:
                     {
-                        var selectionNameOfType = inlineFragment.Type.Name;
-                        var deferredType = context.Schema.FindType(selectionNameOfType);
+                        var selectionNameOfType = inlineFragment.TypeCondition.Type.Name;
+                        var deferredType = context.Schema.AllTypes.Single(x => x.Name == selectionNameOfType);
 
                         if (deferredType is IComplexGraphType complexGraphType)
                         {
@@ -334,12 +335,12 @@ namespace JoinMonster.Language
 
                         break;
                     }
-                    case FragmentSpread fragmentSpread:
+                    case GraphQLFragmentSpread fragmentSpread:
                     {
-                        var fragmentName = fragmentSpread.Name;
-                        var definition = context.Fragments.FindDefinition(fragmentName);
-                        var selectionNameOfType = definition.Type.Name;
-                        var deferredType = context.Schema.FindType(selectionNameOfType);
+                        var fragmentName = fragmentSpread.FragmentName.Name;
+                        var definition = context.Document.FindFragmentDefinition(fragmentName);
+                        var selectionNameOfType = definition!.TypeCondition.Type.Name;
+                        var deferredType = context.Schema.AllTypes.FirstOrDefault(x => x.Name == selectionNameOfType);
 
                         if (deferredType is IComplexGraphType complexGraphType)
                         {
@@ -355,27 +356,29 @@ namespace JoinMonster.Language
             }
         }
 
-        private (IComplexGraphType edgeType, Field queryAstNode) StripRelayConnection(IComplexGraphType graphType, Field fieldAst)
+        private (IComplexGraphType edgeType, GraphQLField queryAstNode) StripRelayConnection(IComplexGraphType graphType, GraphQLField fieldAst)
         {
-            var edgesType = (IComplexGraphType) graphType.GetField("edges").ResolvedType.GetNamedType();
-            var edgeType = (IComplexGraphType) edgesType.GetField("node").ResolvedType.GetNamedType();
+            var edgesType = (IComplexGraphType) graphType.GetField("edges")?.ResolvedType.GetNamedType();
+            var edgeType = (IComplexGraphType) edgesType?.GetField("node")?.ResolvedType.GetNamedType();
 
             var field = fieldAst.SelectionSet.Selections
-                            .OfType<Field>()
+                            .OfType<GraphQLField>()
                             .FirstOrDefault(x => x.Name == "edges")
-                            ?.SelectionSet.Selections.OfType<Field>()
+                            ?.SelectionSet.Selections.OfType<GraphQLField>()
                             .FirstOrDefault(x => x.Name == "node")
                         ?? fieldAst.SelectionSet.Selections
-                            .OfType<Field>()
+                            .OfType<GraphQLField>()
                             .FirstOrDefault(x => x.Name == "items")
-                        ?? new Field();
+                        ?? new GraphQLField();
 
-            fieldAst = new Field(fieldAst.AliasNode, fieldAst.NameNode)
+            fieldAst = new GraphQLField
             {
+                Alias = fieldAst.Alias,
+                Name = fieldAst.Name,
                 Arguments = fieldAst.Arguments,
                 Directives = fieldAst.Directives,
                 SelectionSet = field.SelectionSet,
-                SourceLocation = fieldAst.SourceLocation
+                Location = fieldAst.Location
             };
 
             return (edgeType, fieldAst);

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using GraphQL;
+using GraphQL.Execution;
 using JoinMonster.Builders.Clauses;
 using JoinMonster.Language.AST;
 
@@ -39,6 +40,9 @@ namespace JoinMonster.Data
 
         public string AddParameter(object value)
         {
+            if (value is ArgumentValue argumentValue)
+                value = argumentValue.Value!;
+
             var parameterName = $"@p{_parameters.Count}";
 
             _parameters.Add(parameterName, value);

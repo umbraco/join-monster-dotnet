@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using GraphQL;
 using GraphQL.Resolvers;
 
@@ -10,21 +11,26 @@ namespace JoinMonster.Resolvers
     /// </summary>
     public class DictionaryFieldResolver : IFieldResolver
     {
+        private DictionaryFieldResolver()
+        {
+
+        }
+
         /// <summary>
         /// Returns the static instance of the <see cref="DictionaryFieldResolver"/> class.
         /// </summary>
-        public static DictionaryFieldResolver Instance { get; } = new DictionaryFieldResolver();
+        public static DictionaryFieldResolver Instance { get; } = new();
 
         /// <inheritdoc />
-        public object? Resolve(IResolveFieldContext context)
+        public ValueTask<object?> ResolveAsync(IResolveFieldContext context)
         {
             if (context.Source is IDictionary<string, object> dict
-                && dict.TryGetValue(context.FieldAst.Alias ?? context.FieldName, out var value))
+                && dict.TryGetValue(context.FieldAst.Alias?.Name.StringValue ?? context.FieldDefinition.Name, out var value))
             {
-                return value;
+                return new ValueTask<object?>(value);
             }
 
-            return null;
+            return new ValueTask<object?>();
         }
     }
 }

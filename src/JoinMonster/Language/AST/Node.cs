@@ -1,7 +1,6 @@
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using GraphQL.Language.AST;
+using GraphQLParser.AST;
 
 namespace JoinMonster.Language.AST
 {
@@ -16,6 +15,6 @@ namespace JoinMonster.Language.AST
 
         public virtual IEnumerable<Node> Children => Enumerable.Empty<Node>();
         public Node? Parent { get; }
-        public SourceLocation? SourceLocation { get; set; }
+        public GraphQLLocation? Location { get; set; }
     }
 }

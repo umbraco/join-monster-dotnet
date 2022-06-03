@@ -4,14 +4,15 @@ using System.Linq;
 using FluentAssertions;
 using GraphQL;
 using GraphQL.Execution;
-using GraphQL.Language.AST;
 using GraphQL.Resolvers;
 using GraphQL.Types;
 using GraphQL.Utilities;
+using GraphQL.Validation;
 using JoinMonster.Builders;
 using JoinMonster.Configs;
 using JoinMonster.Language;
 using JoinMonster.Language.AST;
+using JoinMonster.Tests.Unit.Stubs;
 using Xunit;
 
 namespace JoinMonster.Tests.Unit.Language
@@ -70,7 +71,7 @@ namespace JoinMonster.Tests.Unit.Language
         }
 
         [Fact]
-        public void Convert_WithSimpleQuery_SetsSourceLocation()
+        public void Convert_WithSimpleQuery_SetsLocation()
         {
             var schema = CreateSimpleSchema(builder => { builder.Types.For("Product").SqlTable("products", "id"); });
 
@@ -82,7 +83,7 @@ namespace JoinMonster.Tests.Unit.Language
 
             node.Should()
                 .BeOfType<SqlTable>()
-                .Which.SourceLocation.Should()
+                .Which.Location.Should()
                 .NotBeNull();
         }
 
@@ -101,9 +102,9 @@ namespace JoinMonster.Tests.Unit.Language
                 .BeOfType<SqlTable>()
                 .Which.Columns.Should()
                 .ContainEquivalentOf(new SqlColumn(node, "id", "id", "id", true),
-                    config => config.Excluding(x => x.SourceLocation))
+                    config => config.Excluding(x => x.Location))
                 .And.ContainEquivalentOf(new SqlColumn(node, "name", "name", "name"),
-                    config => config.Excluding(x => x.SourceLocation));
+                    config => config.Excluding(x => x.Location));
         }
 
         [Fact]
@@ -121,7 +122,7 @@ namespace JoinMonster.Tests.Unit.Language
                 .BeOfType<SqlTable>()
                 .Which.Columns.Should()
                 .ContainEquivalentOf(new SqlColumn(node, "name", "productName", "productName"),
-                    config => config.Excluding(x => x.SourceLocation));
+                    config => config.Excluding(x => x.Location));
         }
 
         [Fact]
@@ -131,7 +132,7 @@ namespace JoinMonster.Tests.Unit.Language
             {
                 var product = builder.Types.For("Product");
                 product.SqlTable("products", "id");
-                product.FieldFor("name", null).SqlColumn("productName");
+                product.FieldFor("name").SqlColumn("productName");
             });
 
             var query = "{ product { name } }";
@@ -144,7 +145,7 @@ namespace JoinMonster.Tests.Unit.Language
                 .BeOfType<SqlTable>()
                 .Which.Columns.Should()
                 .ContainEquivalentOf(new SqlColumn(node, "productName", "name", "name"),
-                    config => config.Excluding(x => x.SourceLocation));
+                    config => config.Excluding(x => x.Location));
         }
 
         [Fact]
@@ -155,7 +156,7 @@ namespace JoinMonster.Tests.Unit.Language
                 builder.Types.For("Product")
                     .SqlTable("products", "id");
                 builder.Types.For("Product")
-                    .FieldFor("name", null)
+                    .FieldFor("name")
                     .SqlColumn(ignore: true);
             });
 
@@ -260,13 +261,13 @@ namespace JoinMonster.Tests.Unit.Language
         [Fact]
         public void Convert_WhenFieldHasWhereClause_SetsWhereOnSqlTable()
         {
-            void Where(WhereBuilder where, IReadOnlyDictionary<string, object> arguments,
+            void Where(WhereBuilder where, IReadOnlyDictionary<string, ArgumentValue> arguments,
                 IResolveFieldContext context, SqlTable sqlAStNode) => where.Column("id", 3);
 
             var schema = CreateSimpleSchema(builder =>
             {
                 builder.Types.For("Query")
-                    .FieldFor("product", null)
+                    .FieldFor("product")
                     .SqlWhere(Where);
 
                 builder.Types.For("Product")
@@ -306,7 +307,7 @@ namespace JoinMonster.Tests.Unit.Language
                 .SatisfyRespectively(argument =>
                 {
                     argument.Key.Should().Be("id");
-                    argument.Value.Should().Be("1");
+                    argument.Value.Value.Should().Be("1");
                 });
         }
 
@@ -320,7 +321,7 @@ namespace JoinMonster.Tests.Unit.Language
             });
 
             var query = "query ($id: ID) { product(id: $id) { name } }";
-            var context = CreateResolveFieldContext(schema, query, new Variables{ new Variable{ Name = "id", Value = 5} });
+            var context = CreateResolveFieldContext(schema, query, new Variables{ new Variable("id"){ Value = 5} });
 
             var converter = CreateSUT();
             var node = converter.Convert(context);
@@ -331,7 +332,7 @@ namespace JoinMonster.Tests.Unit.Language
                 .SatisfyRespectively(argument =>
                 {
                     argument.Key.Should().Be("id");
-                    argument.Value.Should().Be(5);
+                    argument.Value.Value.Should().Be(5);
                 });
         }
 
@@ -345,7 +346,7 @@ namespace JoinMonster.Tests.Unit.Language
             });
 
             var query = "query ($productId: ID) { product(id: $productId) { name } }";
-            var context = CreateResolveFieldContext(schema, query, new Variables{ new Variable{ Name = "productId", Value = 5} });
+            var context = CreateResolveFieldContext(schema, query, new Variables{ new Variable("productId"){ Value = 5} });
 
             var converter = CreateSUT();
             var node = converter.Convert(context);
@@ -356,7 +357,7 @@ namespace JoinMonster.Tests.Unit.Language
                 .SatisfyRespectively(argument =>
                 {
                     argument.Key.Should().Be("id");
-                    argument.Value.Should().Be(5);
+                    argument.Value.Value.Should().Be(5);
                 });
         }
 
@@ -393,13 +394,13 @@ namespace JoinMonster.Tests.Unit.Language
         [Fact]
         public void Convert_WhenFieldHasJoinExpression_SetsJoinOnSqlTable()
         {
-            void Join(JoinBuilder join, IReadOnlyDictionary<string, object> arguments,
+            void Join(JoinBuilder join, IReadOnlyDictionary<string, ArgumentValue> arguments,
                 IResolveFieldContext context, Node sqlAstNode) => join.On("id", "productId");
 
             var schema = CreateSimpleSchema(builder =>
             {
                 builder.Types.For("Query")
-                    .FieldFor("product", null);
+                    .FieldFor("product");
 
                 builder.Types.For("Product")
                     .SqlTable("products", "id");
@@ -408,7 +409,7 @@ namespace JoinMonster.Tests.Unit.Language
                     .SqlTable("productVariants", "id");
 
                 builder.Types.For("Product")
-                    .FieldFor("variants", null)
+                    .FieldFor("variants")
                     .SqlJoin(Join);
             });
 
@@ -438,7 +439,7 @@ namespace JoinMonster.Tests.Unit.Language
                     .SqlTable("products", "id");
 
                builder.Types.For("Product")
-                   .FieldFor("name", null)
+                   .FieldFor("name")
                    .Resolver = new FuncFieldResolver<object>(x => null);
             });
 
@@ -460,7 +461,7 @@ namespace JoinMonster.Tests.Unit.Language
             var schema = CreateSimpleSchema(builder =>
             {
                 builder.Types.For("Query")
-                    .FieldFor("product", null);
+                    .FieldFor("product");
 
                 builder.Types.For("Product")
                     .SqlTable("products", "id");
@@ -469,7 +470,7 @@ namespace JoinMonster.Tests.Unit.Language
                     .SqlTable("productVariants", "id");
 
                 builder.Types.For("Product")
-                    .FieldFor("variants", null)
+                    .FieldFor("variants")
                     .SqlJoin((_, __, ___, ____) => {});
             });
 
@@ -489,14 +490,14 @@ namespace JoinMonster.Tests.Unit.Language
                 .SatisfyRespectively(argument =>
                 {
                     argument.Key.Should().Be("currency");
-                    argument.Value.Should().Be("DKK");
+                    argument.Value.Value.Should().Be("DKK");
                 });
         }
 
         [Fact]
         public void Convert_WhenFieldHasExpression_SetsExpressionOnSqlColumn()
         {
-            string Expression(string tableAlias, IReadOnlyDictionary<string, object> arguments,
+            string Expression(string tableAlias, IReadOnlyDictionary<string, ArgumentValue> arguments,
                 IResolveFieldContext context, SqlTable sqlAstNode) => $"{tableAlias}.\"productName\"";
 
             var schema = CreateSimpleSchema(builder =>
@@ -505,7 +506,7 @@ namespace JoinMonster.Tests.Unit.Language
                     .SqlTable("products", "id");
 
                 builder.Types.For("Product")
-                    .FieldFor("name", null)
+                    .FieldFor("name")
                     .SqlColumn()
                     .Expression(Expression);
             });
@@ -688,33 +689,7 @@ type Query {
             });
         }
 
-        private static IResolveFieldContext CreateResolveFieldContext(ISchema schema, string query, Variables variables = null)
-        {
-            var documentBuilder = new GraphQLDocumentBuilder();
-            var document = documentBuilder.Build(query);
-            schema.Initialize();
-
-            var executionContext = new ExecutionContext
-            {
-                Document = document,
-                Schema = schema,
-                Fragments = document.Fragments,
-                Operation = document.Operations.First(),
-                Variables = variables
-            };
-
-            var root = new RootExecutionNode(schema.Query)
-            {
-                Result = executionContext.RootValue
-            };
-
-            var fields = ExecutionHelper.CollectFields(executionContext, schema.Query, executionContext.Operation.SelectionSet);
-            ExecutionStrategy.SetSubFieldNodes(executionContext, root, fields);
-
-            var subNode = root.SubFields.FirstOrDefault();
-
-            return new ReadonlyResolveFieldContext(subNode.Value, executionContext);
-        }
-
+        private static IResolveFieldContext CreateResolveFieldContext(ISchema schema, string query, Variables variables = null) =>
+            StubExecutionStrategy.Instance.GetResolveFieldContext(schema, query, variables);
     }
 }

@@ -1,5 +1,5 @@
 using FluentAssertions;
-using GraphQL.Language.AST;
+using GraphQLParser.AST;
 using JoinMonster.Language;
 using JoinMonster.Language.AST;
 using Xunit;
@@ -13,17 +13,17 @@ namespace JoinMonster.Tests.Unit.Language.AST
         {
             var node = new TestNode();
 
-            node.SourceLocation.Should().BeNull();
+            node.Location.Should().BeNull();
         }
 
         [Fact]
         public void SourceLocation_WhenSet_ReturnsValue()
         {
-            var location = new SourceLocation(1, 2, 3, 4);
+            var location = new GraphQLLocation(1, 2);
             var node = new TestNode()
                 .WithLocation(location);
 
-            node.SourceLocation.Should().Be(location);
+            node.Location.Should().Be(location);
         }
 
         [Fact]

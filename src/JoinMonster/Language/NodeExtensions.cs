@@ -1,5 +1,5 @@
 using System;
-using GraphQL.Language.AST;
+using GraphQLParser.AST;
 using JoinMonster.Language.AST;
 
 namespace JoinMonster.Language
@@ -17,12 +17,12 @@ namespace JoinMonster.Language
         /// <typeparam name="T">The node type.</typeparam>
         /// <returns>The <paramref name="node"/> passed in to the method.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="node"/> or <paramref name="location"/> is null.</exception>
-        public static T WithLocation<T>(this T node, SourceLocation location) where T : Node
+        public static T WithLocation<T>(this T node, GraphQLLocation location) where T : Node
         {
             if (node == null) throw new ArgumentNullException(nameof(node));
             if (location == null) throw new ArgumentNullException(nameof(location));
 
-            node.SourceLocation = new SourceLocation(location.Line, location.Column, location.Start, location.End);
+            node.Location = new GraphQLLocation(location.Start, location.End);
             return node;
         }
     }

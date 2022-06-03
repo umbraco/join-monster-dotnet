@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using GraphQL;
+using GraphQL.Execution;
 using JoinMonster.Builders.Clauses;
 using JoinMonster.Language.AST;
 
@@ -36,7 +37,7 @@ namespace JoinMonster.Data
         /// <param name="compilerContext">The sql compiler context.</param>
         /// <param name="joinCondition">The join condition if any.</param>
         void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
-            IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
+            IReadOnlyDictionary<string, ArgumentValue> arguments, IResolveFieldContext context, ICollection<string> tables,
             SqlCompilerContext compilerContext, string? joinCondition);
 
         /// <summary>
@@ -48,14 +49,14 @@ namespace JoinMonster.Data
         /// <param name="context">The context.</param>
         /// <param name="tables">The tables builder.</param>
         /// <param name="compilerContext">The sql compiler context.</param>
-        void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
+        void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,
             IResolveFieldContext context, ICollection<string> tables, SqlCompilerContext compilerContext);
 
-        void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string,object> arguments,
+        void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,
             IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope,
             SqlCompilerContext compilerContext);
 
-        void HandleBatchedManyToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string,object> arguments,
+        void HandleBatchedManyToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,
             IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope,
             SqlCompilerContext compilerContext, string joinCondition);
 

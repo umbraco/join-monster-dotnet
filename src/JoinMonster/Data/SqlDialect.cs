@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using GraphQL;
+using GraphQL.Execution;
 using JoinMonster.Builders;
 using JoinMonster.Builders.Clauses;
 using JoinMonster.Language.AST;
@@ -29,19 +30,19 @@ namespace JoinMonster.Data
 
         /// <inheritdoc />
         public abstract void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
-            IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
+            IReadOnlyDictionary<string, ArgumentValue> arguments, IResolveFieldContext context, ICollection<string> tables,
             SqlCompilerContext compilerContext, string? joinCondition);
 
         /// <inheritdoc />
-        public abstract void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
+        public abstract void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,
             IResolveFieldContext context, ICollection<string> tables, SqlCompilerContext compilerContext);
 
         /// <inheritdoc />
-        public abstract void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
+        public abstract void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,
             IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope, SqlCompilerContext compilerContext);
 
         /// <inheritdoc />
-        public abstract void HandleBatchedManyToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
+        public abstract void HandleBatchedManyToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,
             IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope, SqlCompilerContext compilerContext, string joinCondition);
 
         /// <inheritdoc />
@@ -202,9 +203,9 @@ namespace JoinMonster.Data
         }
 
         protected virtual (int limit, int offset, string order) InterpretForOffsetPaging(SqlTable node,
-            IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context)
+            IReadOnlyDictionary<string, ArgumentValue> arguments, IResolveFieldContext context)
         {
-            if (arguments.ContainsKey("last"))
+            if (arguments.TryGetValue("last", out var last) && last.Value != null)
                 throw new JoinMonsterException(
                     "Backward pagination not supported with offsets. Consider using keyset pagination instead");
 
@@ -225,14 +226,14 @@ namespace JoinMonster.Data
             var limit = -1;
             var offset = 0;
 
-            if (arguments.TryGetValue("first", out var first))
+            if (arguments.TryGetValue("first", out var first) && first.Value is int firstValue)
             {
-                limit = Convert.ToInt32(first);
+                limit = firstValue;
                 // we'll get one extra item (hence the +1). this is to determine if there is a next page or not
                 if (node.Paginate)
                     limit++;
-                if (arguments.TryGetValue("after", out var after))
-                    offset = ConnectionUtils.CursorToOffset((string) after);
+                if (arguments.TryGetValue("after", out var after) && after.Value is string afterValue)
+                    offset = ConnectionUtils.CursorToOffset(afterValue);
             }
 
             var order = CompileOrderBy(orderColumns);
@@ -241,7 +242,7 @@ namespace JoinMonster.Data
         }
 
         protected (int limit, string order, WhereCondition? whereCondition) InterpretForKeysetPaging(SqlTable node,
-            IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context)
+            IReadOnlyDictionary<string, ArgumentValue> arguments, IResolveFieldContext context)
         {
             string? sortTable = null;
             SortKey? sortKey = null;
@@ -262,7 +263,7 @@ namespace JoinMonster.Data
 
             var builder = new OrderByBuilder(sortTable);
             ThenOrderByBuilder? thenBy = null;
-            var isBefore = arguments.ContainsKey("last");
+            var isBefore = arguments.TryGetValue("last", out var last) && last.Value != null;
 
             var sort = sortKey;
             do
@@ -285,32 +286,32 @@ namespace JoinMonster.Data
             var offset = 0;
             WhereCondition? whereCondition = null;
 
-            if (arguments.TryGetValue("first", out var first))
+            if (arguments.TryGetValue("first", out var first) && first.Value is int firstValue)
             {
-                limit = Convert.ToInt32(first) + 1;
-                if (arguments.TryGetValue("after", out var after))
+                limit = firstValue + 1;
+                if (arguments.TryGetValue("after", out var after) && after.Value is string afterValue)
                 {
-                    var cursorObj = ConnectionUtils.CursorToObject((string) after);
+                    var cursorObj = ConnectionUtils.CursorToObject(afterValue);
                     ValidateCursor(cursorObj, GetKeys(sortKey));
                     whereCondition = SortKeyToWhereCondition(sortKey, cursorObj, isBefore, sortTable);
                 }
 
-                if (arguments.ContainsKey("before"))
+                if (arguments.TryGetValue("before", out var before) && before.Value != null)
                 {
                     throw new JoinMonsterException("Using 'before' with 'first' is nonsensical.");
                 }
             }
-            else if (arguments.TryGetValue("last", out var last))
+            else if (last.Value is int lastValue)
             {
-                limit = Convert.ToInt32(last) + 1;
-                if (arguments.TryGetValue("before", out var before))
+                limit = lastValue + 1;
+                if (arguments.TryGetValue("before", out var before) && before.Value is string beforeValue)
                 {
-                    var cursorObj = ConnectionUtils.CursorToObject((string) before);
+                    var cursorObj = ConnectionUtils.CursorToObject(beforeValue);
                     ValidateCursor(cursorObj, GetKeys(sortKey));
                     whereCondition = SortKeyToWhereCondition(sortKey, cursorObj, isBefore, sortTable);
                 }
 
-                if (arguments.ContainsKey("after"))
+                if (arguments.TryGetValue("after", out var after) && after.Value != null)
                 {
                     throw new JoinMonsterException("Using 'after' with 'last' is nonsensical.");
                 }

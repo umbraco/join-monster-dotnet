@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using GraphQL;
+using GraphQL.Execution;
 using JoinMonster.Builders;
 using JoinMonster.Configs;
 using JoinMonster.Language.AST;
@@ -57,7 +58,7 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void Create_WithFromParent_SetsFromParent()
         {
-            void FromParent(JoinBuilder join, IReadOnlyDictionary<string, object> arguments,
+            void FromParent(JoinBuilder join, IReadOnlyDictionary<string, ArgumentValue> arguments,
                 IResolveFieldContext context, Node sqlAstNode)
             {
             }
@@ -71,7 +72,7 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void Create_WithToChild_SetsToChild()
         {
-            void ToChild(JoinBuilder join, IReadOnlyDictionary<string, object> arguments,
+            void ToChild(JoinBuilder join, IReadOnlyDictionary<string, ArgumentValue> arguments,
                 IResolveFieldContext context, Node sqlAstNode)
             {
             }
@@ -85,7 +86,7 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void Where_WithWhereCondition_SetsWhere()
         {
-            void Where(WhereBuilder where, IReadOnlyDictionary<string, object> arguments,
+            void Where(WhereBuilder where, IReadOnlyDictionary<string, ArgumentValue> arguments,
                 IResolveFieldContext context, SqlTable sqlAStNode)
             {
             }
@@ -100,7 +101,7 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void Create_WithBatchConfiguration_SetsBatchConfig()
         {
-            void Join(JoinBuilder join, IReadOnlyDictionary<string, object> _, IResolveFieldContext __, SqlTable ___)
+            void Join(JoinBuilder join, IReadOnlyDictionary<string, ArgumentValue> _, IResolveFieldContext __, SqlTable ___)
             {
             }
 

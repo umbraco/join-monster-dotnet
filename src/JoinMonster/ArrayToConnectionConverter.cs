@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using GraphQL;
+using GraphQL.Execution;
 using GraphQL.Types.Relay.DataObjects;
 using JoinMonster.Language.AST;
 
@@ -92,18 +93,18 @@ namespace JoinMonster
 
                     var hasNextPage = false;
                     var hasPreviousPage = false;
-                    if (arguments.TryGetValue("first", out var first))
+                    if (arguments.TryGetValue("first", out var first) && first.Value is int firstValue)
                     {
                         // we fetched an extra one in order to determine if there is a next page, if there is one, pop off that extra
-                        if (dataArr.Count > System.Convert.ToInt32(first)) {
+                        if (dataArr.Count > firstValue) {
                             hasNextPage = true;
                             dataArr.RemoveAt(dataArr.Count - 1);
                         }
                     }
-                    else if (arguments.TryGetValue("last", out var last))
+                    else if (arguments.TryGetValue("last", out var last) && last.Value is int lastValue)
                     {
                         // if backward paging, do the same, but also reverse it
-                        if (dataArr.Count > System.Convert.ToInt32(last))
+                        if (dataArr.Count > lastValue)
                         {
                             hasPreviousPage = true;
                             dataArr.RemoveAt(dataArr.Count - 1);
@@ -162,8 +163,8 @@ namespace JoinMonster
                 {
                     var arguments = sqlTable.Arguments;
                     var offset = 0;
-                    if (arguments.TryGetValue("after", out var after))
-                        offset = ConnectionUtils.CursorToOffset((string) after);
+                    if (arguments.TryGetValue("after", out var after) && after.Value is string afterValue)
+                        offset = ConnectionUtils.CursorToOffset(afterValue);
 
                     // $total was a special column for determining the total number of items
                     var arrayLength = dataArr.Count > 0 && dataArr[0].TryGetValue("$total", out var total) ? System.Convert.ToInt32(total) : (int?) null;
@@ -179,7 +180,7 @@ namespace JoinMonster
         }
 
         private Connection<object> ConnectionFromArraySlice(IReadOnlyCollection<Dictionary<string, object?>> dataArr,
-            IReadOnlyDictionary<string, object> arguments, int offset, int? arrayLength)
+            IReadOnlyDictionary<string, ArgumentValue> arguments, int offset, int? arrayLength)
         {
             if (arrayLength == 0)
             {
@@ -190,8 +191,8 @@ namespace JoinMonster
                 };
             }
             int? first = null;
-            if (arguments.TryGetValue("first", out var firstArgument))
-                first = (int) firstArgument;
+            if (arguments.TryGetValue("first", out var firstArgument) && firstArgument.Value is int intValue)
+                first = intValue;
 
             var arr = dataArr.AsEnumerable();
             if (first.HasValue)

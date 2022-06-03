@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using GraphQL;
@@ -60,13 +59,13 @@ namespace JoinMonster
             var sqlResult = _compiler.Compile(sqlAst, context);
 
             var data = new List<Dictionary<string, object?>>();
-            
+
             using (var reader = await databaseCall(sqlResult.Sql, sqlResult.Parameters).ConfigureAwait(false))
             {
                 while (await reader.ReadAsync(cancellationToken))
                 {
                     var item = new Dictionary<string, object?>();
-                    
+
                     for (var i = 0; i < reader.FieldCount; ++i)
                     {
                         var value = await reader.IsDBNullAsync(i, cancellationToken)
@@ -79,7 +78,7 @@ namespace JoinMonster
                     data.Add(item);
                 }
             }
-            
+
             var objectShape = _objectShaper.DefineObjectShape(sqlAst);
 #pragma warning disable 8620
             var nested = _hydrator.Nest(data, objectShape);

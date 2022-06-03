@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GraphQL;
+using GraphQL.Execution;
 using JoinMonster.Builders;
 using JoinMonster.Builders.Clauses;
 using JoinMonster.Language.AST;
@@ -42,7 +43,7 @@ namespace JoinMonster.Data
 
         /// <inheritdoc />
         public override void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
-            IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
+            IReadOnlyDictionary<string, ArgumentValue> arguments, IResolveFieldContext context, ICollection<string> tables,
             SqlCompilerContext compilerContext, string? joinCondition)
         {
             if (parent == null) throw new ArgumentNullException(nameof(parent));
@@ -91,7 +92,7 @@ namespace JoinMonster.Data
         }
 
         /// <inheritdoc />
-        public override void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables, SqlCompilerContext compilerContext)
+        public override void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments, IResolveFieldContext context, ICollection<string> tables, SqlCompilerContext compilerContext)
         {
             var pagingWhereConditions = new List<WhereCondition>();
             if (node.SortKey != null)
@@ -124,7 +125,7 @@ namespace JoinMonster.Data
             }
         }
 
-        public override void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
+        public override void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,
             IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope, SqlCompilerContext compilerContext)
         {
             if (node == null) throw new ArgumentNullException(nameof(node));
@@ -174,7 +175,7 @@ namespace JoinMonster.Data
             }
         }
 
-        public override void HandleBatchedManyToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
+        public override void HandleBatchedManyToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,
             IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope, SqlCompilerContext compilerContext,
             string joinCondition)
         {
