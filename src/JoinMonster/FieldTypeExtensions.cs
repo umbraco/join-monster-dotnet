@@ -49,7 +49,7 @@ namespace JoinMonster
         {
             if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
 
-            return fieldType.GetMetadata<SqlColumnConfig>(nameof(SqlColumnConfig));
+            return fieldType.GetMetadata<SqlColumnConfig?>(nameof(SqlColumnConfig));
         }
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace JoinMonster
         {
             if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
 
-            return fieldType.GetMetadata<WhereDelegate>(nameof(WhereDelegate));
+            return fieldType.GetMetadata<WhereDelegate?>(nameof(WhereDelegate));
         }
 
         /// <summary>
@@ -106,7 +106,7 @@ namespace JoinMonster
         {
             if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
 
-            return fieldType.GetMetadata<JoinDelegate>(nameof(JoinDelegate));
+            return fieldType.GetMetadata<JoinDelegate?>(nameof(JoinDelegate));
         }
 
         /// <summary>
@@ -163,7 +163,7 @@ namespace JoinMonster
         {
             if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
 
-            return fieldType.GetMetadata<SqlJunctionConfig>(nameof(SqlJunctionConfig));
+            return fieldType.GetMetadata<SqlJunctionConfig?>(nameof(SqlJunctionConfig));
         }
 
         /// <summary>
@@ -195,7 +195,7 @@ namespace JoinMonster
         {
             if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
 
-            return fieldType.GetMetadata<SqlBatchConfig>(nameof(SqlBatchConfig));
+            return fieldType.GetMetadata<SqlBatchConfig?>(nameof(SqlBatchConfig));
         }
 
         /// <summary>
@@ -223,7 +223,7 @@ namespace JoinMonster
         {
             if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
 
-            return fieldType.GetMetadata<OrderByDelegate>(nameof(OrderByDelegate));
+            return fieldType.GetMetadata<OrderByDelegate?>(nameof(OrderByDelegate));
         }
 
         /// <summary>

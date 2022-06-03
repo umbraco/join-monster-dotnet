@@ -1,7 +1,9 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using FluentAssertions;
 using GraphQL;
-using GraphQL.Language.AST;
+using GraphQL.Types;
+using GraphQLParser.AST;
 using JoinMonster.Resolvers;
 using Xunit;
 
@@ -10,7 +12,7 @@ namespace JoinMonster.Tests.Unit.Resolvers
     public class DictionaryFieldResolverTests
     {
         [Fact]
-        public void Resolve_WhenSourceIsDictionaryAndFieldExists_ReturnsValue()
+        public async Task Resolve_WhenSourceIsDictionaryAndFieldExists_ReturnsValue()
         {
             var source = new Dictionary<string, object>
             {
@@ -20,16 +22,19 @@ namespace JoinMonster.Tests.Unit.Resolvers
             var context = new ResolveFieldContext
             {
                 Source = source,
-                FieldName = "name",
-                FieldAst = new Field()
+                FieldAst = new GraphQLField(),
+                FieldDefinition = new FieldType
+                {
+                    Name = "name"
+                }
             };
 
-            var result = DictionaryFieldResolver.Instance.Resolve(context);
+            var result = await DictionaryFieldResolver.Instance.ResolveAsync(context);
 
             result.Should().Be("Jacket");
         }
         [Fact]
-        public void Resolve_WhenFieldAstHasAlias_UsesAliasToResolveValue()
+        public async Task Resolve_WhenFieldAstHasAlias_UsesAliasToResolveValue()
         {
             var source = new Dictionary<string, object>
             {
@@ -39,25 +44,38 @@ namespace JoinMonster.Tests.Unit.Resolvers
             var context = new ResolveFieldContext
             {
                 Source = source,
-                FieldName = "name",
-                FieldAst = new Field(new NameNode("productName"), new NameNode("name"))
+                FieldDefinition = new FieldType
+                {
+                    Name = "name"
+                },
+                FieldAst = new GraphQLField
+                {
+                    Alias = new GraphQLAlias
+                    {
+                        Name = new GraphQLName("productName")
+                    },
+                    Name = new GraphQLName("name")
+                }
             };
 
-            var result = DictionaryFieldResolver.Instance.Resolve(context);
+            var result = await DictionaryFieldResolver.Instance.ResolveAsync(context);
 
             result.Should().Be("Jacket");
         }
 
         [Fact]
-        public void Resolve_WhenSourceIsNotADictionary_ReturnsNull()
+        public async Task Resolve_WhenSourceIsNotADictionary_ReturnsNull()
         {
             var context = new ResolveFieldContext
             {
                 Source = new object(),
-                FieldName = "name"
+                FieldDefinition = new FieldType
+                {
+                    Name = "name"
+                }
             };
 
-            var result = DictionaryFieldResolver.Instance.Resolve(context);
+            var result = await DictionaryFieldResolver.Instance.ResolveAsync(context);
 
             result.Should().BeNull();
         }

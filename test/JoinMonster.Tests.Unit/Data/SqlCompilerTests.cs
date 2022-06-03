@@ -125,7 +125,7 @@ namespace JoinMonster.Tests.Unit.Data
                     .SqlTable("products", "id");
 
                 builder.Types.For("Query")
-                    .FieldFor("product", null)
+                    .FieldFor("product")
                     .SqlWhere((where, _, __, ___) => where.Column("id", 1));
             });
 
@@ -154,7 +154,7 @@ namespace JoinMonster.Tests.Unit.Data
                     .SqlTable("products", "id");
 
                 builder.Types.For("Query")
-                    .FieldFor("product", null)
+                    .FieldFor("product")
                     .SqlWhere((where, arguments, _, __) => where.Column("id", arguments["id"]));
             });
 
@@ -179,13 +179,13 @@ namespace JoinMonster.Tests.Unit.Data
             var schema = CreateSimpleSchema(builder =>
             {
                 builder.Types.For("Query")
-                    .FieldFor("product", null);
+                    .FieldFor("product");
 
                 builder.Types.For("Product")
                     .SqlTable("products", "id");
 
                 builder.Types.For("Product")
-                    .FieldFor("variants", null)
+                    .FieldFor("variants")
                     .SqlJoin((join, _, __, ___) => join.On("id", "productId"));
 
                 builder.Types.For("ProductVariant")
@@ -210,13 +210,13 @@ namespace JoinMonster.Tests.Unit.Data
             var schema = CreateSimpleSchema(builder =>
             {
                 builder.Types.For("Query")
-                    .FieldFor("product", null);
+                    .FieldFor("product");
 
                 builder.Types.For("Product")
                     .SqlTable("products", "id");
 
                 builder.Types.For("Product")
-                    .FieldFor("variants", null)
+                    .FieldFor("variants")
                     .SqlJoin((join, _, __, ___) => join.Raw($"{join.ParentTableAlias}.\"id\" = {@join.ChildTableAlias}.\"productId\"", @from: $"LEFT JOIN {join.ChildTableName} {join.ChildTableAlias}"));
 
                 builder.Types.For("ProductVariant")
@@ -244,7 +244,7 @@ namespace JoinMonster.Tests.Unit.Data
                     .SqlTable("products", "id");
 
                 builder.Types.For("Product")
-                    .FieldFor("relatedProducts", null)
+                    .FieldFor("relatedProducts")
                     .SqlJunction("productRelations",
                         (join, _, __, ___) => join.On("id", "productId"),
                         (join, _, __, ___) => join.On("relatedProductId", "id"));
@@ -271,7 +271,7 @@ namespace JoinMonster.Tests.Unit.Data
                     .SqlTable("products", "id");
 
                 builder.Types.For("Product")
-                    .FieldFor("relatedProducts", null)
+                    .FieldFor("relatedProducts")
                     .SqlJunction("productRelations",
                         (join, _, __, ___) => join.On("id", "productId"),
                         (join, _, __, ___) => join.On("relatedProductId", "id"))
@@ -299,7 +299,7 @@ namespace JoinMonster.Tests.Unit.Data
                     .SqlTable("products", "id");
 
                 builder.Types.For("Query")
-                    .FieldFor("products", null)
+                    .FieldFor("products")
                     .SqlOrder((order, _, __, ___) => order.By("name").ThenByDescending("price"));
             });
 
@@ -324,7 +324,7 @@ namespace JoinMonster.Tests.Unit.Data
                     .SqlTable("products", "id");
 
                 builder.Types.For("Query")
-                    .FieldFor("products", null)
+                    .FieldFor("products")
                     .SqlWhere((where, _, __, ___) => where.Column("id", 0, "<>"))
                     .SqlOrder((order, _, __, ___) => order.By("name").ThenByDescending("price"));
             });
@@ -355,7 +355,7 @@ namespace JoinMonster.Tests.Unit.Data
                     .SqlTable("products", "id");
 
                 builder.Types.For("Product")
-                    .FieldFor("relatedProducts", null)
+                    .FieldFor("relatedProducts")
                     .SqlJunction("productRelations",
                         (join, _, __, ___) => join.On("id", "productId"),
                         (join, _, __, ___) => join.On("relatedProductId", "id"))
@@ -386,7 +386,7 @@ namespace JoinMonster.Tests.Unit.Data
                     .SqlTable("productVariants", "id");
 
                 builder.Types.For("Product")
-                    .FieldFor("variants", null)
+                    .FieldFor("variants")
                     .SqlJoin((join, _, __, ___) => join.On("id", "productId"))
                     .SqlPaginate(true)
                     .SqlOrder((order, _, __, ___) => order.By("id"));
@@ -459,31 +459,7 @@ type Query {
 ", builder => { configure?.Invoke(builder); });
         }
 
-        private static IResolveFieldContext CreateResolveFieldContext(ISchema schema, string query)
-        {
-            var documentBuilder = new GraphQLDocumentBuilder();
-            var document = documentBuilder.Build(query);
-            schema.Initialize();
-
-            var executionContext = new ExecutionContext
-            {
-                Document = document,
-                Schema = schema,
-                Fragments = document.Fragments,
-                Operation = document.Operations.First()
-            };
-
-            var root = new RootExecutionNode(schema.Query)
-            {
-                Result = executionContext.RootValue
-            };
-
-            var fields = ExecutionHelper.CollectFields(executionContext, schema.Query, executionContext.Operation.SelectionSet);
-            ExecutionStrategy.SetSubFieldNodes(executionContext, root, fields);
-
-            var subNode = root.SubFields.FirstOrDefault();
-
-            return new ReadonlyResolveFieldContext(subNode.Value, executionContext);
-        }
+        private static IResolveFieldContext CreateResolveFieldContext(ISchema schema, string query) =>
+            StubExecutionStrategy.Instance.GetResolveFieldContext(schema, query);
     }
 }

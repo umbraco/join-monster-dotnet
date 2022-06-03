@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GraphQL;
+using GraphQL.Execution;
 using JoinMonster.Language.AST;
 
 namespace JoinMonster.Data
@@ -26,18 +27,18 @@ namespace JoinMonster.Data
 
         /// <inheritdoc />
         public override void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
-            IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
+            IReadOnlyDictionary<string, ArgumentValue> arguments, IResolveFieldContext context, ICollection<string> tables,
             SqlCompilerContext compilerContext, string? joinCondition) => throw new NotSupportedException();
 
         /// <inheritdoc />
-        public override void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context,
+        public override void HandlePaginationAtRoot(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments, IResolveFieldContext context,
             ICollection<string> tables, SqlCompilerContext compilerContext) => throw new NotSupportedException();
 
-        public override void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
+        public override void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,
             IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope, SqlCompilerContext compilerContext) =>
             throw new NotSupportedException();
 
-        public override void HandleBatchedManyToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
+        public override void HandleBatchedManyToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,
             IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope, SqlCompilerContext compilerContext,
             string joinCondition) => throw new NotSupportedException();
     }

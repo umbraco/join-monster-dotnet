@@ -1,9 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using GraphQL.Execution;
-using GraphQL.Language.AST;
-using GraphQL.Types;
 using JoinMonster.Configs;
 
 namespace JoinMonster.Language.AST
@@ -12,7 +9,7 @@ namespace JoinMonster.Language.AST
     public class SqlTable : Node
     {
         public SqlTable(Node? parent, SqlTableConfig? config, string name, string fieldName, string @as,
-            IReadOnlyDictionary<string, object> arguments, bool grabMany) : base(parent)
+            IReadOnlyDictionary<string, ArgumentValue> arguments, bool grabMany) : base(parent)
         {
             Config = config;
             FieldName = fieldName;
@@ -30,7 +27,7 @@ namespace JoinMonster.Language.AST
         public string FieldName { get; }
         public bool GrabMany { get; }
         public bool Paginate { get; set; }
-        public IReadOnlyDictionary<string, object> Arguments { get; }
+        public IReadOnlyDictionary<string, ArgumentValue> Arguments { get; }
         public ICollection<SqlColumnBase> Columns { get; }
         public ICollection<SqlTable> Tables { get; }
         public SqlJunction? Junction { get; set; }
@@ -57,7 +54,7 @@ namespace JoinMonster.Language.AST
         }
 
         public SqlTable AddTable(SqlTableConfig? config, string name, string fieldName, string @as,
-                                         IReadOnlyDictionary<string, object> arguments, bool grabMany)
+                                         IReadOnlyDictionary<string, ArgumentValue> arguments, bool grabMany)
         {
             var sqlTable = new SqlTable(this, config, name, fieldName, @as, arguments, grabMany);
             Tables.Add(sqlTable);

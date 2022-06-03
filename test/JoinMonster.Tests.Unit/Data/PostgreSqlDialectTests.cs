@@ -5,6 +5,7 @@ using System.Text.Json;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using GraphQL;
+using GraphQL.Execution;
 using JoinMonster.Data;
 using JoinMonster.Language.AST;
 using Xunit;
@@ -58,9 +59,9 @@ namespace JoinMonster.Tests.Unit.Data
         {
             var dialect = new PostgresSqlDialect();
             var compilerContext = new SqlCompilerContext(new SqlCompiler(dialect));
-            var parent = new SqlTable(null, null, "products", "products", "products", new Dictionary<string, object>(), true);
+            var parent = new SqlTable(null, null, "products", "products", "products", new Dictionary<string, ArgumentValue>(), true);
             parent.AddColumn("id", "id", "id", true);
-            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
+            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, ArgumentValue>(), true)
             {
                 Join = (join, _, __, ___) => join.On("id", "productId"),
                 OrderBy = new OrderBy("variants", "id", SortDirection.Ascending),
@@ -68,7 +69,7 @@ namespace JoinMonster.Tests.Unit.Data
             };
             node.AddColumn("id", "id", "id", true);
 
-            var arguments = new Dictionary<string, object>();
+            var arguments = new Dictionary<string, ArgumentValue>();
             var context = new ResolveFieldContext();
             var tables = new List<string>();
 
@@ -84,9 +85,9 @@ namespace JoinMonster.Tests.Unit.Data
         {
             var dialect = new PostgresSqlDialect();
             var compilerContext = new SqlCompilerContext(new SqlCompiler(dialect));
-            var parent = new SqlTable(null, null, "products", "products", "products", new Dictionary<string, object>(), true);
+            var parent = new SqlTable(null, null, "products", "products", "products", new Dictionary<string, ArgumentValue>(), true);
             parent.AddColumn("id", "id", "id", true);
-            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
+            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, ArgumentValue>(), true)
             {
                 Join = (join, _, __, ___) => join.On("id", "productId"),
                 OrderBy = new OrderBy("products", "id", SortDirection.Ascending),
@@ -96,7 +97,7 @@ namespace JoinMonster.Tests.Unit.Data
             };
             node.AddColumn("id", "id", "id", true);
 
-            var arguments = new Dictionary<string, object>();
+            var arguments = new Dictionary<string, ArgumentValue>();
             var context = new ResolveFieldContext();
             var tables = new List<string>();
 
@@ -118,10 +119,10 @@ namespace JoinMonster.Tests.Unit.Data
         {
             var dialect = new PostgresSqlDialect();
             var compilerContext = new SqlCompilerContext(new SqlCompiler(dialect));
-            var parent = new SqlTable(null, null, "products", "products", "products", new Dictionary<string, object>(),
+            var parent = new SqlTable(null, null, "products", "products", "products", new Dictionary<string, ArgumentValue>(),
                 true);
             parent.AddColumn("id", "id", "id", true);
-            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(),
+            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, ArgumentValue>(),
                 true)
             {
                 Join = (join, _, __, ___) => join.On("id", "productId"),
@@ -131,10 +132,10 @@ namespace JoinMonster.Tests.Unit.Data
             };
             node.AddColumn("id", "id", "id", true);
 
-            var arguments = new Dictionary<string, object>
+            var arguments = new Dictionary<string, ArgumentValue>
             {
-                {"first", 2},
-                {"after", Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new {id = 1})))}
+                {"first", new ArgumentValue(2, ArgumentSource.Literal)},
+                {"after", new ArgumentValue(Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new {id = 1}))), ArgumentSource.Literal)}
             };
             var context = new ResolveFieldContext();
             var tables = new List<string>();
@@ -167,9 +168,9 @@ namespace JoinMonster.Tests.Unit.Data
         {
             var dialect = new PostgresSqlDialect();
             var compilerContext = new SqlCompilerContext(new SqlCompiler(dialect));
-            var parent = new SqlTable(null, null, "products", "products", "products", new Dictionary<string, object>(), true);
+            var parent = new SqlTable(null, null, "products", "products", "products", new Dictionary<string, ArgumentValue>(), true);
             parent.AddColumn("id", "id", "id", true);
-            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
+            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, ArgumentValue>(), true)
             {
                 Join = (join, _, __, ____) => join.On("id", "productId"),
                 OrderBy = new OrderBy("products", "id", SortDirection.Ascending),
@@ -178,10 +179,10 @@ namespace JoinMonster.Tests.Unit.Data
             };
             node.AddColumn("id", "id", "id", true);
 
-            var arguments = new Dictionary<string, object>
+            var arguments = new Dictionary<string, ArgumentValue>
             {
-                {"last", 5},
-                {"before", Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { id = 2 })))}
+                {"last", new ArgumentValue(5, ArgumentSource.Literal)},
+                {"before", new ArgumentValue(Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { id = 2 }))), ArgumentSource.Literal)}
             };
             var context = new ResolveFieldContext();
             var tables = new List<string>();
@@ -214,14 +215,14 @@ namespace JoinMonster.Tests.Unit.Data
         {
             var dialect = new PostgresSqlDialect();
             var compilerContext = new SqlCompilerContext(new SqlCompiler(dialect));
-            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
+            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, ArgumentValue>(), true)
             {
                 OrderBy = new OrderBy("variants", "id", SortDirection.Ascending),
                 Where = (where, _, __, ___) => where.Column("id", 1, "<>")
             };
             node.AddColumn("id", "id", "id", true);
 
-            var arguments = new Dictionary<string, object>();
+            var arguments = new Dictionary<string, ArgumentValue>();
             var context = new ResolveFieldContext();
             var tables = new List<string>();
 
@@ -251,7 +252,7 @@ namespace JoinMonster.Tests.Unit.Data
         {
             var dialect = new PostgresSqlDialect();
             var compilerContext = new SqlCompilerContext(new SqlCompiler(dialect));
-            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(),
+            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, ArgumentValue>(),
                 true)
             {
                 OrderBy = new OrderBy("products", "id", SortDirection.Ascending),
@@ -260,7 +261,7 @@ namespace JoinMonster.Tests.Unit.Data
             };
             node.AddColumn("id", "id", "id", true);
 
-            var arguments = new Dictionary<string, object>();
+            var arguments = new Dictionary<string, ArgumentValue>();
             var context = new ResolveFieldContext();
             var tables = new List<string>();
 
@@ -290,17 +291,17 @@ namespace JoinMonster.Tests.Unit.Data
         {
             var dialect = new PostgresSqlDialect();
             var compilerContext = new SqlCompilerContext(new SqlCompiler(dialect));
-            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
+            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, ArgumentValue>(), true)
             {
                 SortKey = new SortKey("products", "id", "id", typeof(int), SortDirection.Descending),
                 Where = (where, _, __, ___) => where.Column("id", 1, "<>")
             };
             node.AddColumn("id", "id", "id", true);
 
-            var arguments = new Dictionary<string, object>
+            var arguments = new Dictionary<string, ArgumentValue>
             {
-                {"first", 2},
-                {"after", Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { id = 2 })))}
+                {"first", new ArgumentValue(2, ArgumentSource.Literal)},
+                {"after", new ArgumentValue(Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { id = 2 }))), ArgumentSource.Literal)}
             };
             var context = new ResolveFieldContext();
             var tables = new List<string>();
@@ -332,7 +333,7 @@ namespace JoinMonster.Tests.Unit.Data
         {
             var dialect = new PostgresSqlDialect();
             var compilerContext = new SqlCompilerContext(new SqlCompiler(dialect));
-            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
+            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, ArgumentValue>(), true)
             {
                 SortKey = new SortKey("products", "price", "price", typeof(decimal), SortDirection.Descending)
                 {
@@ -342,10 +343,10 @@ namespace JoinMonster.Tests.Unit.Data
             };
             node.AddColumn("id", "id", "id", true);
 
-            var arguments = new Dictionary<string, object>
+            var arguments = new Dictionary<string, ArgumentValue>
             {
-                {"first", 2},
-                {"after", Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { price = 199, name = "Jacket" })))}
+                {"first", new ArgumentValue(2, ArgumentSource.Literal)},
+                {"after", new ArgumentValue(Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { price = 199, name = "Jacket" }))), ArgumentSource.Literal)}
             };
             var context = new ResolveFieldContext();
             var tables = new List<string>();
@@ -379,7 +380,7 @@ namespace JoinMonster.Tests.Unit.Data
         {
             var dialect = new PostgresSqlDialect();
             var compilerContext = new SqlCompilerContext(new SqlCompiler(dialect));
-            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, object>(), true)
+            var node = new SqlTable(null, null, "variants", "variants", "variants", new Dictionary<string, ArgumentValue>(), true)
             {
                 OrderBy = new OrderBy("products", "id", SortDirection.Ascending),
                 SortKey = new SortKey("products", "id", "id", typeof(int), SortDirection.Ascending),
@@ -387,10 +388,10 @@ namespace JoinMonster.Tests.Unit.Data
             };
             node.AddColumn("id", "id", "id", true);
 
-            var arguments = new Dictionary<string, object>
+            var arguments = new Dictionary<string, ArgumentValue>
             {
-                {"last", 5},
-                {"before", Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { id = 2 })))}
+                {"last", new ArgumentValue(5, ArgumentSource.Literal)},
+                {"before", new ArgumentValue(Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { id = 2 }))), ArgumentSource.Literal)}
             };
             var context = new ResolveFieldContext();
             var tables = new List<string>();

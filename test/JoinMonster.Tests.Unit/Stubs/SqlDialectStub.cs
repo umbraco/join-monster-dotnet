@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using GraphQL;
+using GraphQL.Execution;
 using JoinMonster.Data;
 using JoinMonster.Language.AST;
 
@@ -29,26 +30,26 @@ namespace JoinMonster.Tests.Unit.Stubs
         }
 
         public override void HandleJoinedOneToManyPaginated(SqlTable parent, SqlTable node,
-            IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
+            IReadOnlyDictionary<string, ArgumentValue> arguments, IResolveFieldContext context, ICollection<string> tables,
             SqlCompilerContext compilerContext, string joinCondition)
         {
             tables.Add(_joinedOneToManyPaginatedSql);
         }
 
         public override void HandlePaginationAtRoot(Node parent, SqlTable node,
-            IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, ICollection<string> tables,
+            IReadOnlyDictionary<string, ArgumentValue> arguments, IResolveFieldContext context, ICollection<string> tables,
             SqlCompilerContext compilerContext)
         {
             tables.Add(_paginatedAtRootSql);
         }
 
-        public override void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
+        public override void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,
             IResolveFieldContext resolveFieldContext, ICollection<string> tables, IEnumerable<object> batchScope, SqlCompilerContext compilerContext)
         {
             tables.Add(_batchedOneToManyPaginatedSql);
         }
 
-        public override void HandleBatchedManyToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, object> arguments,
+        public override void HandleBatchedManyToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,
             IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> enumerable, SqlCompilerContext compilerContext,
             string joinCondition)
         {

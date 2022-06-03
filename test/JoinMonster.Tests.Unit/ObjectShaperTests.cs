@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using FluentAssertions;
+using GraphQL.Execution;
 using JoinMonster.Language.AST;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -12,15 +13,15 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void DefineObjectShape_WhenCalledWithObject_ReturnsObjectShapeDefinition()
         {
-            var node = new SqlTable(null, null, "products", "products", "products", new Dictionary<string, object>(),
+            var node = new SqlTable(null, null, "products", "products", "products", new Dictionary<string, ArgumentValue>(),
                 true);
             node.AddColumn("id", "id", "id", true);
             node.AddColumn("name", "name", "name");
-            var variantsTable = node.AddTable(null, "variants", "variants", "variants", new Dictionary<string, object>(), true);
+            var variantsTable = node.AddTable(null, "variants", "variants", "variants", new Dictionary<string, ArgumentValue>(), true);
             variantsTable.AddColumn("id", "id", "id", true);
             variantsTable.AddColumn("name", "name", "name");
             variantsTable.SortKey = new SortKey("products", "sortOrder", "sortOrder", typeof(int), SortDirection.Ascending);
-            var colorsTable = variantsTable.AddTable(null, "colors", "color", "color", new Dictionary<string, object>(), true);
+            var colorsTable = variantsTable.AddTable(null, "colors", "color", "color", new Dictionary<string, ArgumentValue>(), true);
             colorsTable.AddColumn("id", "id", "id", true);
             colorsTable.AddColumn("color", "color", "color");
 

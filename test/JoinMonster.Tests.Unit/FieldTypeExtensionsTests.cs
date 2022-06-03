@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using GraphQL;
+using GraphQL.Execution;
 using GraphQL.Resolvers;
 using GraphQL.Types;
 using JoinMonster.Builders;
@@ -170,7 +171,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void GetSqlWhere_WhenWhereDelegateHasBeenSet_ReturnsWhereDelegate()
         {
-            void Where(WhereBuilder where, IReadOnlyDictionary<string, object> arguments,
+            void Where(WhereBuilder where, IReadOnlyDictionary<string, ArgumentValue> arguments,
                 IResolveFieldContext context, SqlTable sqlAStNode)
             {
             }
@@ -256,7 +257,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void GetSqlJoin_WhenJoinDelegateHasBeenSet_ReturnsJoinDelegate()
         {
-            void Join(JoinBuilder join, IReadOnlyDictionary<string, object> arguments,
+            void Join(JoinBuilder join, IReadOnlyDictionary<string, ArgumentValue> arguments,
                 IResolveFieldContext context, Node sqlAstNode) => join.On("id", "parentId");
 
             var fieldType = new FieldType();
@@ -282,7 +283,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void SqlOrder_WithOrderByDelegate_AddsOrderByDelegateToMetadata()
         {
-            void OrderBy(OrderByBuilder order, IReadOnlyDictionary<string, object> arguments,
+            void OrderBy(OrderByBuilder order, IReadOnlyDictionary<string, ArgumentValue> arguments,
                 IResolveFieldContext context, SqlTable sqlTable) => order.By("name");
 
             var fieldType = new FieldType();

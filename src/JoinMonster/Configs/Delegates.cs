@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.Common;
 using System.Threading.Tasks;
 using GraphQL;
+using GraphQL.Execution;
 using JoinMonster.Builders;
 using JoinMonster.Language.AST;
 
@@ -15,7 +16,7 @@ namespace JoinMonster.Configs
     /// <param name="arguments">The arguments.</param>
     /// <param name="context">The context.</param>
     /// <returns>A RAW SQL expression.</returns>
-    public delegate string TableExpressionDelegate(IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context);
+    public delegate string TableExpressionDelegate(IReadOnlyDictionary<string, ArgumentValue> arguments, IResolveFieldContext context);
 
     /// <summary>
     /// Generates a SQL expression.
@@ -25,7 +26,7 @@ namespace JoinMonster.Configs
     /// <param name="arguments">The arguments.</param>
     /// <param name="context">The context.</param>
     /// <returns>A RAW SQL expression.</returns>
-    public delegate string ColumnExpressionDelegate(string tableAlias, string column, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context);
+    public delegate string ColumnExpressionDelegate(string tableAlias, string column, IReadOnlyDictionary<string, ArgumentValue> arguments, IResolveFieldContext context);
 
     /// <summary>
     /// Generates a SQL expression.
@@ -35,7 +36,7 @@ namespace JoinMonster.Configs
     /// <param name="context">The context.</param>
     /// <param name="sqlAstNode">The SQL AST node.</param>
     /// <returns>A RAW SQL expression.</returns>
-    public delegate string ExpressionDelegate(string tableAlias, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, SqlTable sqlAstNode);
+    public delegate string ExpressionDelegate(string tableAlias, IReadOnlyDictionary<string, ArgumentValue> arguments, IResolveFieldContext context, SqlTable sqlAstNode);
 
     /// <summary>
     /// Generates a <c>WHERE</c> condition.
@@ -44,7 +45,7 @@ namespace JoinMonster.Configs
     /// <param name="arguments">The arguments.</param>
     /// <param name="context">The context.</param>
     /// <param name="sqlAstNode">The SQL AST node.</param>
-    public delegate void WhereDelegate(WhereBuilder where, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, SqlTable sqlAstNode);
+    public delegate void WhereDelegate(WhereBuilder where, IReadOnlyDictionary<string, ArgumentValue> arguments, IResolveFieldContext context, SqlTable sqlAstNode);
 
     /// <summary>
     /// Generates a <c>WHERE</c> condition.
@@ -55,7 +56,7 @@ namespace JoinMonster.Configs
     /// <param name="arguments">The arguments.</param>
     /// <param name="context">The context.</param>
     /// <param name="sqlAstNode">The SQL AST node.</param>
-    public delegate void BatchWhereDelegate(WhereBuilder where, string column, IEnumerable values, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, SqlTable sqlAstNode);
+    public delegate void BatchWhereDelegate(WhereBuilder where, string column, IEnumerable values, IReadOnlyDictionary<string, ArgumentValue> arguments, IResolveFieldContext context, SqlTable sqlAstNode);
 
     /// <summary>
     /// Generates a <c>JOIN</c> condition.
@@ -64,7 +65,7 @@ namespace JoinMonster.Configs
     /// <param name="arguments">The arguments.</param>
     /// <param name="context">The context.</param>
     /// <param name="sqlAstNode">The SQL AST node.</param>
-    public delegate void JoinDelegate(JoinBuilder join, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, SqlTable sqlAstNode);
+    public delegate void JoinDelegate(JoinBuilder join, IReadOnlyDictionary<string, ArgumentValue> arguments, IResolveFieldContext context, SqlTable sqlAstNode);
 
     /// <summary>
     /// Generates a <c>ORDER BY</c> clause.
@@ -73,7 +74,7 @@ namespace JoinMonster.Configs
     /// <param name="arguments">The arguments.</param>
     /// <param name="context">The context.</param>
     /// <param name="sqlAstNode">The SQL AST node.</param>
-    public delegate void OrderByDelegate(OrderByBuilder order, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, SqlTable sqlAstNode);
+    public delegate void OrderByDelegate(OrderByBuilder order, IReadOnlyDictionary<string, ArgumentValue> arguments, IResolveFieldContext context, SqlTable sqlAstNode);
 
     /// <summary>
     /// Defines a sort key that is used when doing keyset pagination.
@@ -82,7 +83,7 @@ namespace JoinMonster.Configs
     /// <param name="arguments">The arguments.</param>
     /// <param name="context">The context.</param>
     /// <param name="sqlAstNode">The SQL AST node.</param>
-    public delegate void SortKeyDelegate(SortKeyBuilder sort, IReadOnlyDictionary<string, object> arguments, IResolveFieldContext context, SqlTable sqlAstNode);
+    public delegate void SortKeyDelegate(SortKeyBuilder sort, IReadOnlyDictionary<string, ArgumentValue> arguments, IResolveFieldContext context, SqlTable sqlAstNode);
 
     /// <summary>
     /// Takes the SQL string and the parameters and sends them to a database.

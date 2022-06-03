@@ -38,7 +38,7 @@ namespace JoinMonster
             if (uniqueKey == null) throw new ArgumentNullException(nameof(uniqueKey));
 
             var builder = SqlTableConfigBuilder.Create(table, uniqueKey);
-            graphType.WithMetadata(nameof(SqlTableConfig) ,builder.SqlTableConfig);
+            graphType.WithMetadata(nameof(SqlTableConfig), builder.SqlTableConfig);
             return builder;
         }
 

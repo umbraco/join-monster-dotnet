@@ -93,9 +93,8 @@ namespace JoinMonster.Data
                     break;
                 case SqlColumn sqlColumn:
                 {
-                    if (!(parent is SqlTable table))
-                        throw new ArgumentException($"'{nameof(parent)}' must be of type {typeof(SqlTable)}",
-                            nameof(parent));
+                    if (parent is not SqlTable table)
+                        throw new ArgumentException($"'{nameof(parent)}' must be of type {typeof(SqlTable)}", nameof(parent));
 
                     var parentTable = table.As;
                     string columnName;
@@ -118,7 +117,7 @@ namespace JoinMonster.Data
                 }
                 case SqlComposite sqlComposite:
                 {
-                    if (!(parent is SqlTable table))
+                    if (parent is not SqlTable table)
                         throw new ArgumentException($"'{nameof(parent)}' must be of type {typeof(SqlTable)}", nameof(parent));
 
                     var parentTable = table.As;
@@ -213,16 +212,9 @@ namespace JoinMonster.Data
             {
                 if (parent is SqlTable parentTable)
                 {
-                    string columnName;
-
-                    if (node.Junction.Batch.ParentKey.Expression != null)
-                    {
-                        columnName = node.Junction.Batch.ParentKey.Expression(_dialect.Quote(parentTable.As), node.Junction.Batch.ParentKey.Arguments, context, node);
-                    }
-                    else
-                    {
-                        columnName = $"{_dialect.Quote(parentTable.As)}.{_dialect.Quote(node.Junction.Batch.ParentKey.Name)}";
-                    }
+                    var columnName = node.Junction.Batch.ParentKey.Expression != null
+                        ? node.Junction.Batch.ParentKey.Expression(_dialect.Quote(parentTable.As), node.Junction.Batch.ParentKey.Arguments, context, node)
+                        : $"{_dialect.Quote(parentTable.As)}.{_dialect.Quote(node.Junction.Batch.ParentKey.Name)}";
 
                     selections.Add($"{columnName} AS ${_dialect.Quote(JoinPrefix(prefix) + node.Junction.Batch.ParentKey.As)}");
                 }
@@ -286,24 +278,13 @@ namespace JoinMonster.Data
                     }
                     else
                     {
-                        if (fromParentJoin.Condition is RawCondition)
-                        {
-                            tables.Add($"{fromParentJoin.From} ON {compiledFromParentJoinCondition}");
-                        }
-                        else
-                        {
-                            tables.Add(
-                                $"LEFT JOIN {_dialect.Quote(node.Junction.Table)} {_dialect.Quote(node.Junction.As)} ON {compiledFromParentJoinCondition}");
-                        }
+                        tables.Add(fromParentJoin.Condition is RawCondition
+                            ? $"{fromParentJoin.From} ON {compiledFromParentJoinCondition}"
+                            : $"LEFT JOIN {_dialect.Quote(node.Junction.Table)} {_dialect.Quote(node.Junction.As)} ON {compiledFromParentJoinCondition}");
 
-                        if (toChildJoin.Condition is RawCondition)
-                        {
-                            tables.Add($"{toChildJoin.From} ON {compiledToChildJoinCondition}");
-                        }
-                        else
-                        {
-                            tables.Add($"LEFT JOIN {_dialect.Quote(node.Name)} {_dialect.Quote(node.As)} ON {compiledToChildJoinCondition}");
-                        }
+                        tables.Add(toChildJoin.Condition is RawCondition
+                            ? $"{toChildJoin.From} ON {compiledToChildJoinCondition}"
+                            : $"LEFT JOIN {_dialect.Quote(node.Name)} {_dialect.Quote(node.As)} ON {compiledToChildJoinCondition}");
                     }
                 }
 
@@ -313,16 +294,9 @@ namespace JoinMonster.Data
             {
                 if (parent is SqlTable parentTable)
                 {
-                    string columnName;
-
-                    if (node.Batch.ParentKey.Expression != null)
-                    {
-                        columnName = node.Batch.ParentKey.Expression(_dialect.Quote(parentTable.As), node.Batch.ParentKey.Arguments, context, node);
-                    }
-                    else
-                    {
-                        columnName = $"{_dialect.Quote(parentTable.As)}.{_dialect.Quote(node.Batch.ParentKey.Name)}";
-                    }
+                    var columnName = node.Batch.ParentKey.Expression != null
+                        ? node.Batch.ParentKey.Expression(_dialect.Quote(parentTable.As), node.Batch.ParentKey.Arguments, context, node)
+                        : $"{_dialect.Quote(parentTable.As)}.{_dialect.Quote(node.Batch.ParentKey.Name)}";
 
                     selections.Add($"{columnName} AS {_dialect.Quote(JoinPrefix(prefix) + node.Batch.ParentKey.As)}");
                 }
