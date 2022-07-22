@@ -97,6 +97,7 @@ namespace JoinMonster.Data
                 InCondition inCondition => CompileCondition(inCondition, context),
                 NestedCondition nestedCondition => CompileCondition(nestedCondition, context),
                 RawCondition rawCondition => CompileCondition(rawCondition, context),
+                RawSubQueryCondition subQueryCondition => CompileCondition(subQueryCondition, context),
                 _ => throw new ArgumentOutOfRangeException(nameof(condition))
             };
         }
@@ -146,6 +147,13 @@ namespace JoinMonster.Data
             }
 
             return sql;
+        }
+
+        protected virtual string CompileCondition(RawSubQueryCondition condition, SqlCompilerContext context)
+        {
+            var sql = condition.Sql.Replace("?", CompileConditions(condition.Conditions, context));
+
+            return condition.IsNot ? $"(NOT({sql}))" : $"({sql})";
         }
 
         protected virtual string KeysetPagingSelect(string table, IEnumerable<WhereCondition> pagingWhereConditions, string order,

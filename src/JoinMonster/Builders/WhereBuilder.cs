@@ -106,6 +106,30 @@ namespace JoinMonster.Builders
         public WhereBuilder Raw(string sql, IDictionary<string, object>? parameters) =>
             AddCondition(new RawCondition(sql, parameters));
 
+        /// <summary>
+        /// Adds a sub query condition.
+        /// </summary>
+        /// <param name="table">The child table.</param>
+        /// <param name="sql">The raw sql condition, ? will be replaced with the sub condition.</param>
+        /// <param name="where">The sub conditions.</param>
+        /// <returns>The <see cref="WhereBuilder"/>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="where" /> is null.</exception>
+        public WhereBuilder RawCondition(string table, string sql, Action<WhereBuilder> where)
+        {
+            if (where == null) throw new ArgumentNullException(nameof(where));
+
+            var conditions = new List<WhereCondition>();
+            var nestedCondition = new RawSubQueryCondition(sql, conditions);
+            var nestedBuilder = new WhereBuilder(table, conditions);
+
+            AddCondition(nestedCondition);
+
+            where(nestedBuilder);
+
+            return this;
+        }
+
+
         private WhereBuilder AddCondition(WhereCondition condition)
         {
             condition.IsNot = _not;
