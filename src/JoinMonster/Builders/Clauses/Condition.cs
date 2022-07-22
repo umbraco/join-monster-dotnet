@@ -79,4 +79,16 @@ namespace JoinMonster.Builders.Clauses
         public string Column { get; }
         public IEnumerable Values { get; }
     }
+
+    public class RawSubQueryCondition : WhereCondition
+    {
+        public RawSubQueryCondition(string sql, IEnumerable<WhereCondition> conditions)
+        {
+            Sql = sql ?? throw new ArgumentNullException(nameof(sql));
+            Conditions = conditions ?? throw new ArgumentNullException(nameof(conditions));
+        }
+
+        public string Sql { get; }
+        public IEnumerable<WhereCondition> Conditions { get; }
+    }
 }
