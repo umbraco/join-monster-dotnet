@@ -117,7 +117,7 @@ namespace JoinMonster
 
             if (graphType is IComplexGraphType complexGraphType && complexGraphType.HasField("edges"))
             {
-                if (complexGraphType.GetField("edges").ResolvedType.GetNamedType() is IComplexGraphType edgesType)
+                if (complexGraphType.GetField("edges")?.ResolvedType?.GetNamedType() is IComplexGraphType edgesType)
                     return edgesType.HasField("node");
             }
 

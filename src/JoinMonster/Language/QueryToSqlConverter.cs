@@ -42,11 +42,14 @@ namespace JoinMonster.Language
             var field = context.FieldDefinition;
             var parentType = context.ParentType.GetNamedType();
 
-            var node = Convert(null, fieldAst, field, parentType, 0, context);
-            if (node is SqlTable sqlTable)
-                return sqlTable;
+            using (context.Metrics.Subject(Constants.MetricsCategory, "Converting Query AST to SQL AST"))
+            {
+                var node = Convert(null, fieldAst, field, parentType, 0, context);
+                if (node is SqlTable sqlTable)
+                    return sqlTable;
 
-            throw new JoinMonsterException($"Expected node to be of type '{typeof(SqlTable)}' but was '{node.GetType()}'.");
+                throw new JoinMonsterException($"Expected node to be of type '{typeof(SqlTable)}' but was '{node.GetType()}'.");
+            }
         }
 
         private Node Convert(SqlTable? sqlTable, GraphQLField fieldAst, FieldType field, IGraphType parentType, int depth,
@@ -92,6 +95,9 @@ namespace JoinMonster.Language
         private Node HandleTable(Node? parent, GraphQLField fieldAst, FieldType field, IComplexGraphType graphType,
             SqlTableConfig config, int depth, IResolveFieldContext context)
         {
+            using var _ = context.Metrics.Subject(Constants.MetricsCategory, "QueryToSql handle table",
+                new Dictionary<string, object?> {{"field", field.Name}});
+
             var arguments = HandleArguments(field, fieldAst, context);
 
             var fieldName = fieldAst.Alias?.Name.StringValue ?? field.Name;
@@ -269,6 +275,9 @@ namespace JoinMonster.Language
         private Node HandleColumn(SqlTable sqlTable, GraphQLField fieldAst, FieldType field, IGraphType graphType,
             SqlColumnConfig? config, int depth, IResolveFieldContext context)
         {
+            using var _ = context.Metrics.Subject(Constants.MetricsCategory, "QueryToSql handle column",
+                new Dictionary<string, object?> {{"field", field.Name}});
+
             var fieldName = fieldAst.Alias?.Name.StringValue ?? field.Name;
             var columnName = config?.Column ?? field.Name;
             var columnAs = _aliasGenerator.GenerateColumnAlias(fieldName);
@@ -290,6 +299,8 @@ namespace JoinMonster.Language
         private void HandleSelections(SqlTable parent, IComplexGraphType graphType, IEnumerable<ASTNode> selections,
             int depth, IResolveFieldContext context)
         {
+            using var _ = context.Metrics.Subject(Constants.MetricsCategory, "QueryToSql handle selections");
+
             foreach (var selection in selections)
             {
                 switch (selection)

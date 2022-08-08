@@ -46,9 +46,9 @@ namespace JoinMonster.Data
             // paginated fields are wrapped in connections. strip those off for the batching
             if (sqlAst.Paginate)
             {
-                if (data is Connection<object> connection)
+                if (data is Connection<object> {Edges: { }} connection)
                 {
-                    data = connection.Edges.Select(x => (IDictionary<string, object?>) x.Node).ToList();
+                    data = connection.Edges.Select(x => x.Node).Cast<IDictionary<string, object?>>().ToList();
                 }
             }
 
@@ -114,7 +114,8 @@ namespace JoinMonster.Data
                     var objectShape = _objectShaper.DefineObjectShape(sqlTable);
 
                     // grab the data
-                    var newData = await HandleDatabaseCall(databaseCall, sqlResult, objectShape, cancellationToken);
+                    var newData = await HandleDatabaseCall(databaseCall, sqlResult, objectShape, context,
+                        cancellationToken);
 
                     // group the rows by the key so we can match them with the previous batch
                     var newDataGrouped = newData.GroupBy(x => x[thisKey])
@@ -215,7 +216,8 @@ namespace JoinMonster.Data
                         var sqlResult = _compiler.Compile(sqlTable, context, SqlDialect.CastArray(batchScope));
 
                         var objectShape = _objectShaper.DefineObjectShape(sqlTable);
-                        var newData = await HandleDatabaseCall(databaseCall, sqlResult, objectShape, cancellationToken);
+                        var newData = await HandleDatabaseCall(databaseCall, sqlResult, objectShape, context,
+                            cancellationToken);
 
                         var newDataGrouped = newData.GroupBy(x => x[thisKey])
                             .ToDictionary(x => x.Key, x => x.ToList());
@@ -351,27 +353,31 @@ namespace JoinMonster.Data
         // TODO: Refactor to share code with JoinMonsterExecuter
         private async Task<List<Dictionary<string, object?>>> HandleDatabaseCall(
             DatabaseCallDelegate databaseCall, SqlResult sqlResult, Definition objectShape,
-            CancellationToken cancellationToken)
+            IResolveFieldContext context, CancellationToken cancellationToken)
         {
-            using var reader = await databaseCall(sqlResult.Sql, sqlResult.Parameters);
-
             var data = new List<Dictionary<string, object?>>();
-            while (await reader.ReadAsync(cancellationToken))
+            using (context.Metrics.Subject(Constants.MetricsCategory, "Database call"))
             {
-                var item = new Dictionary<string, object?>();
-                for (var i = 0; i < reader.FieldCount; ++i)
-                {
-                    item[reader.GetName(i)] = await reader.IsDBNullAsync(i, cancellationToken)
-                        ? null
-                        : await reader.GetFieldValueAsync<object>(i, cancellationToken);
-                }
+                using var reader = await databaseCall(sqlResult.Sql, sqlResult.Parameters);
 
-                data.Add(item);
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    var item = new Dictionary<string, object?>();
+                    for (var i = 0; i < reader.FieldCount; ++i)
+                    {
+                        item[reader.GetName(i)] = await reader.IsDBNullAsync(i, cancellationToken)
+                            ? null
+                            : await reader.GetFieldValueAsync<object>(i, cancellationToken);
+                    }
+
+                    data.Add(item);
+                }
             }
 
 #pragma warning disable 8620
 #pragma warning disable 8619
-            return _hydrator.Nest(data, objectShape);
+            using (context.Metrics.Subject(Constants.MetricsCategory, "Nesting data"))
+                return _hydrator.Nest(data, objectShape);
 #pragma warning restore 8619
 #pragma warning restore 8620
         }

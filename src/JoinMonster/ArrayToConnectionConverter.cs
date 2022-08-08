@@ -11,7 +11,7 @@ namespace JoinMonster
 {
     internal class ArrayToConnectionConverter
     {
-        public object? Convert(IEnumerable<IDictionary<string, object?>> data, Node sqlAst, IResolveFieldContext context)
+        public object? Convert(IEnumerable<IDictionary<string, object?>> data, SqlTable sqlAst, IResolveFieldContext context)
         {
             if (data == null) throw new ArgumentNullException(nameof(data));
             if (sqlAst == null) throw new ArgumentNullException(nameof(sqlAst));
@@ -20,7 +20,7 @@ namespace JoinMonster
             var converted = ConvertInternal(data, sqlAst, context);
             return converted switch
             {
-                IEnumerable<IDictionary<string, object?>> enumerable when sqlAst is SqlTable table && table.GrabMany => enumerable,
+                IEnumerable<IDictionary<string, object?>> enumerable when sqlAst.GrabMany => enumerable,
                 IEnumerable<IDictionary<string, object?>> enumerable => enumerable.FirstOrDefault(),
                 Connection<object> connection => connection,
                 null => throw new JoinMonsterException("Expected result to not be null."),
@@ -29,7 +29,7 @@ namespace JoinMonster
             };
         }
 
-        public object Convert(IDictionary<string, object?> data, Node sqlAst, IResolveFieldContext context)
+        public object Convert(IDictionary<string, object?> data, SqlTable sqlAst, IResolveFieldContext context)
         {
             if (data == null) throw new ArgumentNullException(nameof(data));
             if (sqlAst == null) throw new ArgumentNullException(nameof(sqlAst));
@@ -48,6 +48,19 @@ namespace JoinMonster
 
         private object? ConvertInternal(object? data, Node sqlAst, IResolveFieldContext context)
         {
+            var metadata = new Dictionary<string, object?>();
+
+            switch (sqlAst)
+            {
+                case SqlTable table:
+                    metadata.Add("field", table.FieldName);
+                    break;
+                case SqlColumnBase sqlColumnBase:
+                    metadata.Add("field", sqlColumnBase.FieldName);
+                    break;
+            }
+
+            using var _ = context.Metrics.Subject(Constants.MetricsCategory, "Converting array to connection", metadata);
             foreach (var astChild in sqlAst.Children)
             {
                 switch (data)
@@ -69,7 +82,7 @@ namespace JoinMonster
                 }
             }
 
-            if (!(sqlAst is SqlTable sqlTable) || sqlTable.Paginate == false)
+            if (sqlAst is not SqlTable sqlTable || sqlTable.Paginate == false)
                 return data;
 
             switch (data)

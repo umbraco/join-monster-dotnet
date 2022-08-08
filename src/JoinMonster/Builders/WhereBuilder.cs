@@ -118,5 +118,19 @@ namespace JoinMonster.Builders
 
             return this;
         }
+        public WhereBuilder SubQueryIn(string table, string parentColumn, string childColumn, Action<WhereBuilder> where, string op = "IN")
+        {
+            if (where == null) throw new ArgumentNullException(nameof(where));
+
+            var conditions = new List<WhereCondition>();
+            var nestedCondition = new SubQueryCondition(Table, parentColumn, table, childColumn, op, conditions);
+            var nestedBuilder = new WhereBuilder(table, conditions);
+
+            AddCondition(nestedCondition);
+
+            where(nestedBuilder);
+
+            return this;
+        }
     }
 }

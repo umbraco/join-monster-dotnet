@@ -60,34 +60,49 @@ namespace JoinMonster
 
             var data = new List<Dictionary<string, object?>>();
 
+            using (context.Metrics.Subject(Constants.MetricsCategory, "Database call"))
             using (var reader = await databaseCall(sqlResult.Sql, sqlResult.Parameters).ConfigureAwait(false))
             {
                 while (await reader.ReadAsync(cancellationToken))
                 {
-                    var item = new Dictionary<string, object?>();
-
-                    for (var i = 0; i < reader.FieldCount; ++i)
+                    using (context.Metrics.Subject(Constants.MetricsCategory, "Read row"))
                     {
-                        var value = await reader.IsDBNullAsync(i, cancellationToken)
-                            ? null
-                            : await reader.GetFieldValueAsync<object>(i, cancellationToken);
+                        var item = new Dictionary<string, object?>();
 
-                        item[reader.GetName(i)] = value;
+                        for (var i = 0; i < reader.FieldCount; ++i)
+                        {
+                            var value = await reader.IsDBNullAsync(i, cancellationToken)
+                                ? null
+                                : await reader.GetFieldValueAsync<object>(i, cancellationToken);
+
+                            item[reader.GetName(i)] = value;
+                        }
+
+                        data.Add(item);
                     }
-
-                    data.Add(item);
                 }
             }
 
-            var objectShape = _objectShaper.DefineObjectShape(sqlAst);
+            Definition objectShape;
+            using (context.Metrics.Subject(Constants.MetricsCategory, "Defining object shape"))
+                objectShape = _objectShaper.DefineObjectShape(sqlAst);
+
 #pragma warning disable 8620
-            var nested = _hydrator.Nest(data, objectShape);
-            var result = _arrayToConnectionConverter.Convert(nested, sqlAst, context);
+            List<Dictionary<string, object>> nested;
+
+            using (context.Metrics.Subject(Constants.MetricsCategory, "Nesting data"))
+                nested = _hydrator.Nest(data, objectShape);
+            object? result;
+
+            using (context.Metrics.Subject(Constants.MetricsCategory, "Converting Array to Connection"))
+                result= _arrayToConnectionConverter.Convert(nested, sqlAst, context);
 #pragma warning restore 8620
 
             if (result == null) return null;
 
-            await _batchPlanner.NextBatch(sqlAst, result, databaseCall, context, cancellationToken).ConfigureAwait(false);
+            using (context.Metrics.Subject(Constants.MetricsCategory, "Batch planning"))
+                await _batchPlanner.NextBatch(sqlAst, result, databaseCall, context, cancellationToken)
+                    .ConfigureAwait(false);
 
             return result;
         }
