@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using GraphQL;
@@ -71,6 +72,9 @@ namespace JoinMonster
                         var value = await reader.IsDBNullAsync(i, cancellationToken)
                             ? null
                             : await reader.GetFieldValueAsync<object>(i, cancellationToken);
+
+                        if (value is JsonElement {ValueKind: JsonValueKind.Null or JsonValueKind.Undefined})
+                            value = null;
 
                         item[reader.GetName(i)] = value;
                     }
