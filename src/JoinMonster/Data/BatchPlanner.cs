@@ -48,7 +48,7 @@ namespace JoinMonster.Data
             {
                 if (data is Connection<object> connection)
                 {
-                    data = connection.Edges.Select(x => (IDictionary<string, object?>) x.Node).ToList();
+                    data = connection.Items!.Cast<IDictionary<string, object?>>().ToList();
                 }
             }
 
@@ -68,8 +68,8 @@ namespace JoinMonster.Data
 
             data = data switch
             {
-                List<object> objList => objList.Select(x => (IDictionary<string, object?>) x),
-                Connection<object> connection => connection.Items.Select(x => (IDictionary<string, object?>) x),
+                List<object> objList => objList.Cast<IDictionary<string, object?>>(),
+                Connection<object> connection => connection.Items!.Cast<IDictionary<string, object?>>(),
                 _ => data
             };
 
@@ -135,6 +135,13 @@ namespace JoinMonster.Data
                     {
                         foreach (var entry in entryList)
                         {
+                            if (entry.TryGetValue(parentKey, out var prop) == false ||
+                                prop is null or string or IDictionary<string, object> ||
+                                (prop is not JsonElement {ValueKind: JsonValueKind.Array} && prop is not IEnumerable))
+                            {
+                                continue;
+                            }
+
                             var values = PrepareValues(entry, parentKey);
 
                             var res = new List<Dictionary<string, object?>>();
@@ -154,10 +161,16 @@ namespace JoinMonster.Data
                         var matchedData = new List<object>();
                         foreach (var entry in entryList)
                         {
-                            if (entry.TryGetValue(parentKey, out var key) == false) continue;
-                            if (newDataGrouped.TryGetValue(key, out var list) && list.Count > 0)
+                            if (entry.TryGetValue(parentKey, out var key) == false || key is null
+                                    || key is JsonElement {ValueKind: JsonValueKind.Array} or IEnumerable and not string)
                             {
-                                entry[fieldName] = _arrayToConnectionConverter.Convert(list[0], sqlTable, context);
+                                continue;
+                            }
+
+                            var convertedKey = SqlDialect.PrepareValue(key, null);
+                            if (newDataGrouped.TryGetValue(convertedKey, out var list) && list.Count > 0)
+                            {
+                                entry[fieldName] = _arrayToConnectionConverter.Convert(list, sqlTable, context);
                                 matchedData.Add(entry);
                             }
                             else
@@ -188,7 +201,6 @@ namespace JoinMonster.Data
                                 })
                                 .Where(x => x is {Count: > 0})
                                 .SelectMany(x => x)
-                                .Select(x => x.ToDictionary())
                                 .ToList();
 
                             await NextBatch(sqlTable, nextLevelData, databaseCall, context, cancellationToken);
@@ -265,7 +277,6 @@ namespace JoinMonster.Data
                             })
                             .Where(x => x is {Count: > 0})
                             .SelectMany(x => x)
-                            .Select(x => x.ToDictionary())
                             .ToList();
 
                         await NextBatch(sqlTable, nextLevelData, databaseCall, context, cancellationToken);
@@ -305,9 +316,9 @@ namespace JoinMonster.Data
                 }
                 case IDictionary<string, object?> entry when entry.TryGetValue(sqlTable.FieldName, out var newData):
                 {
-                    var tasks = (sqlTable.Tables
+                    var tasks = sqlTable.Tables
                         .Select(child =>
-                            NextBatchChild(child, newData, databaseCall, context, cancellationToken)));
+                            NextBatchChild(child, newData, databaseCall, context, cancellationToken));
                     await Task.WhenAll(tasks);
                     break;
                 }
@@ -323,9 +334,6 @@ namespace JoinMonster.Data
                 switch (obj)
                 {
                     case JsonElement element:
-                        if (element.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null or JsonValueKind.Object)
-                            break;
-
                         var preparedValue = SqlDialect.PrepareValue(element, null);
                         if (preparedValue is IEnumerable enumerable and not string)
                         {
@@ -361,9 +369,14 @@ namespace JoinMonster.Data
                 var item = new Dictionary<string, object?>();
                 for (var i = 0; i < reader.FieldCount; ++i)
                 {
-                    item[reader.GetName(i)] = await reader.IsDBNullAsync(i, cancellationToken)
+                    var value = await reader.IsDBNullAsync(i, cancellationToken)
                         ? null
                         : await reader.GetFieldValueAsync<object>(i, cancellationToken);
+
+                    if (value is JsonElement {ValueKind: JsonValueKind.Null or JsonValueKind.Undefined})
+                        value = null;
+
+                    item[reader.GetName(i)] = value;
                 }
 
                 data.Add(item);
