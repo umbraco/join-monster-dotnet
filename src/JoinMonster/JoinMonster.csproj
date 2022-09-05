@@ -20,9 +20,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="GraphQL" Version="5.3.0" />
+      <PackageReference Include="GraphQL" Version="7.0.2" />
       <PackageReference Include="NestHydration" Version="0.1.2" />
-      <PackageReference Include="System.Text.Json" Version="6.0.4" />
+      <PackageReference Include="System.Text.Json" Version="6.0.5" />
     </ItemGroup>
 
     <ItemGroup>
