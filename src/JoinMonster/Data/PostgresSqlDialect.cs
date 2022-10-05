@@ -58,7 +58,7 @@ namespace JoinMonster.Data
             var join = new JoinBuilder(Quote(parent.Name), Quote(parent.As), Quote(node.Name), Quote(node.As));
             node.Join(join, arguments, context, node);
 
-            if(join.Condition == null)
+            if (join.Condition == null)
                 throw new JoinMonsterException($"The join condition on table '{node.Name}' cannot be null.");
 
             var pagingWhereConditions = new List<WhereCondition>
@@ -126,24 +126,25 @@ namespace JoinMonster.Data
         }
 
         public override void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,
-            IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope, SqlCompilerContext compilerContext)
+            IResolveFieldContext context, ICollection<string> tables, ICollection<string> selections, IEnumerable<object> batchScope, SqlCompilerContext compilerContext)
         {
             if (node == null) throw new ArgumentNullException(nameof(node));
             if (arguments == null) throw new ArgumentNullException(nameof(arguments));
             if (context == null) throw new ArgumentNullException(nameof(context));
             if (tables == null) throw new ArgumentNullException(nameof(tables));
+            if (selections is null) throw new ArgumentNullException(nameof(selections));
             if (batchScope == null) throw new ArgumentNullException(nameof(batchScope));
             if (compilerContext == null) throw new ArgumentNullException(nameof(compilerContext));
 
             if (node.Batch == null)
                 throw new InvalidOperationException("node.Batchcannot be null.");
 
-            var thisKeyOperand = $"${node.As}.{node.Batch.ThisKey.Name}";
+            var thisKeyOperand = $"{Quote(node.As)}.{Quote(node.Batch.ThisKey.Name)}";
+            var parentKeyOperand = $"{Quote("temp")}.{Quote(node.Batch.ParentKey.Name)}";
 
-            var whereConditions = new List<WhereCondition>
-            {
-                new RawCondition($"{thisKeyOperand} = temp.\"{node.Batch.ParentKey.Name}\"", null)
-            };
+            selections.Add($"{parentKeyOperand} AS {Quote("$$temp")}");
+
+            var whereConditions = new List<WhereCondition>();
 
             if (node.Where != null)
             {
@@ -152,15 +153,39 @@ namespace JoinMonster.Data
                 node.Where(whereBuilder, arguments, context, node);
             }
 
+            if (node.Batch.Where != null)
+            {
+                var whereBuilder = new WhereBuilder(node.As, whereConditions);
+
+                node.Batch.Where(whereBuilder, parentKeyOperand, Enumerable.Empty<object>(), arguments, context, node);
+            }
+            else
+            {
+                whereConditions.Add(new RawCondition($"{thisKeyOperand} = {parentKeyOperand}", null));
+            }
+
             var tempTable =
-                $"FROM (VALUES {string.Join("", batchScope.Select(val => $"({val})"))}) temp(\"{node.Batch.ParentKey.Name}\")";
+                $"FROM (VALUES {string.Join(", ", batchScope.Select(val => $"({MaybeWrap(val)})"))}) temp({Quote(node.Batch.ParentKey.Name)})";
             tables.Add(tempTable);
 
-            var lateralJoinCondition = $"{thisKeyOperand} = temp.\"{node.Batch.ParentKey.Name}\"";
+            var lateralJoinCondition = $"{thisKeyOperand} = temp.{Quote(node.Batch.ParentKey.Name)}";
 
-            if (node.SortKey != null) {
+            if (node.Batch.Join != null)
+            {
+                var join = new JoinBuilder(Quote("temp"), Quote(Quote("temp")), Quote(node.Name), Quote(node.As));
+                node.Batch.Join(join, arguments, context, node);
+
+                if (join.Condition != null)
+                    lateralJoinCondition = CompileCondition(join.Condition, compilerContext);
+            }
+
+            if (node.SortKey != null)
+            {
                 var (limit, order, whereCondition) = InterpretForKeysetPaging(node, arguments, context);
-                whereConditions.Add(whereCondition);
+                if (whereCondition != null)
+                {
+                    whereConditions.Add(whereCondition);
+                }
 
                 tables.Add(KeysetPagingSelect(node.Name, whereConditions, order, limit, node.As, lateralJoinCondition,
                     null, compilerContext));
@@ -197,7 +222,7 @@ namespace JoinMonster.Data
             //     $"${node.Junction.As}.{node.Junction.Batch.ThisKey.Name}",
             //     batchScope.ElementAtOrDefault(0)
             // );
-            var thisKeyOperand = $"${node.Junction.As}.{node.Junction.Batch.ThisKey.Name}";
+            var thisKeyOperand = $"${Quote(node.Junction.As)}.{Quote(node.Junction.Batch.ThisKey.Name)}";
 
             var whereConditions = new List<WhereCondition>
             {
@@ -218,7 +243,7 @@ namespace JoinMonster.Data
             }
 
             var tempTable =
-                $"FROM (VALUES {string.Join("", batchScope.Select(val => $"({val})"))}) temp(\"{node.Junction.Batch.ParentKey.Name}\")";
+                $"FROM (VALUES {string.Join("", batchScope.Select(val => $"({MaybeWrap(val)})"))}) temp(\"{node.Junction.Batch.ParentKey.Name}\")";
 
             tables.Add(tempTable);
             var lateralJoinCondition = $"{thisKeyOperand} = temp.\"{node.Junction.Batch.ParentKey.Name}\"";
@@ -312,7 +337,23 @@ namespace JoinMonster.Data
                 }
             }
 
-            where.Raw($"{col} {op} @value", new {value});
+            where.Raw($"{col} {op} @value", new { value });
+        }
+
+        private object MaybeWrap(object value)
+        {
+            var type = value.GetType();
+
+            if (type == typeof(string))
+                return $"'{value}'";
+
+            if (type == typeof(Guid))
+            {
+                return $"'{value}'::uuid";
+            }
+
+            return value;
+
         }
     }
 }

@@ -44,7 +44,7 @@ namespace JoinMonster.Tests.Unit.Stubs
         }
 
         public override void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,
-            IResolveFieldContext resolveFieldContext, ICollection<string> tables, IEnumerable<object> batchScope, SqlCompilerContext compilerContext)
+            IResolveFieldContext resolveFieldContext, ICollection<string> tables, ICollection<string> selections, IEnumerable<object> batchScope, SqlCompilerContext compilerContext)
         {
             tables.Add(_batchedOneToManyPaginatedSql);
         }

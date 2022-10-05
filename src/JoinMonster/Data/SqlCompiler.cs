@@ -302,7 +302,7 @@ namespace JoinMonster.Data
                 }
                 else if (node.Paginate)
                 {
-                    _dialect.HandleBatchedOneToManyPaginated(parent, node, arguments, context, tables, batchScope.Cast<object>(), compilerContext);
+                    _dialect.HandleBatchedOneToManyPaginated(parent, node, arguments, context, tables, selections, batchScope.Cast<object>(), compilerContext);
                 }
                 else
                 {
@@ -310,14 +310,14 @@ namespace JoinMonster.Data
 
                     var column = _dialect.Quote(node.Batch.ThisKey.Name);
                     var whereBuilder = new WhereBuilder(_dialect.Quote(node.As), wheres);
-                    if (node.Batch.Where != null)
-                    {
-                        node.Batch.Where(whereBuilder, column, batchScope, arguments, context, node);
-                    }
-                    else
-                    {
+                    //if (node.Batch.Where != null)
+                    //{
+                    //    node.Batch.Where(whereBuilder, column, batchScope, arguments, context, node);
+                    //}
+                    //else
+                    //{
                         whereBuilder.In(column, batchScope);
-                    }
+                    //}
                 }
 
                 return;
