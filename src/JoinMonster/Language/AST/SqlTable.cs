@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using GraphQL.Execution;
 using JoinMonster.Configs;
 
@@ -65,9 +66,9 @@ namespace JoinMonster.Language.AST
         {
             get
             {
-                foreach (var column in Columns)
+                foreach (var column in Columns.ToList())
                     yield return column;
-                foreach (var table in Tables)
+                foreach (var table in Tables.ToList())
                     yield return table;
                 if (Junction != null)
                     yield return Junction;

@@ -39,7 +39,7 @@ namespace JoinMonster.Data
 
         /// <inheritdoc />
         public abstract void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,
-            IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope, SqlCompilerContext compilerContext);
+            IResolveFieldContext context, ICollection<string> tables, ICollection<string> selections, IEnumerable<object> batchScope, SqlCompilerContext compilerContext);
 
         /// <inheritdoc />
         public abstract void HandleBatchedManyToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,
@@ -506,7 +506,7 @@ namespace JoinMonster.Data
             return value;
         }
 
-        internal static IEnumerable CastArray(IReadOnlyList<object> result)
+        internal static IEnumerable CastArray(IEnumerable<object> result)
         {
             var values = result.Where(x => x != null).ToList();
             if (values.Count == 0)

@@ -53,7 +53,7 @@ namespace JoinMonster.Data
             IResolveFieldContext context, ICollection<string> tables, SqlCompilerContext compilerContext);
 
         void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,
-            IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope,
+            IResolveFieldContext context, ICollection<string> tables, ICollection<string> selections, IEnumerable<object> batchScope,
             SqlCompilerContext compilerContext);
 
         void HandleBatchedManyToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,

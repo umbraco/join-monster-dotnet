@@ -48,7 +48,11 @@ namespace JoinMonster.Data
             {
                 if (data is Connection<object> connection)
                 {
-                    data = connection.Edges.Select(x => (IDictionary<string, object?>) x.Node).ToList();
+                    data = connection.Edges.Select(x => x.Node).OfType<IDictionary<string, object?>>().ToList();
+                }
+                else if (data is IEnumerable<object> connections)
+                {
+                    data = connections.OfType<Connection<object>>().SelectMany( x => x.Items.OfType<IDictionary<string, object?>>()).ToList();
                 }
             }
 
@@ -68,15 +72,15 @@ namespace JoinMonster.Data
 
             data = data switch
             {
-                List<object> objList => objList.Select(x => (IDictionary<string, object?>) x),
-                Connection<object> connection => connection.Items.Select(x => (IDictionary<string, object?>) x),
+                List<object> objList => objList.OfType<IDictionary<string, object?>>().ToList(),
+                Connection<object> connection => connection.Items.OfType<IDictionary<string, object?>>().ToList(),
                 _ => data
             };
 
             // see if any begin a new batch
             if (sqlTable.Batch != null || sqlTable.Junction?.Batch != null)
             {
-                string thisKey = null!;
+                string thisKeyAlias = null!;
                 string parentKey = null!;
 
                 if (sqlTable.Batch != null)
@@ -84,15 +88,15 @@ namespace JoinMonster.Data
                     // if so, we know we'll need to get the key for matching with the parent key
                     sqlTable.AddColumn(sqlTable.Batch.ThisKey);
 
-                    thisKey = sqlTable.Batch.ThisKey.FieldName;
-                    parentKey = sqlTable.Batch.ParentKey.FieldName;
+                    thisKeyAlias = sqlTable.Batch.ThisKey.As;
+                    parentKey = sqlTable.Batch.ParentKey.Name;
                 }
                 else if (sqlTable.Junction?.Batch != null)
                 {
                     sqlTable.AddColumn(sqlTable.Junction.Batch.ThisKey);
 
-                    thisKey = sqlTable.Junction.Batch.ThisKey.FieldName;
-                    parentKey = sqlTable.Junction.Batch.ParentKey.FieldName;
+                    thisKeyAlias = sqlTable.Junction.Batch.ThisKey.As;
+                    parentKey = sqlTable.Junction.Batch.ParentKey.Name;
                 }
 
                 if (data is IEnumerable<IDictionary<string, object?>> entries)
@@ -107,28 +111,27 @@ namespace JoinMonster.Data
                         batchScope.AddRange(values);
                     }
 
-                    if (batchScope.Count == 0) return;
+                    if (batchScope.Count == 0)
+                    {
+                        if (sqlTable.Paginate)
+                        {
+                            foreach (var entry in entries)
+                                entry[fieldName] = new Connection<object> { Edges = new List<Edge<object>>() };
+                        }
+                        return;
+                    }
 
                     // generate the SQL, with the batch scope values incorporated in a WHERE IN clause
                     var sqlResult = _compiler.Compile(sqlTable, context, SqlDialect.CastArray(batchScope));
+                    sqlTable.AddColumn("$$temp", "$$temp", "$$temp");
                     var objectShape = _objectShaper.DefineObjectShape(sqlTable);
 
                     // grab the data
-                    var newData = await HandleDatabaseCall(databaseCall, sqlResult, objectShape, cancellationToken);
+                    var newData = await HandleDatabaseCall(databaseCall, sqlResult, thisKeyAlias, cancellationToken);
 
                     // group the rows by the key so we can match them with the previous batch
-                    var newDataGrouped = newData.GroupBy(x => x[thisKey])
+                    var newDataGrouped = newData.GroupBy(x => x["$$temp"])
                         .ToDictionary(x => x.Key, x => x.ToList());
-
-                    // but if we paginate, we must convert to connection type first
-                    if (sqlTable.Paginate)
-                    {
-                        //TODO: implement
-                        // foreach (var group in newDataGrouped)
-                        //     newDataGrouped[group.Key] =
-                        //         (List<Dictionary<string, object?>>)
-                        //             _arrayToConnectionConverter.Convert(group.Value, sqlTable, context);
-                    }
 
                     // if we they want many rows, give them an array
                     if (sqlTable.GrabMany)
@@ -138,6 +141,7 @@ namespace JoinMonster.Data
                             var values = PrepareValues(entry, parentKey);
 
                             var res = new List<Dictionary<string, object?>>();
+
                             foreach (var value in values)
                             {
                                 if (newDataGrouped.TryGetValue(value, out var obj))
@@ -146,7 +150,15 @@ namespace JoinMonster.Data
                                 }
                             }
 
-                            entry[fieldName] = res;
+#pragma warning disable 8620
+#pragma warning disable 8619
+                            res = _hydrator.Nest(res, objectShape);
+#pragma warning restore 8620
+#pragma warning restore 8619
+
+                            entry[fieldName] = sqlTable.Paginate
+                                ? _arrayToConnectionConverter.Convert(res, sqlTable, context)
+                                : res;
                         }
                     }
                     else
@@ -157,7 +169,12 @@ namespace JoinMonster.Data
                             if (entry.TryGetValue(parentKey, out var key) == false) continue;
                             if (newDataGrouped.TryGetValue(key, out var list) && list.Count > 0)
                             {
-                                entry[fieldName] = _arrayToConnectionConverter.Convert(list[0], sqlTable, context);
+#pragma warning disable 8620
+#pragma warning disable 8619
+                                var res = _hydrator.Nest(list, objectShape);
+                                entry[fieldName] = _arrayToConnectionConverter.Convert(res[0], sqlTable, context);
+#pragma warning restore 8620
+#pragma warning restore 8619
                                 matchedData.Add(entry);
                             }
                             else
@@ -174,22 +191,18 @@ namespace JoinMonster.Data
                     {
                         case IEnumerable<IDictionary<string, object?>> list:
                         {
-                            var nextLevelData = list
-                                .Where(x => x.Count > 0)
-                                .Select(x =>
+                            List<object> nextLevelData = new List<object>();
+                            foreach (var item in list)
+                            {
+                                if (item.TryGetValue(fieldName, out var value) && value is IEnumerable<IDictionary<string, object?>> dict)
                                 {
-                                    if (x.TryGetValue(fieldName, out var value)
-                                        && value is List<Dictionary<string, object?>> dict)
-                                    {
-                                        return dict;
-                                    }
-
-                                    return null;
-                                })
-                                .Where(x => x is {Count: > 0})
-                                .SelectMany(x => x)
-                                .Select(x => x.ToDictionary())
-                                .ToList();
+                                    nextLevelData.AddRange(dict);
+                                }
+                                else if (value is Connection<object> connection)
+                                {
+                                    nextLevelData.Add(value);
+                                }
+                            }
 
                             await NextBatch(sqlTable, nextLevelData, databaseCall, context, cancellationToken);
                             return;
@@ -202,6 +215,7 @@ namespace JoinMonster.Data
                             return;
                         }
                     }
+                    return;
                 }
 
                 switch (data)
@@ -215,17 +229,19 @@ namespace JoinMonster.Data
                         var sqlResult = _compiler.Compile(sqlTable, context, SqlDialect.CastArray(batchScope));
 
                         var objectShape = _objectShaper.DefineObjectShape(sqlTable);
-                        var newData = await HandleDatabaseCall(databaseCall, sqlResult, objectShape, cancellationToken);
+                        var newData = await HandleDatabaseCall(databaseCall, sqlResult, thisKeyAlias, cancellationToken);
 
-                        var newDataGrouped = newData.GroupBy(x => x[thisKey])
-                            .ToDictionary(x => x.Key, x => x.ToList());
+#pragma warning disable 8620
+#pragma warning disable 8619
+                        var newDataGrouped = newData
+                            .GroupBy(x => x[thisKeyAlias])
+                            .ToDictionary(x => x.Key, x => _hydrator.Nest(x.ToList(), objectShape));
+#pragma warning restore 8620
+#pragma warning restore 8619
 
-                        if (sqlTable.Paginate)
-                        {
-                            var targets = newDataGrouped[parentKey];
-                            dict[fieldName] = _arrayToConnectionConverter.Convert(targets, sqlTable, context);
-                        }
-                        else if (sqlTable.GrabMany)
+                        Console.WriteLine(JsonSerializer.Serialize(newDataGrouped));
+
+                        if (sqlTable.GrabMany)
                         {
                             var res = new List<Dictionary<string, object?>>();
                             foreach (var value in batchScope)
@@ -260,7 +276,6 @@ namespace JoinMonster.Data
                                 {
                                     return dict;
                                 }
-
                                 return null;
                             })
                             .Where(x => x is {Count: > 0})
@@ -322,7 +337,17 @@ namespace JoinMonster.Data
             {
                 switch (obj)
                 {
+                    case Connection<object> connection:
+                        if (connection.Items != null)
+                        {
+                            foreach (var item in connection.Items)
+                            {
+                                batchScope.Add(item);
+                            }
+                        }
+                        break;
                     case JsonElement element:
+                    {
                         if (element.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null or JsonValueKind.Object)
                             break;
 
@@ -337,6 +362,15 @@ namespace JoinMonster.Data
                         }
 
                         break;
+                    }
+                    case IEnumerable enumerable when enumerable is not string:
+                    {
+                        foreach (var item in enumerable)
+                        {
+                            batchScope.Add(item);
+                        }
+                        break;
+                    }
                     case null:
                         break;
                     default:
@@ -350,8 +384,8 @@ namespace JoinMonster.Data
 
         // TODO: Refactor to share code with JoinMonsterExecuter
         private async Task<List<Dictionary<string, object?>>> HandleDatabaseCall(
-            DatabaseCallDelegate databaseCall, SqlResult sqlResult, Definition objectShape,
-            CancellationToken cancellationToken)
+            DatabaseCallDelegate databaseCall, SqlResult sqlResult,
+            string keyColumn, CancellationToken cancellationToken)
         {
             using var reader = await databaseCall(sqlResult.Sql, sqlResult.Parameters);
 
@@ -366,14 +400,13 @@ namespace JoinMonster.Data
                         : await reader.GetFieldValueAsync<object>(i, cancellationToken);
                 }
 
+                if (item.ContainsKey("$$temp") == false)
+                    item["$$temp"] = item[keyColumn];
+
                 data.Add(item);
             }
 
-#pragma warning disable 8620
-#pragma warning disable 8619
-            return _hydrator.Nest(data, objectShape);
-#pragma warning restore 8619
-#pragma warning restore 8620
+            return data;
         }
     }
 }

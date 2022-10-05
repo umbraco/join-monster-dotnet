@@ -62,10 +62,8 @@ namespace JoinMonster
                     case Dictionary<string, object?> dataItem:
                         RecurseOnObjInData(dataItem, astChild, context);
                         break;
-                    case null:
-                        break;
                     default:
-                        throw new ArgumentOutOfRangeException(nameof(data), $"Unknown type {data.GetType()}");
+                        break;
                 }
             }
 
@@ -233,8 +231,8 @@ namespace JoinMonster
 
             if (fieldName == null) return;
 
-            if (dataItem.TryGetValue(fieldName, out _))
-                dataItem[fieldName] = ConvertInternal(dataItem[fieldName], astChild, context);
+            if (dataItem.TryGetValue(fieldName, out var value))
+                dataItem[fieldName] = ConvertInternal(value, astChild, context);
         }
     }
 }

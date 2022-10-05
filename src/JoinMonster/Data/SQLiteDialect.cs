@@ -35,7 +35,7 @@ namespace JoinMonster.Data
             ICollection<string> tables, SqlCompilerContext compilerContext) => throw new NotSupportedException();
 
         public override void HandleBatchedOneToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,
-            IResolveFieldContext context, ICollection<string> tables, IEnumerable<object> batchScope, SqlCompilerContext compilerContext) =>
+            IResolveFieldContext context, ICollection<string> tables, ICollection<string> selections, IEnumerable<object> batchScope, SqlCompilerContext compilerContext) =>
             throw new NotSupportedException();
 
         public override void HandleBatchedManyToManyPaginated(Node? parent, SqlTable node, IReadOnlyDictionary<string, ArgumentValue> arguments,

@@ -230,7 +230,8 @@ namespace JoinMonster.Language
                     }
                 )
                 {
-                    Where = batch.Where
+                    Where = batch.Where,
+                    Join = batch.Join
                 };
             }
 
