@@ -102,13 +102,14 @@ namespace JoinMonster.Data
                 if (data is IEnumerable<IDictionary<string, object?>> entries)
                 {
                     // the "batch scope" is the set of values to match this key against from the previous batch
-                    var batchScope = new List<object>();
+                    var batchScope = new HashSet<object>();
                     var entryList = entries.ToList();
 
                     foreach (var entry in entryList)
                     {
                         var values = PrepareValues(entry, parentKey);
-                        batchScope.AddRange(values);
+                        foreach (var value in values)
+                            batchScope.Add(value);
                     }
 
                     if (batchScope.Count == 0)
@@ -331,7 +332,7 @@ namespace JoinMonster.Data
 
         private static List<object> PrepareValues(IDictionary<string, object?> dict, string parentKey)
         {
-            var batchScope = new List<object>();
+            var batchScope = new HashSet<object>();
 
             if (dict.TryGetValue(parentKey, out var obj))
             {
@@ -354,7 +355,8 @@ namespace JoinMonster.Data
                         var preparedValue = SqlDialect.PrepareValue(element, null);
                         if (preparedValue is IEnumerable enumerable and not string)
                         {
-                            batchScope.AddRange(enumerable.Cast<object>());
+                            foreach (var value in enumerable.Cast<object>())
+                                batchScope.Add(value);
                         }
                         else
                         {
@@ -379,7 +381,7 @@ namespace JoinMonster.Data
                 }
             }
 
-            return batchScope;
+            return batchScope.ToList();
         }
 
         // TODO: Refactor to share code with JoinMonsterExecuter
