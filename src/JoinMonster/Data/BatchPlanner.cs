@@ -124,7 +124,6 @@ namespace JoinMonster.Data
 
                     // generate the SQL, with the batch scope values incorporated in a WHERE IN clause
                     var sqlResult = _compiler.Compile(sqlTable, context, SqlDialect.CastArray(batchScope));
-                    sqlTable.AddColumn("$$temp", "$$temp", "$$temp");
                     var objectShape = _objectShaper.DefineObjectShape(sqlTable);
 
                     // grab the data
@@ -239,8 +238,6 @@ namespace JoinMonster.Data
                             .ToDictionary(x => x.Key, x => _hydrator.Nest(x.ToList(), objectShape));
 #pragma warning restore 8620
 #pragma warning restore 8619
-
-                        Console.WriteLine(JsonSerializer.Serialize(newDataGrouped));
 
                         if (sqlTable.GrabMany)
                         {
