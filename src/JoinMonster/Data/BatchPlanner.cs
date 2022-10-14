@@ -234,7 +234,7 @@ namespace JoinMonster.Data
 #pragma warning disable 8620
 #pragma warning disable 8619
                         var newDataGrouped = newData
-                            .GroupBy(x => x[thisKeyAlias])
+                            .GroupBy(x => x["$$temp"])
                             .ToDictionary(x => x.Key, x => _hydrator.Nest(x.ToList(), objectShape));
 #pragma warning restore 8620
 #pragma warning restore 8619
