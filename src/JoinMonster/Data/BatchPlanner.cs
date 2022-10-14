@@ -142,11 +142,11 @@ namespace JoinMonster.Data
 
                             var res = new List<Dictionary<string, object?>>();
 
-                            foreach (var value in values)
+                            foreach (var value in newDataGrouped)
                             {
-                                if (newDataGrouped.TryGetValue(value, out var obj))
+                                if (values.Contains(value.Key))
                                 {
-                                    res.AddRange(obj);
+                                    res.AddRange(value.Value);
                                 }
                             }
 
