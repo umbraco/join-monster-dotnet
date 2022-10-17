@@ -176,11 +176,29 @@ namespace JoinMonster.Data
                 //     orders.Add(junctionOrderBy);
                 // }
                 //
-                // if (node.SortKey != null)
-                // {
-                //     var orderBy = _dialect.CompileOrderBy(node.SortKey);
-                //     orders.Add(orderBy);
-                // }
+                if (node.SortKey != null)
+                {
+                    var builder = new OrderByBuilder(node.SortKey.Table);
+                    ThenOrderByBuilder? thenBy = null;
+
+                    var sort = node.SortKey;
+                    do
+                    {
+                        var descending = sort.Direction == SortDirection.Descending;
+
+                        if (thenBy == null)
+                        {
+                            thenBy = descending ? builder.ByDescending(sort.Column) : builder.By(sort.Column);
+                        }
+                        else
+                        {
+                            thenBy = descending ? thenBy.ThenByDescending(sort.Column) : thenBy.ThenBy(sort.Column);
+                        }
+                    } while ((sort = sort.ThenBy) != null);
+
+                    var order = builder.OrderBy == null ? "" : _dialect.CompileOrderBy(builder.OrderBy);
+                    orders.Add(order);
+                }
             }
 
             if (node.Join != null)
@@ -303,32 +321,6 @@ namespace JoinMonster.Data
                 else if (node.Paginate)
                 {
                     _dialect.HandleBatchedOneToManyPaginated(parent, node, arguments, context, tables, selections, batchScope.Cast<object>(), compilerContext);
-
-                    if (node.SortKey != null)
-                    {
-                        var builder = new OrderByBuilder(node.SortKey.Table);
-                        ThenOrderByBuilder? thenBy = null;
-                        var isBefore = arguments.TryGetValue("last", out var last) && last.Value != null;
-
-                        var sort = node.SortKey;
-                        do
-                        {
-                            var descending = sort.Direction == SortDirection.Descending;
-                            if (isBefore) descending = !descending;
-
-                            if (thenBy == null)
-                            {
-                                thenBy = descending ? builder.ByDescending(sort.Column) : builder.By(sort.Column);
-                            }
-                            else
-                            {
-                                thenBy = descending ? thenBy.ThenByDescending(sort.Column) : thenBy.ThenBy(sort.Column);
-                            }
-                        } while ((sort = sort.ThenBy) != null);
-
-                        var order = builder.OrderBy == null ? "" : _dialect.CompileOrderBy(builder.OrderBy);
-                        orders.Add(order);
-                    }
                 }
                 else
                 {

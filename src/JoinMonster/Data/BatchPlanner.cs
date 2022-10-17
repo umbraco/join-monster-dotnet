@@ -144,6 +144,7 @@ namespace JoinMonster.Data
 
                             foreach (var value in newDataGrouped)
                             {
+                                if (value.Key == null) continue;
                                 if (values.Contains(value.Key))
                                 {
                                     res.AddRange(value.Value);
@@ -242,10 +243,13 @@ namespace JoinMonster.Data
                         if (sqlTable.GrabMany)
                         {
                             var res = new List<Dictionary<string, object?>>();
-                            foreach (var value in batchScope)
+                            foreach (var value in newDataGrouped)
                             {
-                                if (newDataGrouped.TryGetValue(value, out var resultValue))
-                                    res.AddRange(resultValue);
+                                if (value.Key == null) continue;
+                                if (batchScope.Contains(value.Key))
+                                {
+                                    res.AddRange(value.Value);
+                                }
                             }
 
                             // ensure that any child connection is resolved
