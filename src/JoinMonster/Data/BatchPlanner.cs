@@ -142,12 +142,25 @@ namespace JoinMonster.Data
 
                             var res = new List<Dictionary<string, object?>>();
 
-                            foreach (var value in newDataGrouped)
+                            if (sqlTable.OrderBy == null && sqlTable.SortKey == null)
                             {
-                                if (value.Key == null) continue;
-                                if (values.Contains(value.Key))
+                                foreach (var value in values)
                                 {
-                                    res.AddRange(value.Value);
+                                    if (newDataGrouped.TryGetValue(value, out var resultValue))
+                                    {
+                                        res.AddRange(resultValue);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                foreach (var value in newDataGrouped)
+                                {
+                                    if (value.Key == null) continue;
+                                    if (values.Contains(value.Key))
+                                    {
+                                        res.AddRange(value.Value);
+                                    }
                                 }
                             }
 
@@ -243,12 +256,25 @@ namespace JoinMonster.Data
                         if (sqlTable.GrabMany)
                         {
                             var res = new List<Dictionary<string, object?>>();
-                            foreach (var value in newDataGrouped)
+                            if (sqlTable.OrderBy == null && sqlTable.SortKey == null)
                             {
-                                if (value.Key == null) continue;
-                                if (batchScope.Contains(value.Key))
+                                foreach (var value in batchScope)
                                 {
-                                    res.AddRange(value.Value);
+                                    if (newDataGrouped.TryGetValue(value, out var resultValue))
+                                    {
+                                        res.AddRange(resultValue);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                foreach (var value in newDataGrouped)
+                                {
+                                    if (value.Key == null) continue;
+                                    if (batchScope.Contains(value.Key))
+                                    {
+                                        res.AddRange(value.Value);
+                                    }
                                 }
                             }
 
