@@ -382,7 +382,7 @@ namespace JoinMonster.Data
                 op ??= descending ? "<" : ">";
 
                 var conditions = new List<WhereCondition>();
-                var where = new WhereBuilder(sortTable, conditions);
+                var where = new WhereBuilder(Quote(sortTable), conditions);
 
                 var value = keyObj[ordering.As];
                 var preparedValue = PrepareValue(value, ordering.Type);

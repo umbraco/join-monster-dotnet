@@ -148,14 +148,14 @@ namespace JoinMonster.Data
 
             if (node.Where != null)
             {
-                var whereBuilder = new WhereBuilder(node.As, whereConditions);
+                var whereBuilder = new WhereBuilder(Quote(node.As), whereConditions);
 
                 node.Where(whereBuilder, arguments, context, node);
             }
 
             if (node.Batch.Where != null)
             {
-                var whereBuilder = new WhereBuilder(node.As, whereConditions);
+                var whereBuilder = new WhereBuilder(Quote(node.As), whereConditions);
 
                 node.Batch.Where(whereBuilder, parentKeyOperand, Enumerable.Empty<object>(), arguments, context, node);
             }
@@ -231,13 +231,13 @@ namespace JoinMonster.Data
 
             if (node.Junction.Where != null)
             {
-                var whereBuilder = new WhereBuilder(node.Junction.As, whereConditions);
+                var whereBuilder = new WhereBuilder(Quote(node.Junction.As), whereConditions);
                 node.Junction.Where(whereBuilder, arguments, context, node);
             }
 
             if (node.Where != null)
             {
-                var whereBuilder = new WhereBuilder(node.As, whereConditions);
+                var whereBuilder = new WhereBuilder(Quote(node.As), whereConditions);
 
                 node.Where(whereBuilder, arguments, context, node);
             }
