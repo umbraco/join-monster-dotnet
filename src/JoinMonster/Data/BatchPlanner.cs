@@ -238,7 +238,16 @@ namespace JoinMonster.Data
                     {
                         var batchScope = PrepareValues(dict, parentKey);
 
-                        if (batchScope.Count == 0) return;
+                        if (batchScope.Count == 0)
+                        {
+
+                            if (sqlTable.Paginate)
+                            {
+                                dict[fieldName] = new Connection<object> { Edges = new List<Edge<object>>() };
+                            }
+                            return;
+                        }
+
 
                         var sqlResult = _compiler.Compile(sqlTable, context, SqlDialect.CastArray(batchScope));
 
