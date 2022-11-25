@@ -119,7 +119,7 @@ namespace JoinMonster
                         do
                         {
                             var value = obj[sort.Column];
-                            if (sort.Type != null && value != null)
+                            if (sort.Type != null && value != null && value.GetType() != sort.Type)
                             {
                                 if (sort.Type == typeof(DateTime) && value is string strVal)
                                 {
