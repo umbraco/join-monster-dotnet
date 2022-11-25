@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -52,7 +53,7 @@ namespace JoinMonster.Data
                 }
                 else if (data is IEnumerable<object> connections)
                 {
-                    data = connections.OfType<Connection<object>>().SelectMany( x => x.Items.OfType<IDictionary<string, object?>>()).ToList();
+                    data = connections.OfType<Connection<object>>().SelectMany(x => x.Items.OfType<IDictionary<string, object?>>()).ToList();
                 }
             }
 
@@ -62,7 +63,7 @@ namespace JoinMonster.Data
             var tasks = sqlAst.Tables
                 .Select(child => NextBatchChild(child, data, databaseCall, context, cancellationToken));
 
-            await Task.WhenAll(tasks);
+            await Task.WhenAll(tasks).ConfigureAwait(false);
         }
 
         private async Task NextBatchChild(SqlTable sqlTable, object? data, DatabaseCallDelegate databaseCall,
@@ -127,11 +128,11 @@ namespace JoinMonster.Data
                     var objectShape = _objectShaper.DefineObjectShape(sqlTable);
 
                     // grab the data
-                    var newData = await HandleDatabaseCall(databaseCall, sqlResult, thisKeyAlias, cancellationToken);
+                    var newData = await HandleDatabaseCall(databaseCall, sqlResult, thisKeyAlias, cancellationToken).ConfigureAwait(false);
 
                     // group the rows by the key so we can match them with the previous batch
                     var newDataGrouped = newData.GroupBy(x => x["$$temp"])
-                        .ToDictionary(x => x.Key, x => x.ToList());
+                            .ToDictionary(x => x.Key, x => x.ToList());
 
                     // if we they want many rows, give them an array
                     if (sqlTable.GrabMany)
@@ -140,7 +141,7 @@ namespace JoinMonster.Data
                         {
                             var values = PrepareValues(entry, parentKey);
 
-                            var res = new List<Dictionary<string, object?>>();
+                            var res = new List<IDictionary<string, object?>>();
 
                             if (sqlTable.OrderBy == null && sqlTable.SortKey == null)
                             {
@@ -164,42 +165,30 @@ namespace JoinMonster.Data
                                 }
                             }
 
-#pragma warning disable 8620
-#pragma warning disable 8619
-                            res = _hydrator.Nest(res, objectShape);
-#pragma warning restore 8620
-#pragma warning restore 8619
+                            var nested = _hydrator.Nest(res, objectShape).ToList();
 
                             entry[fieldName] = sqlTable.Paginate
-                                ? _arrayToConnectionConverter.Convert(res, sqlTable, context)
-                                : res;
+                                ? _arrayToConnectionConverter.Convert(nested, sqlTable, context)
+                                : nested;
                         }
                     }
                     else
                     {
-                        var matchedData = new List<object>();
+                        var matchedData = new List<IDictionary<string, object?>>();
                         foreach (var entry in entryList)
                         {
                             if (entry.TryGetValue(parentKey, out var key) == false) continue;
+
                             if (newDataGrouped.TryGetValue(key, out var list) && list.Count > 0)
                             {
-#pragma warning disable 8620
-#pragma warning disable 8619
-                                var res = _hydrator.Nest(list, objectShape);
+                                var res = _hydrator.Nest(list, objectShape).ToList();
                                 entry[fieldName] = _arrayToConnectionConverter.Convert(res[0], sqlTable, context);
-#pragma warning restore 8620
-#pragma warning restore 8619
                                 matchedData.Add(entry);
-                            }
-                            else
-                            {
-                                entry[fieldName] = null;
                             }
                         }
 
                         data = matchedData;
                     }
-
 
                     switch (data)
                     {
@@ -218,14 +207,15 @@ namespace JoinMonster.Data
                                 }
                             }
 
-                            await NextBatch(sqlTable, nextLevelData, databaseCall, context, cancellationToken);
+                            await NextBatch(sqlTable, nextLevelData, databaseCall, context, cancellationToken).ConfigureAwait(false);
+
                             return;
                         }
                         case List<object> objects:
                         {
                             var nextLevelData = objects.Where(x => x != null);
 
-                            await NextBatch(sqlTable, nextLevelData, databaseCall, context, cancellationToken);
+                            await NextBatch(sqlTable, nextLevelData, databaseCall, context, cancellationToken).ConfigureAwait(false);
                             return;
                         }
                     }
@@ -252,19 +242,15 @@ namespace JoinMonster.Data
                         var sqlResult = _compiler.Compile(sqlTable, context, SqlDialect.CastArray(batchScope));
 
                         var objectShape = _objectShaper.DefineObjectShape(sqlTable);
-                        var newData = await HandleDatabaseCall(databaseCall, sqlResult, thisKeyAlias, cancellationToken);
+                        var newData = await HandleDatabaseCall(databaseCall, sqlResult, thisKeyAlias, cancellationToken).ConfigureAwait(false);
 
-#pragma warning disable 8620
-#pragma warning disable 8619
                         var newDataGrouped = newData
                             .GroupBy(x => x["$$temp"])
-                            .ToDictionary(x => x.Key, x => _hydrator.Nest(x.ToList(), objectShape));
-#pragma warning restore 8620
-#pragma warning restore 8619
+                            .ToDictionary(x => x.Key, x => _hydrator.Nest(x, objectShape).ToList());
 
                         if (sqlTable.GrabMany)
                         {
-                            var res = new List<Dictionary<string, object?>>();
+                            var res = new List<IDictionary<string, object?>>();
                             if (sqlTable.OrderBy == null && sqlTable.SortKey == null)
                             {
                                 foreach (var value in batchScope)
@@ -297,7 +283,7 @@ namespace JoinMonster.Data
 
                         if (dict.TryGetValue(fieldName, out var newDataObj) && newDataObj is not null)
                         {
-                            await NextBatch(sqlTable, newDataObj, databaseCall, context, cancellationToken);
+                            await NextBatch(sqlTable, newDataObj, databaseCall, context, cancellationToken).ConfigureAwait(false);
                         }
 
                         break;
@@ -309,7 +295,7 @@ namespace JoinMonster.Data
                             .Select(x =>
                             {
                                 if (x.TryGetValue(fieldName, out var value)
-                                    && value is List<Dictionary<string, object?>> dict)
+                                    && value is List<IDictionary<string, object?>> dict)
                                 {
                                     return dict;
                                 }
@@ -317,10 +303,9 @@ namespace JoinMonster.Data
                             })
                             .Where(x => x is {Count: > 0})
                             .SelectMany(x => x)
-                            .Select(x => x.ToDictionary())
                             .ToList();
 
-                        await NextBatch(sqlTable, nextLevelData, databaseCall, context, cancellationToken);
+                        await NextBatch(sqlTable, nextLevelData, databaseCall, context, cancellationToken).ConfigureAwait(false);
                         break;
                     }
                     default:
@@ -329,7 +314,7 @@ namespace JoinMonster.Data
                         {
                             if (obj.TryGetValue(fieldName, out var newData) && newData is not null)
                             {
-                                await NextBatch(sqlTable, newData, databaseCall, context, cancellationToken);
+                                await NextBatch(sqlTable, newData, databaseCall, context, cancellationToken).ConfigureAwait(false);
                             }
                         }
 
@@ -352,7 +337,7 @@ namespace JoinMonster.Data
                         }
                     }
 
-                    await Task.WhenAll(tasks);
+                    await Task.WhenAll(tasks).ConfigureAwait(false);
                     break;
                 }
                 case IDictionary<string, object?> entry when entry.TryGetValue(sqlTable.FieldName, out var newData):
@@ -360,7 +345,7 @@ namespace JoinMonster.Data
                     var tasks = (sqlTable.Tables
                         .Select(child =>
                             NextBatchChild(child, newData, databaseCall, context, cancellationToken)));
-                    await Task.WhenAll(tasks);
+                    await Task.WhenAll(tasks).ConfigureAwait(false);
                     break;
                 }
             }
@@ -421,21 +406,21 @@ namespace JoinMonster.Data
         }
 
         // TODO: Refactor to share code with JoinMonsterExecuter
-        private async Task<List<Dictionary<string, object?>>> HandleDatabaseCall(
+        private static async Task<List<ConcurrentDictionary<string, object?>>> HandleDatabaseCall(
             DatabaseCallDelegate databaseCall, SqlResult sqlResult,
             string keyColumn, CancellationToken cancellationToken)
         {
-            using var reader = await databaseCall(sqlResult.Sql, sqlResult.Parameters);
+            using var reader = await databaseCall(sqlResult.Sql, sqlResult.Parameters).ConfigureAwait(false);
 
-            var data = new List<Dictionary<string, object?>>();
-            while (await reader.ReadAsync(cancellationToken))
+            var data = new List<ConcurrentDictionary<string, object?>>();
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                var item = new Dictionary<string, object?>();
+                var item = new ConcurrentDictionary<string, object?>();
                 for (var i = 0; i < reader.FieldCount; ++i)
                 {
-                    item[reader.GetName(i)] = await reader.IsDBNullAsync(i, cancellationToken)
+                    item[reader.GetName(i)] = await reader.IsDBNullAsync(i, cancellationToken).ConfigureAwait(false)
                         ? null
-                        : await reader.GetFieldValueAsync<object>(i, cancellationToken);
+                        : await reader.GetFieldValueAsync<object>(i, cancellationToken).ConfigureAwait(false);
                 }
 
                 if (item.ContainsKey("$$temp") == false)
