@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using GraphQL;
@@ -58,13 +60,13 @@ namespace JoinMonster
             var sqlAst = _converter.Convert(context);
             var sqlResult = _compiler.Compile(sqlAst, context);
 
-            var data = new List<Dictionary<string, object?>>();
+            var data = new List<IDictionary<string, object?>>();
 
             using (var reader = await databaseCall(sqlResult.Sql, sqlResult.Parameters).ConfigureAwait(false))
             {
                 while (await reader.ReadAsync(cancellationToken))
                 {
-                    var item = new Dictionary<string, object?>();
+                    var item = new ConcurrentDictionary<string, object?>();
 
                     for (var i = 0; i < reader.FieldCount; ++i)
                     {
@@ -80,10 +82,8 @@ namespace JoinMonster
             }
 
             var objectShape = _objectShaper.DefineObjectShape(sqlAst);
-#pragma warning disable 8620
-            var nested = _hydrator.Nest(data, objectShape);
+            var nested = _hydrator.Nest(data, objectShape).ToList();
             var result = _arrayToConnectionConverter.Convert(nested, sqlAst, context);
-#pragma warning restore 8620
 
             if (result == null) return null;
 

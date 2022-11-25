@@ -52,14 +52,14 @@ namespace JoinMonster
             {
                 switch (data)
                 {
-                    case IEnumerable<Dictionary<string, object?>> array:
+                    case IEnumerable<IDictionary<string, object?>> array:
                     {
                         foreach (var dataItem in array)
                             RecurseOnObjInData(dataItem, astChild, context);
 
                         break;
                     }
-                    case Dictionary<string, object?> dataItem:
+                    case IDictionary<string, object?> dataItem:
                         RecurseOnObjInData(dataItem, astChild, context);
                         break;
                     default:
@@ -80,12 +80,13 @@ namespace JoinMonster
                     };
                 case null:
                     return null!;
-                case List<Dictionary<string, object?>> dataArr when sqlTable.SortKey != null || sqlTable.Junction?.SortKey != null:
+                case IEnumerable<IDictionary<string, object?>> enumerable when sqlTable.SortKey != null || sqlTable.Junction?.SortKey != null:
                 {
+                    var dataList = enumerable.ToList();
                     var arguments = sqlTable.Arguments;
 
                     // $total was a special column for determining the total number of items
-                    var arrayLength = dataArr.Count > 0 && dataArr[0].TryGetValue("$total", out var total) ? System.Convert.ToInt32(total) : (int?) null;
+                    var arrayLength = dataList.Count > 0 && dataList[0].TryGetValue("$total", out var total) ? System.Convert.ToInt32(total) : (int?) null;
 
                     var sortKey = sqlTable.SortKey ?? sqlTable.Junction?.SortKey;
 
@@ -94,26 +95,26 @@ namespace JoinMonster
                     if (arguments.TryGetValue("first", out var first) && first.Value is int firstValue)
                     {
                         // we fetched an extra one in order to determine if there is a next page, if there is one, pop off that extra
-                        if (dataArr.Count > firstValue) {
+                        if (dataList.Count > firstValue) {
                             hasNextPage = true;
-                            dataArr.RemoveAt(dataArr.Count - 1);
+                            dataList.RemoveAt(dataList.Count - 1);
                         }
                     }
                     else if (arguments.TryGetValue("last", out var last) && last.Value is int lastValue)
                     {
                         // if backward paging, do the same, but also reverse it
-                        if (dataArr.Count > lastValue)
+                        if (dataList.Count > lastValue)
                         {
                             hasPreviousPage = true;
-                            dataArr.RemoveAt(dataArr.Count - 1);
+                            dataList.RemoveAt(dataList.Count - 1);
                         }
 
-                        dataArr.Reverse();
+                        dataList.Reverse();
                     }
 
                     var cursor = new Dictionary<string, object?>();
 
-                    var edges = dataArr.Select(obj =>
+                    var edges = dataList.Select(obj =>
                     {
                         var sort = sortKey!;
                         do
@@ -121,10 +122,10 @@ namespace JoinMonster
                             var value = obj[sort.Column];
                             if (sort.Type != null && value != null)
                             {
-                                if (sort.Type == typeof(DateTime) && value is string strVal)
+                                if (sort.Type == typeof(DateTime) && value is string strDate)
                                 {
                                     // TODO: is this needed?
-                                    value = DateTime.Parse(strVal, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
+                                    value = DateTime.Parse(strDate, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
                                 }
                                 else
                                 {
@@ -157,17 +158,18 @@ namespace JoinMonster
                         connection.TotalCount = arrayLength.Value;
                     return connection;
                 }
-                case List<Dictionary<string, object?>> dataArr when (sqlTable.OrderBy != null || sqlTable.Junction?.OrderBy != null):
+                case IEnumerable<IDictionary<string, object?>> enumerable when (sqlTable.OrderBy != null || sqlTable.Junction?.OrderBy != null):
                 {
+                    var dataList = enumerable.ToList();
                     var arguments = sqlTable.Arguments;
                     var offset = 0;
                     if (arguments.TryGetValue("after", out var after) && after.Value is string afterValue)
                         offset = ConnectionUtils.CursorToOffset(afterValue);
 
                     // $total was a special column for determining the total number of items
-                    var arrayLength = dataArr.Count > 0 && dataArr[0].TryGetValue("$total", out var total) ? System.Convert.ToInt32(total) : (int?) null;
+                    var arrayLength = dataList.Count > 0 && dataList[0].TryGetValue("$total", out var total) ? System.Convert.ToInt32(total) : (int?) null;
 
-                    var connection = ConnectionFromArraySlice(dataArr, arguments, offset, arrayLength);
+                    var connection = ConnectionFromArraySlice(dataList, arguments, offset, arrayLength);
                     if (arrayLength.HasValue)
                         connection.TotalCount = arrayLength.Value;
                     return connection;
@@ -177,7 +179,7 @@ namespace JoinMonster
             }
         }
 
-        private Connection<object> ConnectionFromArraySlice(IReadOnlyCollection<Dictionary<string, object?>> dataArr,
+        private Connection<object> ConnectionFromArraySlice(IReadOnlyCollection<IDictionary<string, object?>> dataArr,
             IReadOnlyDictionary<string, ArgumentValue> arguments, int offset, int? arrayLength)
         {
             if (arrayLength == 0)
