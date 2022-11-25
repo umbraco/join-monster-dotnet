@@ -54,7 +54,7 @@ namespace JoinMonster.Language
         {
             var sqlColumnConfig = field.GetSqlColumnConfig();
             if (sqlColumnConfig?.Ignored == true)
-                return new SqlNoop();
+                return SqlNoop.Instance;
 
             var gqlType = field.ResolvedType?.GetNamedType();
 
@@ -76,7 +76,7 @@ namespace JoinMonster.Language
                 }
 
                 if (sqlColumnConfig == null)
-                    return new SqlNoop();
+                    return SqlNoop.Instance;
             }
 
             if(sqlTable == null)
@@ -95,6 +95,21 @@ namespace JoinMonster.Language
             var arguments = HandleArguments(field, fieldAst, context);
 
             var fieldName = fieldAst.Alias?.Name.StringValue ?? field.Name;
+
+            if (parent is SqlTable parentTable)
+            {
+                var existingTable = parentTable.Tables.FirstOrDefault(x => x.FieldName == fieldName);
+                // we already have a table for the field, this can happend when there's multiple fragments
+                if (existingTable is not null && fieldAst.SelectionSet is not null)
+                {
+                    // lets add the fragment selections to the existing table
+                    HandleSelections(existingTable, graphType, fieldAst.SelectionSet.Selections, depth, context);
+
+                    // return SqlNoop to avoid the table being added multiple times to the selection
+                    return SqlNoop.Instance;
+                }
+            }
+
             var tableName = config.Table(arguments, context);
             var tableAs = _aliasGenerator.GenerateTableAlias(fieldName);
 
