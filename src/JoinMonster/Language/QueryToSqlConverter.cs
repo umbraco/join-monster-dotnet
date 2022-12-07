@@ -95,8 +95,9 @@ namespace JoinMonster.Language
             var arguments = HandleArguments(field, fieldAst, context);
 
             var fieldName = fieldAst.Alias?.Name.StringValue ?? field.Name;
+            var tableName = config.Table(arguments, context);
 
-            if (parent is SqlTable parentTable)
+            if (parent is SqlTable parentTable && parentTable.Name == tableName)
             {
                 var existingTable = parentTable.Tables.FirstOrDefault(x => x.FieldName == fieldName);
                 // we already have a table for the field, this can happend when there's multiple fragments
@@ -110,7 +111,6 @@ namespace JoinMonster.Language
                 }
             }
 
-            var tableName = config.Table(arguments, context);
             var tableAs = _aliasGenerator.GenerateTableAlias(fieldName);
 
             var grabMany = field.ResolvedType.IsListType();
