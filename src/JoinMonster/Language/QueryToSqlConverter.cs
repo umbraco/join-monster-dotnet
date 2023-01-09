@@ -377,15 +377,35 @@ namespace JoinMonster.Language
             var edgesType = (IComplexGraphType) graphType.GetField("edges")?.ResolvedType.GetNamedType();
             var edgeType = (IComplexGraphType) edgesType?.GetField("node")?.ResolvedType.GetNamedType();
 
-            var field = fieldAst.SelectionSet.Selections
+            var nodeField = fieldAst.SelectionSet.Selections
                             .OfType<GraphQLField>()
                             .FirstOrDefault(x => x.Name == "edges")
                             ?.SelectionSet.Selections.OfType<GraphQLField>()
-                            .FirstOrDefault(x => x.Name == "node")
-                        ?? fieldAst.SelectionSet.Selections
+                            .FirstOrDefault(x => x.Name == "node");
+
+            var itemsField = fieldAst.SelectionSet.Selections
                             .OfType<GraphQLField>()
-                            .FirstOrDefault(x => x.Name == "items")
-                        ?? new GraphQLField();
+                            .FirstOrDefault(x => x.Name == "items");
+
+            GraphQLSelectionSet? selectionSet = null;
+            if (nodeField?.SelectionSet != null && itemsField?.SelectionSet != null)
+            {
+                selectionSet = new GraphQLSelectionSet
+                {
+                    Selections = new List<ASTNode>()
+                };
+                selectionSet.Selections.AddRange(nodeField.SelectionSet.Selections);
+                selectionSet.Selections.AddRange(itemsField.SelectionSet.Selections);
+            }
+            else if (nodeField?.SelectionSet != null)
+            {
+                selectionSet = nodeField.SelectionSet;
+            }
+            else if (itemsField?.SelectionSet != null)
+            {
+                selectionSet = itemsField.SelectionSet;
+            }
+
 
             fieldAst = new GraphQLField
             {
@@ -393,7 +413,7 @@ namespace JoinMonster.Language
                 Name = fieldAst.Name,
                 Arguments = fieldAst.Arguments,
                 Directives = fieldAst.Directives,
-                SelectionSet = field.SelectionSet,
+                SelectionSet = selectionSet,
                 Location = fieldAst.Location
             };
 
