@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
+using GraphQL;
 
 namespace JoinMonster
 {
@@ -27,8 +28,15 @@ namespace JoinMonster
 
         public static IDictionary<string, object> CursorToObject(string cursor)
         {
-            var str = Encoding.UTF8.GetString(Convert.FromBase64String(cursor));
-            return JsonSerializer.Deserialize<IDictionary<string, object>>(str);
+            try
+            {
+                var str = Encoding.UTF8.GetString(Convert.FromBase64String(cursor));
+                return JsonSerializer.Deserialize<IDictionary<string, object>>(str);
+            }
+            catch (Exception ex) when (ex is FormatException or JsonException)
+            {
+                throw new ExecutionError("Invalid cursor.");
+            }
         }
     }
 }
