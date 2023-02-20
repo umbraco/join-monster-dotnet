@@ -60,10 +60,10 @@ namespace JoinMonster.Data
             if (data is IEnumerable<IDictionary<string, object?>> entries && entries.Any() == false)
                 return;
 
-            var tasks = sqlAst.Tables
-                .Select(child => NextBatchChild(child, data, databaseCall, context, cancellationToken));
-
-            await Task.WhenAll(tasks).ConfigureAwait(false);
+            foreach (var table in sqlAst.Tables)
+            {
+                await NextBatchChild(table, data, databaseCall, context, cancellationToken);
+            }
         }
 
         private async Task NextBatchChild(SqlTable sqlTable, object? data, DatabaseCallDelegate databaseCall,
