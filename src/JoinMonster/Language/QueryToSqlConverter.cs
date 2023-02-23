@@ -97,9 +97,10 @@ namespace JoinMonster.Language
             var fieldName = fieldAst.Alias?.Name.StringValue ?? field.Name;
             var tableName = config.Table(arguments, context);
 
-            if (parent is SqlTable parentTable && parentTable.Name == tableName)
+            if (parent is SqlTable parentTable)
             {
-                var existingTable = parentTable.Tables.FirstOrDefault(x => x.FieldName == fieldName);
+                var existingTable = parentTable.Tables.FirstOrDefault(x => x.FieldName == fieldName && x.Name == tableName);
+
                 // we already have a table for the field, this can happend when there's multiple fragments
                 if (existingTable is not null && fieldAst.SelectionSet is not null)
                 {
