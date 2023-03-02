@@ -12,17 +12,36 @@ using Xunit;
 
 namespace JoinMonster.Tests.Unit
 {
-    public class ConnectionExtensionsTests
+    public class ConnectionBuilderExtensionsTests
     {
         [Fact]
-        public void SqlWhere_WhenBuilderIsNull_ThrowsException()
+        public void SqlBatch_WhenBuilderIsNull_ThrowsException()
         {
-            Action action = () => ConnectionExtensions.SqlWhere<ObjectGraphType>(null, null);
+            Action action = () => ConnectionBuilderExtensions.SqlBatch<ObjectGraphType>(null, null, null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
                 .Which.ParamName.Should()
-                .Be("builder");
+                .Be("connectionBuilder");
+        }
+
+        [Fact]
+        public void SqlBatch_WithThisKeyAndParentKey_SetsBatchOnFieldType()
+        {
+            var builder = ConnectionBuilder.Create<ObjectGraphType, object>().SqlBatch("parentId", "id");
+
+            builder.FieldType.GetSqlBatch().Should().NotBeNull();
+        }
+
+        [Fact]
+        public void SqlWhere_WhenBuilderIsNull_ThrowsException()
+        {
+            Action action = () => ConnectionBuilderExtensions.SqlWhere<ObjectGraphType>(null, null);
+
+            action.Should()
+                .Throw<ArgumentNullException>()
+                .Which.ParamName.Should()
+                .Be("connectionBuilder");
         }
 
         [Fact]
@@ -46,18 +65,18 @@ namespace JoinMonster.Tests.Unit
 
             var builder = ConnectionBuilder.Create<ObjectGraphType, object>().SqlWhere(Where);
 
-            builder.FieldType.GetSqlWhere().Should().Be((WhereDelegate) Where);
+            builder.FieldType.GetSqlWhere().Should().Be((WhereDelegate)Where);
         }
 
         [Fact]
         public void SqlOrder_WhenBuilderIsNull_ThrowsException()
         {
-            Action action = () => ConnectionExtensions.SqlOrder<ObjectGraphType>(null, null);
+            Action action = () => ConnectionBuilderExtensions.SqlOrder<ObjectGraphType>(null, null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
                 .Which.ParamName.Should()
-                .Be("builder");
+                .Be("connectionBuilder");
         }
 
         [Fact]
@@ -79,18 +98,18 @@ namespace JoinMonster.Tests.Unit
 
             var builder = ConnectionBuilder.Create<ObjectGraphType, object>().SqlOrder(Order);
 
-            builder.FieldType.GetSqlOrder().Should().Be((OrderByDelegate) Order);
+            builder.FieldType.GetSqlOrder().Should().Be((OrderByDelegate)Order);
         }
 
         [Fact]
         public void SqlJoin_WhenBuilderIsNull_ThrowsException()
         {
-            Action action = () => ConnectionExtensions.SqlJoin<ObjectGraphType>(null, null);
+            Action action = () => ConnectionBuilderExtensions.SqlJoin<ObjectGraphType>(null, null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
                 .Which.ParamName.Should()
-                .Be("builder");
+                .Be("connectionBuilder");
         }
 
         [Fact]
@@ -114,18 +133,18 @@ namespace JoinMonster.Tests.Unit
 
             var builder = ConnectionBuilder.Create<ObjectGraphType, object>().SqlJoin(Join);
 
-            builder.FieldType.GetSqlJoin().Should().Be((JoinDelegate) Join);
+            builder.FieldType.GetSqlJoin().Should().Be((JoinDelegate)Join);
         }
 
         [Fact]
         public void SqlPaginate_WhenBuilderIsNull_ThrowsException()
         {
-            Action action = () => ConnectionExtensions.SqlPaginate<ObjectGraphType>(null);
+            Action action = () => ConnectionBuilderExtensions.SqlPaginate<ObjectGraphType>(null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
                 .Which.ParamName.Should()
-                .Be("builder");
+                .Be("connectionBuilder");
         }
 
         [Fact]
