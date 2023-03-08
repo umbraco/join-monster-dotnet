@@ -16,7 +16,7 @@
         <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
         <PackageProjectUrl>https://github.com/umbraco/join-monster-dotnet</PackageProjectUrl>
         <RepositoryType>git</RepositoryType>
-        <RepositoryUrl>https://github.com/umbraco/join-nomster-dotnet</RepositoryUrl>
+        <RepositoryUrl>https://github.com/umbraco/join-monster-dotnet</RepositoryUrl>
     </PropertyGroup>
 
     <ItemGroup>
