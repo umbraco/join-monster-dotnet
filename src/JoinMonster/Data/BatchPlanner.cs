@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using GraphQL;
+using GraphQL.Types;
 using GraphQL.Types.Relay.DataObjects;
 using JoinMonster.Configs;
 using JoinMonster.Language.AST;
@@ -83,6 +84,10 @@ namespace JoinMonster.Data
             {
                 string thisKeyAlias = null!;
                 string parentKey = null!;
+                Func<object, bool> isTypeOf = _ => true;
+
+                if (sqlTable.ParentGraphType is IObjectGraphType { IsTypeOf: var typeOf } && typeOf is not null)
+                    isTypeOf = typeOf;
 
                 if (sqlTable.Batch != null)
                 {
@@ -108,6 +113,7 @@ namespace JoinMonster.Data
 
                     foreach (var entry in entryList)
                     {
+                        if (isTypeOf(entry) is false) continue;
                         var values = PrepareValues(entry, parentKey);
                         foreach (var value in values)
                             batchScope.Add(value);
@@ -139,6 +145,7 @@ namespace JoinMonster.Data
                     {
                         foreach (var entry in entryList)
                         {
+                            if (isTypeOf(entry) is false) continue;
                             var values = PrepareValues(entry, parentKey);
 
                             var res = new List<IDictionary<string, object?>>();
