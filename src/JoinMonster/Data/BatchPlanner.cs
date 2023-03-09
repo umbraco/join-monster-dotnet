@@ -146,6 +146,7 @@ namespace JoinMonster.Data
                         foreach (var entry in entryList)
                         {
                             if (isTypeOf(entry) is false) continue;
+
                             var values = PrepareValues(entry, parentKey);
 
                             var res = new List<IDictionary<string, object?>>();
@@ -184,13 +185,19 @@ namespace JoinMonster.Data
                         var matchedData = new List<IDictionary<string, object?>>();
                         foreach (var entry in entryList)
                         {
-                            if (entry.TryGetValue(parentKey, out var key) == false) continue;
+                            if (entry.TryGetValue(parentKey, out var key) is false) continue;
+                            if (key is null) continue;
+                            var convertedKey = SqlDialect.PrepareValue(key, null);
 
-                            if (newDataGrouped.TryGetValue(key, out var list) && list.Count > 0)
+                            if (newDataGrouped.TryGetValue(convertedKey, out var list) && list.Count > 0)
                             {
                                 var res = _hydrator.Nest(list, objectShape).ToList();
-                                entry[fieldName] = _arrayToConnectionConverter.Convert(res[0], sqlTable, context);
+                                entry[fieldName] = res[0];
                                 matchedData.Add(entry);
+                            }
+                            else
+                            {
+                                entry[fieldName] = null;
                             }
                         }
 
@@ -208,7 +215,7 @@ namespace JoinMonster.Data
                                 {
                                     nextLevelData.AddRange(dict);
                                 }
-                                else if (value is Connection<object> connection)
+                                else if (value is Connection<object> connection || value is IDictionary<string, object?>)
                                 {
                                     nextLevelData.Add(value);
                                 }
@@ -237,7 +244,6 @@ namespace JoinMonster.Data
 
                         if (batchScope.Count == 0)
                         {
-
                             if (sqlTable.Paginate)
                             {
                                 dict[fieldName] = new Connection<object> { Edges = new List<Edge<object>>() };
