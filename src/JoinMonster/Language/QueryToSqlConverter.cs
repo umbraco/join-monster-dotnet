@@ -72,7 +72,7 @@ namespace JoinMonster.Language
                         //TODO: Validate that either join, batch or junction is set on the field
                     }
 
-                    return HandleTable(sqlTable, fieldAst, field, complexGraphType, sqlTableConfig, depth, context);
+                    return HandleTable(sqlTable, fieldAst, field, complexGraphType, parentType, sqlTableConfig, depth, context);
                 }
 
                 if (sqlColumnConfig == null)
@@ -90,7 +90,7 @@ namespace JoinMonster.Language
         }
 
         private Node HandleTable(Node? parent, GraphQLField fieldAst, FieldType field, IComplexGraphType graphType,
-            SqlTableConfig config, int depth, IResolveFieldContext context)
+            IGraphType parentGraphType, SqlTableConfig config, int depth, IResolveFieldContext context)
         {
             var arguments = HandleArguments(field, fieldAst, context);
 
@@ -130,6 +130,9 @@ namespace JoinMonster.Language
             }
 
             var sqlTable = new SqlTable(parent, config, tableName, fieldName, tableAs, arguments, grabMany)
+                {
+                    ParentGraphType = parentGraphType,
+                }
                 .WithLocation(fieldAst.Location);
 
             if (config.UniqueKey.Length == 1)

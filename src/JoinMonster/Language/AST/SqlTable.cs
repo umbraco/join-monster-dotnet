@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using GraphQL.Execution;
+using GraphQL.Types;
+using GraphQLParser.AST;
 using JoinMonster.Configs;
 
 namespace JoinMonster.Language.AST
@@ -38,6 +40,7 @@ namespace JoinMonster.Language.AST
         public OrderBy? OrderBy { get; set; }
         public SortKey? SortKey { get; set; }
         public ColumnExpressionDelegate? ColumnExpression { get; set; }
+        internal IGraphType? ParentGraphType { get; set; }
 
         public SqlColumn AddColumn(string name, string fieldName, string @as, bool isId = false)
         {
