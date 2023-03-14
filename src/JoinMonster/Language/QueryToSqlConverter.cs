@@ -96,22 +96,6 @@ namespace JoinMonster.Language
 
             var fieldName = fieldAst.Alias?.Name.StringValue ?? field.Name;
             var tableName = config.Table(arguments, context);
-
-            if (parent is SqlTable parentTable)
-            {
-                var existingTable = parentTable.Tables.FirstOrDefault(x => x.FieldName == fieldName && x.Name == tableName);
-
-                // we already have a table for the field, this can happend when there's multiple fragments
-                if (existingTable is not null && fieldAst.SelectionSet is not null)
-                {
-                    // lets add the fragment selections to the existing table
-                    HandleSelections(existingTable, graphType, fieldAst.SelectionSet.Selections, depth, context);
-
-                    // return SqlNoop to avoid the table being added multiple times to the selection
-                    return SqlNoop.Instance;
-                }
-            }
-
             var tableAs = _aliasGenerator.GenerateTableAlias(fieldName);
 
             var grabMany = field.ResolvedType.IsListType();

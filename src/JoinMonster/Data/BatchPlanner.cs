@@ -63,7 +63,7 @@ namespace JoinMonster.Data
 
             foreach (var table in sqlAst.Tables)
             {
-                await NextBatchChild(table, data, databaseCall, context, cancellationToken);
+                await NextBatchChild(table, data, databaseCall, context, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -109,11 +109,10 @@ namespace JoinMonster.Data
                 {
                     // the "batch scope" is the set of values to match this key against from the previous batch
                     var batchScope = new HashSet<object>();
-                    var entryList = entries.ToList();
+                    var entryList = entries.Where(isTypeOf).OfType<IDictionary<string, object?>>().ToList();
 
                     foreach (var entry in entryList)
                     {
-                        if (isTypeOf(entry) is false) continue;
                         var values = PrepareValues(entry, parentKey);
                         foreach (var value in values)
                             batchScope.Add(value);
@@ -145,8 +144,6 @@ namespace JoinMonster.Data
                     {
                         foreach (var entry in entryList)
                         {
-                            if (isTypeOf(entry) is false) continue;
-
                             var values = PrepareValues(entry, parentKey);
 
                             var res = new List<IDictionary<string, object?>>();
@@ -257,12 +254,12 @@ namespace JoinMonster.Data
                         var objectShape = _objectShaper.DefineObjectShape(sqlTable);
                         var newData = await HandleDatabaseCall(databaseCall, sqlResult, thisKeyAlias, cancellationToken).ConfigureAwait(false);
 
-                        var newDataGrouped = newData
-                            .GroupBy(x => x["$$temp"])
-                            .ToDictionary(x => x.Key, x => _hydrator.Nest(x, objectShape).ToList());
-
                         if (sqlTable.GrabMany)
                         {
+                            var newDataGrouped = newData
+                                .GroupBy(x => x["$$temp"])
+                                .ToDictionary(x => SqlDialect.PrepareValue(x.Key, null), x => _hydrator.Nest(x, objectShape).ToList());
+
                             var res = new List<IDictionary<string, object?>>();
                             if (sqlTable.OrderBy == null && sqlTable.SortKey == null)
                             {
@@ -289,9 +286,10 @@ namespace JoinMonster.Data
                             // ensure that any child connection is resolved
                             dict[fieldName] = _arrayToConnectionConverter.Convert(res, sqlTable, context);
                         }
-                        else if (newDataGrouped.TryGetValue(parentKey, out var obj) && obj.Count > 0)
+                        else
                         {
-                            dict[fieldName] = obj[0];
+                            var nestedData = _hydrator.Nest(newData, objectShape);
+                            dict[fieldName] = nestedData.FirstOrDefault();
                         }
 
                         if (dict.TryGetValue(fieldName, out var newDataObj) && newDataObj is not null)
