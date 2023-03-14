@@ -257,12 +257,12 @@ namespace JoinMonster.Data
                         var objectShape = _objectShaper.DefineObjectShape(sqlTable);
                         var newData = await HandleDatabaseCall(databaseCall, sqlResult, thisKeyAlias, cancellationToken).ConfigureAwait(false);
 
-                        var newDataGrouped = newData
-                            .GroupBy(x => x["$$temp"])
-                            .ToDictionary(x => x.Key, x => _hydrator.Nest(x, objectShape).ToList());
-
                         if (sqlTable.GrabMany)
                         {
+                            var newDataGrouped = newData
+                                .GroupBy(x => x["$$temp"])
+                                .ToDictionary(x => SqlDialect.PrepareValue(x.Key, null), x => _hydrator.Nest(x, objectShape).ToList());
+
                             var res = new List<IDictionary<string, object?>>();
                             if (sqlTable.OrderBy == null && sqlTable.SortKey == null)
                             {
@@ -289,9 +289,10 @@ namespace JoinMonster.Data
                             // ensure that any child connection is resolved
                             dict[fieldName] = _arrayToConnectionConverter.Convert(res, sqlTable, context);
                         }
-                        else if (newDataGrouped.TryGetValue(parentKey, out var obj) && obj.Count > 0)
+                        else
                         {
-                            dict[fieldName] = obj[0];
+                            var nestedData = _hydrator.Nest(newData, objectShape);
+                            dict[fieldName] = nestedData.FirstOrDefault();
                         }
 
                         if (dict.TryGetValue(fieldName, out var newDataObj) && newDataObj is not null)
