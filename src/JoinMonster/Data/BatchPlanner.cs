@@ -63,7 +63,7 @@ namespace JoinMonster.Data
 
             foreach (var table in sqlAst.Tables)
             {
-                await NextBatchChild(table, data, databaseCall, context, cancellationToken);
+                await NextBatchChild(table, data, databaseCall, context, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -109,11 +109,10 @@ namespace JoinMonster.Data
                 {
                     // the "batch scope" is the set of values to match this key against from the previous batch
                     var batchScope = new HashSet<object>();
-                    var entryList = entries.ToList();
+                    var entryList = entries.Where(isTypeOf).OfType<IDictionary<string, object?>>().ToList();
 
                     foreach (var entry in entryList)
                     {
-                        if (isTypeOf(entry) is false) continue;
                         var values = PrepareValues(entry, parentKey);
                         foreach (var value in values)
                             batchScope.Add(value);
@@ -145,8 +144,6 @@ namespace JoinMonster.Data
                     {
                         foreach (var entry in entryList)
                         {
-                            if (isTypeOf(entry) is false) continue;
-
                             var values = PrepareValues(entry, parentKey);
 
                             var res = new List<IDictionary<string, object?>>();
