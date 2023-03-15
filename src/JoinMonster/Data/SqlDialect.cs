@@ -306,7 +306,7 @@ namespace JoinMonster.Data
 
                 if (arguments.TryGetValue("before", out var before) && before.Value != null)
                 {
-                    throw new JoinMonsterException("Using 'before' with 'first' is nonsensical.");
+                    throw new ExecutionError("Using 'before' with 'first' is not supported.");
                 }
             }
             else if (last.Value is int lastValue)
@@ -321,7 +321,7 @@ namespace JoinMonster.Data
 
                 if (arguments.TryGetValue("after", out var after) && after.Value != null)
                 {
-                    throw new JoinMonsterException("Using 'after' with 'last' is nonsensical.");
+                    throw new ExecutionError("Using 'after' with 'last' is not supported.");
                 }
             }
 
