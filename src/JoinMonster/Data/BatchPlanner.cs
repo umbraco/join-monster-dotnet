@@ -183,7 +183,7 @@ namespace JoinMonster.Data
                         foreach (var entry in entryList)
                         {
                             if (entry.TryGetValue(parentKey, out var key) is false) continue;
-                            if (key is null) continue;
+                            if (key is null || key is JsonElement { ValueKind: JsonValueKind.Null or JsonValueKind.Undefined or JsonValueKind.Object }) continue;
                             var convertedKey = SqlDialect.PrepareValue(key, null);
 
                             if (newDataGrouped.TryGetValue(convertedKey, out var list) && list.Count > 0)
