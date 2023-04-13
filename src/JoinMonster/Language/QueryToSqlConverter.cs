@@ -294,7 +294,7 @@ namespace JoinMonster.Language
         private void HandleSelections(SqlTable parent, IComplexGraphType graphType, IEnumerable<ASTNode> selections,
             int depth, IResolveFieldContext context)
         {
-            foreach (var selection in selections)
+            foreach (var selection in MergeSelections(selections))
             {
                 switch (selection)
                 {
@@ -406,6 +406,33 @@ namespace JoinMonster.Language
             };
 
             return (edgeType, fieldAst);
+        }
+
+        private IEnumerable<ASTNode> MergeSelections(IEnumerable<ASTNode> selections)
+        {
+            var merged = new List<ASTNode>();
+            var fields = new Dictionary<string, GraphQLField>();
+            foreach (var selection in selections)
+            {
+                if (selection is GraphQLField field)
+                {
+                    var fieldName = field.Alias?.Name.StringValue ?? field.Name.StringValue;
+                    if (fields.TryGetValue(fieldName, out var existing) &&
+                        existing.SelectionSet != null && field.SelectionSet != null)
+                    {
+                        existing.SelectionSet.Selections = MergeSelections(existing.SelectionSet.Selections
+                            .Concat(field.SelectionSet.Selections))
+                            .ToList();
+
+                        continue;
+                    }
+                    fields.Add(fieldName, field);
+                }
+
+                merged.Add(selection);
+            }
+
+            return merged;
         }
     }
 }
