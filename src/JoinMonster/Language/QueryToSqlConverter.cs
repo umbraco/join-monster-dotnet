@@ -417,16 +417,18 @@ namespace JoinMonster.Language
                 if (selection is GraphQLField field)
                 {
                     var fieldName = field.Alias?.Name.StringValue ?? field.Name.StringValue;
-                    if (fields.TryGetValue(fieldName, out var existing) &&
-                        existing.SelectionSet != null && field.SelectionSet != null)
+                    if (fields.TryGetValue(fieldName, out var existing))
                     {
-                        existing.SelectionSet.Selections = MergeSelections(existing.SelectionSet.Selections
-                            .Concat(field.SelectionSet.Selections))
-                            .ToList();
+                        if (existing.SelectionSet != null && field.SelectionSet != null)
+                        {
+                            existing.SelectionSet.Selections = MergeSelections(existing.SelectionSet.Selections
+                                .Concat(field.SelectionSet.Selections))
+                                .ToList();
 
-                        continue;
+                            continue;
+                        }
+                        fields.Add(fieldName, field);
                     }
-                    fields.Add(fieldName, field);
                 }
 
                 merged.Add(selection);
