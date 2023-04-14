@@ -427,8 +427,8 @@ namespace JoinMonster.Language
 
                             continue;
                         }
-                        fields.Add(fieldName, field);
                     }
+                    fields.Add(fieldName, field);
                 }
 
                 merged.Add(selection);
