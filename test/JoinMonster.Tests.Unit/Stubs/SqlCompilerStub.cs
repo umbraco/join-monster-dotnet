@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using GraphQL;
-using JoinMonster.Builders.Clauses;
 using JoinMonster.Data;
 using JoinMonster.Language.AST;
 

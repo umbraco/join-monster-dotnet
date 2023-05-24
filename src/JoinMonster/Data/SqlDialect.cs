@@ -9,6 +9,7 @@ using GraphQL;
 using GraphQL.Execution;
 using JoinMonster.Builders;
 using JoinMonster.Builders.Clauses;
+using JoinMonster.Exceptions;
 using JoinMonster.Language.AST;
 using SortKey = JoinMonster.Language.AST.SortKey;
 
@@ -297,10 +298,10 @@ namespace JoinMonster.Data
             if (arguments.TryGetValue("first", out var first) && first.Value is int firstValue)
             {
                 limit = firstValue + 1;
-                if (arguments.TryGetValue("after", out var after) && after.Value is string afterValue)
+                if (arguments.TryGetValue("after", out var after) && after.Value is string afterCursor)
                 {
-                    var cursorObj = ConnectionUtils.CursorToObject(afterValue);
-                    ValidateCursor(cursorObj, GetKeys(sortKey));
+                    var cursorObj = ConnectionUtils.CursorToObject(afterCursor);
+                    ValidateCursor(afterCursor, cursorObj, GetKeys(sortKey));
                     whereCondition = SortKeyToWhereCondition(sortKey, cursorObj, isBefore, sortTable);
                 }
 
@@ -312,10 +313,10 @@ namespace JoinMonster.Data
             else if (last.Value is int lastValue)
             {
                 limit = lastValue + 1;
-                if (arguments.TryGetValue("before", out var before) && before.Value is string beforeValue)
+                if (arguments.TryGetValue("before", out var before) && before.Value is string beforeCursor)
                 {
-                    var cursorObj = ConnectionUtils.CursorToObject(beforeValue);
-                    ValidateCursor(cursorObj, GetKeys(sortKey));
+                    var cursorObj = ConnectionUtils.CursorToObject(beforeCursor);
+                    ValidateCursor(beforeCursor, cursorObj, GetKeys(sortKey));
                     whereCondition = SortKeyToWhereCondition(sortKey, cursorObj, isBefore, sortTable);
                 }
 
@@ -328,9 +329,8 @@ namespace JoinMonster.Data
             return (limit, order, whereCondition);
         }
 
-
         // the cursor contains the sort keys. it needs to match the keys specified in the `sortKey` on this field in the schema
-        private void ValidateCursor(IDictionary<string, object> cursorObj, IEnumerable<string> expectedKeys)
+        private void ValidateCursor(string cursor, IDictionary<string, object> cursorObj, IEnumerable<string> expectedKeys)
         {
             var expectedKeySet = new HashSet<string>(expectedKeys);
             var actualKeySet = new HashSet<string>(cursorObj.Keys);
@@ -339,7 +339,7 @@ namespace JoinMonster.Data
             {
                 if (!expectedKeySet.Contains(key))
                 {
-                    throw new JoinMonsterException($"Invalid cursor. The column '{key}' is not in the sort key.");
+                    throw new InvalidCursorException(cursor, message: $"Invalid cursor. The column '{key}' is not in the sort key.");
                 }
             }
 
@@ -347,7 +347,7 @@ namespace JoinMonster.Data
             {
                 if (!actualKeySet.Contains(key))
                 {
-                    throw new JoinMonsterException($"Invalid cursor. The column '{key}' is not in the cursor.");
+                    throw new InvalidCursorException(cursor, message: $"Invalid cursor. The column '{key}' is not in the cursor.");
                 }
             }
         }

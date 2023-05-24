@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
-using GraphQL;
+using JoinMonster.Exceptions;
 
 namespace JoinMonster
 {
@@ -31,11 +31,11 @@ namespace JoinMonster
             try
             {
                 var str = Encoding.UTF8.GetString(Convert.FromBase64String(cursor));
-                return JsonSerializer.Deserialize<IDictionary<string, object>>(str);
+                return JsonSerializer.Deserialize<IDictionary<string, object>>(str)!; // The JSON value cannot be null
             }
             catch (Exception ex) when (ex is FormatException or JsonException)
             {
-                throw new ExecutionError("Invalid cursor.");
+                throw new InvalidCursorException(cursor, message: "Provided cursor is not base64 as expected.");
             }
         }
     }

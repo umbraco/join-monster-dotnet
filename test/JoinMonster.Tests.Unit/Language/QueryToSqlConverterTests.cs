@@ -10,6 +10,7 @@ using GraphQL.Utilities;
 using GraphQL.Validation;
 using JoinMonster.Builders;
 using JoinMonster.Configs;
+using JoinMonster.Exceptions;
 using JoinMonster.Language;
 using JoinMonster.Language.AST;
 using JoinMonster.Tests.Unit.Stubs;

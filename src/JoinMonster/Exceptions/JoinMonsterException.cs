@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace JoinMonster
+namespace JoinMonster.Exceptions
 {
     /// <summary>
     /// The exception that is thrown when JoinMonster encounters something unexpected.

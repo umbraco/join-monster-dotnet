@@ -1,6 +1,4 @@
 using System;
-using System.Linq;
-using JoinMonster.Configs;
 using JoinMonster.Language.AST;
 
 namespace JoinMonster.Builders

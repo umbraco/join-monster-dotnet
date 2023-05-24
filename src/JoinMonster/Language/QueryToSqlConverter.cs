@@ -8,6 +8,7 @@ using GraphQLParser;
 using GraphQLParser.AST;
 using JoinMonster.Builders;
 using JoinMonster.Configs;
+using JoinMonster.Exceptions;
 using JoinMonster.Language.AST;
 
 namespace JoinMonster.Language

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using JoinMonster.Builders.Clauses;
-using JoinMonster.Data;
 
 namespace JoinMonster.Builders
 {

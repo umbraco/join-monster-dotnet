@@ -6,6 +6,7 @@ using System.Text;
 using GraphQL;
 using JoinMonster.Builders;
 using JoinMonster.Builders.Clauses;
+using JoinMonster.Exceptions;
 using JoinMonster.Language.AST;
 
 namespace JoinMonster.Data

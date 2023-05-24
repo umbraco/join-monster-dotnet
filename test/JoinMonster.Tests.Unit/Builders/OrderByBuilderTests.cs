@@ -1,8 +1,6 @@
 using System;
 using FluentAssertions;
 using JoinMonster.Builders;
-using JoinMonster.Configs;
-using JoinMonster.Data;
 using JoinMonster.Language.AST;
 using Xunit;
 

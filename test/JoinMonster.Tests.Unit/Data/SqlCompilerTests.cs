@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using FluentAssertions;
 using GraphQL;
-using GraphQL.Execution;
 using GraphQL.Types;
 using GraphQL.Utilities;
 using JoinMonster.Data;

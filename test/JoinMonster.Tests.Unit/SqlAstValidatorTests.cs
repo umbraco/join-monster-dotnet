@@ -1,5 +1,6 @@
 using System;
 using FluentAssertions;
+using JoinMonster.Exceptions;
 using JoinMonster.Language.AST;
 using Xunit;
 

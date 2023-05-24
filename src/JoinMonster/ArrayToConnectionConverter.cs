@@ -5,6 +5,7 @@ using System.Linq;
 using GraphQL;
 using GraphQL.Execution;
 using GraphQL.Types.Relay.DataObjects;
+using JoinMonster.Exceptions;
 using JoinMonster.Language.AST;
 
 namespace JoinMonster

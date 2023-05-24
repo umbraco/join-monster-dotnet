@@ -1,10 +1,6 @@
 using System;
-using System.Collections.Generic;
 using FluentAssertions;
-using GraphQL;
 using JoinMonster.Builders;
-using JoinMonster.Configs;
-using JoinMonster.Language.AST;
 using Xunit;
 
 namespace JoinMonster.Tests.Unit.Builders

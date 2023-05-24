@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Linq;
 using GraphQL.Execution;
 using GraphQL.Types;
-using GraphQLParser.AST;
 using JoinMonster.Configs;
 
 namespace JoinMonster.Language.AST
