@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace JoinMonster
@@ -10,7 +11,7 @@ namespace JoinMonster
     {
         private static readonly char[] _chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ#$".ToCharArray();
         private readonly IEnumerator<string> _enumerator;
-        private readonly Dictionary<string, string> _columnAliases;
+        private readonly ConcurrentDictionary<string, string> _columnAliases;
 
         /// <summary>
         /// Creates a new instance of <see cref="MinifyAliasGenerator" />.
@@ -18,7 +19,7 @@ namespace JoinMonster
         public MinifyAliasGenerator()
         {
             _enumerator = CreateEnumerator();
-            _columnAliases = new Dictionary<string, string>();
+            _columnAliases = new ConcurrentDictionary<string, string>();
         }
 
         /// <summary>
