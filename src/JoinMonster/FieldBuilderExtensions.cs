@@ -100,11 +100,11 @@ namespace JoinMonster
         /// <param name="configure">The configuration action.</param>
         /// <returns>The <see cref="FieldBuilder{TSourceType, TTargetType}"/>.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="fieldBuilder"/> is <c>null</c>.</exception>
-        public static FieldBuilder<TSourceType, TTargetType> SqlBatch<TSourceType, TTargetType>(this FieldBuilder<TSourceType, TTargetType> fieldBuilder, string thisKey, string parentKey, Action<SqlBatchConfigBuilder>? configure = null)
+        public static FieldBuilder<TSourceType, TTargetType> SqlBatch<TSourceType, TTargetType>(this FieldBuilder<TSourceType, TTargetType> fieldBuilder, string thisKey, string parentKey, Type keyType, Action<SqlBatchConfigBuilder>? configure = null)
         {
             if (fieldBuilder == null) throw new ArgumentNullException(nameof(fieldBuilder));
 
-            var columnBuilder = fieldBuilder.FieldType.SqlBatch(thisKey, parentKey);
+            var columnBuilder = fieldBuilder.FieldType.SqlBatch(thisKey, parentKey, keyType);
 
             if (configure is not null)
                 configure(columnBuilder);

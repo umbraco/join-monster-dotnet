@@ -213,8 +213,8 @@ namespace JoinMonster.Language
                             _aliasGenerator.GenerateColumnAlias(batchConfig.ParentKey))
                         {
                             Expression = batchConfig.ParentKeyExpression
-                        }
-                    )
+                        },
+                        batchConfig.KeyType)
                     {
                         Join = batchConfig.Join,
                         Where = batchConfig.Where
@@ -231,8 +231,8 @@ namespace JoinMonster.Language
                     new SqlColumn(sqlTable, batch.ParentKey, batch.ParentKey, _aliasGenerator.GenerateColumnAlias(batch.ParentKey))
                     {
                         Expression = batch.ParentKeyExpression
-                    }
-                )
+                    },
+                    batch.KeyType)
                 {
                     Where = batch.Where,
                     Join = batch.Join

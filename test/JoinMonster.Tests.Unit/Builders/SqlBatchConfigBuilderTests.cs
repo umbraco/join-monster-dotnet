@@ -10,7 +10,7 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void Create_WhenThisKeyIsNull_ThrowsException()
         {
-            Action action = () => SqlBatchConfigBuilder.Create(null, null);
+            Action action = () => SqlBatchConfigBuilder.Create(null, null, null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
@@ -21,7 +21,7 @@ namespace JoinMonster.Tests.Unit.Builders
         [Fact]
         public void Create_WhenParentKeyIsNull_ThrowsException()
         {
-            Action action = () => SqlBatchConfigBuilder.Create("friend_id", null);
+            Action action = () => SqlBatchConfigBuilder.Create("friend_id", null, null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
@@ -33,7 +33,7 @@ namespace JoinMonster.Tests.Unit.Builders
         public void Create_WithThisKey_SetsThisKey()
         {
             var thisKey = "friend_id";
-            var builder = SqlBatchConfigBuilder.Create(thisKey, "id");
+            var builder = SqlBatchConfigBuilder.Create(thisKey, "id", typeof(Guid));
 
             builder.SqlBatchConfig.ThisKey.Should().Be(thisKey);
         }
@@ -42,7 +42,7 @@ namespace JoinMonster.Tests.Unit.Builders
         public void Create_WithParentKey_SetsParentKey()
         {
             var parentKey = "id";
-            var builder = SqlBatchConfigBuilder.Create("friend_id", parentKey);
+            var builder = SqlBatchConfigBuilder.Create("friend_id", parentKey, typeof(Guid));
 
             builder.SqlBatchConfig.ParentKey.Should().Be(parentKey);
         }

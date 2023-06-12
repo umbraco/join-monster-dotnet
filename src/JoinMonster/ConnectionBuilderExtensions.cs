@@ -72,14 +72,15 @@ namespace JoinMonster
         /// <param name="connectionBuilder">The field builder.</param>
         /// <param name="thisKey">The column in this table.</param>
         /// <param name="parentKey">The column in the other table.</param>
+        /// <param name="keyType">The type of the keys.</param>
         /// <param name="configure">The configuration action.</param>
         /// <returns>The <see cref="ConnectionBuilder{TSourceType}"/>.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="connectionBuilder"/> is <c>null</c>.</exception>
-        public static ConnectionBuilder<TSourceType> SqlBatch<TSourceType>(this ConnectionBuilder<TSourceType> connectionBuilder, string thisKey, string parentKey, Action<SqlBatchConfigBuilder>? configure = null)
+        public static ConnectionBuilder<TSourceType> SqlBatch<TSourceType>(this ConnectionBuilder<TSourceType> connectionBuilder, string thisKey, string parentKey, Type keyType, Action<SqlBatchConfigBuilder>? configure = null)
         {
             if (connectionBuilder == null) throw new ArgumentNullException(nameof(connectionBuilder));
 
-            var columnBuilder = connectionBuilder.FieldType.SqlBatch(thisKey, parentKey);
+            var columnBuilder = connectionBuilder.FieldType.SqlBatch(thisKey, parentKey, keyType);
 
             if (configure is not null)
                 configure(columnBuilder);

@@ -12,11 +12,13 @@ namespace JoinMonster.Configs
         /// </summary>
         /// <param name="thisKey">The column to match on the current table.</param>
         /// <param name="parentKey">The column to match on the other table.</param>
+        /// <param name="keyType">The type of the keys</param>
         /// <exception cref="ArgumentNullException">If <paramref name="thisKey"/> or <paramref name="parentKey"/> is null.</exception>
-        public SqlBatchConfig(string thisKey, string parentKey)
+        public SqlBatchConfig(string thisKey, string parentKey, Type keyType)
         {
             ThisKey = thisKey ?? throw new ArgumentNullException(nameof(thisKey));
             ParentKey = parentKey ?? throw new ArgumentNullException(nameof(parentKey));
+            KeyType = keyType ?? throw new ArgumentNullException(nameof(keyType));
         }
 
         /// <summary>
@@ -33,6 +35,11 @@ namespace JoinMonster.Configs
         /// The column to match on the other table.
         /// </summary>
         public string ParentKey { get; }
+
+        /// <summary>
+        /// The type of the keys to match on
+        /// </summary>
+        public Type KeyType { get; }
 
         /// <summary>
         /// Custom SQL expression for matching the column on the other table.

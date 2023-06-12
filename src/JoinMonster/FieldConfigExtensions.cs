@@ -97,13 +97,14 @@ namespace JoinMonster
         /// <param name="fieldConfig">The field config.</param>
         /// <param name="thisKey">The column in this table.</param>
         /// <param name="parentKey">The column in the other table.</param>
+        /// <param name="keyType">The type of the keys.</param>
         /// <returns>The <see cref="SqlBatchConfigBuilder"/>.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="fieldConfig"/> is <c>null</c>.</exception>
-        public static SqlBatchConfigBuilder SqlBatch(this FieldConfig fieldConfig, string thisKey, string parentKey)
+        public static SqlBatchConfigBuilder SqlBatch(this FieldConfig fieldConfig, string thisKey, string parentKey, Type keyType)
         {
             if (fieldConfig == null) throw new ArgumentNullException(nameof(fieldConfig));
 
-            var builder = SqlBatchConfigBuilder.Create(thisKey, parentKey);
+            var builder = SqlBatchConfigBuilder.Create(thisKey, parentKey, keyType);
             fieldConfig.WithMetadata(nameof(SqlBatchConfig), builder.SqlBatchConfig);
             fieldConfig.Resolver ??= DictionaryFieldResolver.Instance;
 

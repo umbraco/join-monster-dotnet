@@ -105,10 +105,10 @@ namespace JoinMonster.Tests.Unit.Builders
             {
             }
 
-            var builder = SqlJunctionConfigBuilder.Create("friends", new[] {"characterId", "friendId"}, "friendId", "id", Join);
+            var builder = SqlJunctionConfigBuilder.Create("friends", new[] {"characterId", "friendId"}, "friendId", "id", typeof(Guid), Join);
 
             builder.SqlJunctionConfig.BatchConfig.Should()
-                .BeEquivalentTo(new SqlBatchConfig("friendId", "id")
+                .BeEquivalentTo(new SqlBatchConfig("friendId", "id", typeof(Guid))
                 {
                     Join = Join
                 });
