@@ -432,7 +432,7 @@ namespace JoinMonster.Data
 
                     warningCollection.Add(new
                     {
-                        message = $"Invalid type of data reference detected. Expected a value of type '{keyType}', but found a value of type '{entry.GetType()}'",
+                        message = $"Invalid reference type detected in the data. Expected a value of type '{keyType.Name}', but found a value of type '{entry.GetType().Name}'",
                         location = sqlTable.Location,
                         fieldName = sqlTable.FieldName,
                         value = entry
