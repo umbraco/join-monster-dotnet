@@ -17,7 +17,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void SqlBatch_WhenBuilderIsNull_ThrowsException()
         {
-            Action action = () => ConnectionBuilderExtensions.SqlBatch<ObjectGraphType>(null, null, null);
+            Action action = () => ConnectionBuilderExtensions.SqlBatch<ObjectGraphType>(null, null, null, null);
 
             action.Should()
                 .Throw<ArgumentNullException>()
@@ -28,7 +28,7 @@ namespace JoinMonster.Tests.Unit
         [Fact]
         public void SqlBatch_WithThisKeyAndParentKey_SetsBatchOnFieldType()
         {
-            var builder = ConnectionBuilder.Create<ObjectGraphType, object>().SqlBatch("parentId", "id");
+            var builder = ConnectionBuilder.Create<ObjectGraphType, object>().SqlBatch("parentId", "id", typeof(Guid));
 
             builder.FieldType.GetSqlBatch().Should().NotBeNull();
         }

@@ -11,6 +11,7 @@ using GraphQL.Types;
 using GraphQL.Types.Relay.DataObjects;
 using JoinMonster.Configs;
 using JoinMonster.Language.AST;
+using JoinMonster.Utils;
 using NestHydration;
 
 namespace JoinMonster.Data
@@ -84,6 +85,8 @@ namespace JoinMonster.Data
             {
                 string thisKeyAlias = null!;
                 string parentKey = null!;
+                Type keyType = null!;
+
                 Func<object, bool> isTypeOf = _ => true;
 
                 if (sqlTable.ParentGraphType is IObjectGraphType { IsTypeOf: var typeOf } && typeOf is not null)
@@ -96,6 +99,7 @@ namespace JoinMonster.Data
 
                     thisKeyAlias = sqlTable.Batch.ThisKey.As;
                     parentKey = sqlTable.Batch.ParentKey.Name;
+                    keyType = sqlTable.Batch.KeyType;
                 }
                 else if (sqlTable.Junction?.Batch != null)
                 {
@@ -103,6 +107,7 @@ namespace JoinMonster.Data
 
                     thisKeyAlias = sqlTable.Junction.Batch.ThisKey.As;
                     parentKey = sqlTable.Junction.Batch.ParentKey.Name;
+                    keyType = sqlTable.Junction.Batch.KeyType;
                 }
 
                 if (data is IEnumerable<IDictionary<string, object?>> entries)
@@ -113,7 +118,7 @@ namespace JoinMonster.Data
 
                     foreach (var entry in entryList)
                     {
-                        var values = PrepareValues(entry, parentKey);
+                        var values = PrepareValues(context, sqlTable, entry, parentKey, keyType);
                         foreach (var value in values)
                             batchScope.Add(value);
                     }
@@ -144,7 +149,7 @@ namespace JoinMonster.Data
                     {
                         foreach (var entry in entryList)
                         {
-                            var values = PrepareValues(entry, parentKey);
+                            var values = PrepareValues(context, sqlTable, entry, parentKey, keyType);
 
                             var res = new List<IDictionary<string, object?>>();
 
@@ -237,7 +242,7 @@ namespace JoinMonster.Data
                 {
                     case IDictionary<string, object?> dict:
                     {
-                        var batchScope = PrepareValues(dict, parentKey);
+                        var batchScope = PrepareValues(context, sqlTable, dict, parentKey, keyType);
 
                         if (batchScope.Count == 0)
                         {
@@ -362,7 +367,7 @@ namespace JoinMonster.Data
             }
         }
 
-        private static List<object> PrepareValues(IDictionary<string, object?> dict, string parentKey)
+        private static List<object> PrepareValues(IResolveFieldContext context, SqlTable sqlTable, IDictionary<string, object?> dict, string parentKey, Type keyType)
         {
             var batchScope = new HashSet<object>();
 
@@ -413,7 +418,29 @@ namespace JoinMonster.Data
                 }
             }
 
-            return batchScope.ToList();
+            var validatedBatchScope = new List<object>();
+
+            foreach (object entry in batchScope)
+            {
+                if (keyType.IsInstanceOfType(entry))
+                {
+                    validatedBatchScope.Add(entry);
+                }
+                else
+                {
+                    List<object> warningCollection = (List<object>) context.OutputExtensions.GetOrAdd("warnings", () => new List<object>())!;
+
+                    warningCollection.Add(new
+                    {
+                        message = $"Invalid reference type detected in the data. Expected a value of type '{keyType.Name}', but found a value of type '{entry.GetType().Name}'",
+                        location = sqlTable.Location,
+                        fieldName = sqlTable.FieldName,
+                        value = entry
+                    });
+                }
+            }
+
+            return validatedBatchScope;
         }
 
         // TODO: Refactor to share code with JoinMonsterExecuter

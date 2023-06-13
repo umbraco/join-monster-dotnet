@@ -44,10 +44,11 @@ namespace JoinMonster.Builders
         /// <param name="uniqueKey">The unique key columns.</param>
         /// <param name="thisKey">The column to match on the current table.</param>
         /// <param name="parentKey">The column to match in the parent table.</param>
+        /// <param name="keyType">The type of the keys.</param>
         /// <param name="join">The JOIN condition when joining from the junction table to the related table.</param>
         /// <returns>The <see cref="SqlJunctionConfigBuilder"/>.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="tableName"/>, <paramref name="uniqueKey"/>, <paramref name="thisKey"/>, <paramref name="parentKey"/> or <paramref name="join"/> is <c>null</c>.</exception>
-        public static SqlJunctionConfigBuilder Create(string tableName, string[] uniqueKey, string thisKey, string parentKey, JoinDelegate join)
+        public static SqlJunctionConfigBuilder Create(string tableName, string[] uniqueKey, string thisKey, string parentKey, Type keyType, JoinDelegate join)
         {
             if (tableName == null) throw new ArgumentNullException(nameof(tableName));
             if (thisKey == null) throw new ArgumentNullException(nameof(thisKey));
@@ -55,7 +56,7 @@ namespace JoinMonster.Builders
             if (join == null) throw new ArgumentNullException(nameof(join));
 
             var sqlBatchBuilder = SqlBatchConfigBuilder
-                .Create(thisKey, parentKey)
+                .Create(thisKey, parentKey, keyType)
                 .Join(join);
 
             var config = new SqlJunctionConfig(tableName, uniqueKey, sqlBatchBuilder.SqlBatchConfig);

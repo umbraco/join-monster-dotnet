@@ -21,18 +21,4 @@ namespace JoinMonster.Language.AST
         public SortKey? SortKey { get; set; }
         public SqlBatch? Batch { get; set; }
     }
-
-    public class SqlBatch : Node
-    {
-        public SqlBatch(SqlColumn thisKey, SqlColumn parentKey)
-        {
-            ThisKey = thisKey;
-            ParentKey = parentKey;
-        }
-
-        public SqlColumn ThisKey { get; }
-        public SqlColumn ParentKey { get; }
-        public JoinDelegate? Join { get; set; }
-        public BatchWhereDelegate? Where { get; set; }
-    }
 }

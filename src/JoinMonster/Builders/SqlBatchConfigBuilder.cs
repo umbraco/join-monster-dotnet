@@ -18,14 +18,15 @@ namespace JoinMonster.Builders
         /// </summary>
         /// <param name="thisKey">The column to match on the current table.</param>
         /// <param name="parentKey">The column to match on the other table.</param>
+        /// <param name="keyType">The type of the keys</param>
         /// <exception cref="ArgumentNullException">If <paramref name="thisKey"/> or <paramref name="parentKey"/> is null.</exception>
         /// <returns>The <see cref="SqlBatchConfigBuilder"/>.</returns>
-        public static SqlBatchConfigBuilder Create(string thisKey, string parentKey)
+        public static SqlBatchConfigBuilder Create(string thisKey, string parentKey, Type keyType)
         {
             if (thisKey == null) throw new ArgumentNullException(nameof(thisKey));
             if (parentKey == null) throw new ArgumentNullException(nameof(parentKey));
 
-            var config = new SqlBatchConfig(thisKey, parentKey);
+            var config = new SqlBatchConfig(thisKey, parentKey, keyType);
 
             return new SqlBatchConfigBuilder(config);
         }

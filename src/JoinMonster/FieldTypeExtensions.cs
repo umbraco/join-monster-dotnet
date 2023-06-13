@@ -137,10 +137,11 @@ namespace JoinMonster
         /// <param name="uniqueKey">The unique key columns.</param>
         /// <param name="thisKey">The column to match on the current table.</param>
         /// <param name="parentKey">The column to match in the parent table.</param>
+        /// <param name="keyType">The type of the keys,</param>
         /// <param name="join">The JOIN condition when joining from the junction table to the related table.</param>
         /// <returns>The <see cref="SqlJunctionConfigBuilder"/>.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="fieldType"/>, <paramref name="tableName"/>, <paramref name="uniqueKey"/>, <paramref name="thisKey"/>, <paramref name="parentKey"/> or <paramref name="join"/> is <c>null</c>.</exception>
-        public static SqlJunctionConfigBuilder SqlJunction(this FieldType fieldType, string tableName, string[] uniqueKey, string thisKey, string parentKey, JoinDelegate join)
+        public static SqlJunctionConfigBuilder SqlJunction(this FieldType fieldType, string tableName, string[] uniqueKey, string thisKey, string parentKey, Type keyType, JoinDelegate join)
         {
             if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
             if (tableName == null) throw new ArgumentNullException(nameof(tableName));
@@ -148,7 +149,7 @@ namespace JoinMonster
             if (parentKey == null) throw new ArgumentNullException(nameof(parentKey));
             if (join == null) throw new ArgumentNullException(nameof(join));
 
-            var builder = SqlJunctionConfigBuilder.Create(tableName, uniqueKey, thisKey, parentKey, join);
+            var builder = SqlJunctionConfigBuilder.Create(tableName, uniqueKey, thisKey, parentKey, keyType, join);
             fieldType.WithMetadata(nameof(SqlJunctionConfig), builder.SqlJunctionConfig);
             return builder;
         }
@@ -172,13 +173,14 @@ namespace JoinMonster
         /// <param name="fieldType">The field type.</param>
         /// <param name="thisKey">The column in this table.</param>
         /// <param name="parentKey">The column in the other table.</param>
+        /// <param name="keyType">The type of the keys</param>
         /// <returns>The <see cref="SqlBatchConfigBuilder"/>.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="fieldType"/> is <c>null</c>.</exception>
-        public static SqlBatchConfigBuilder SqlBatch(this FieldType fieldType, string thisKey, string parentKey)
+        public static SqlBatchConfigBuilder SqlBatch(this FieldType fieldType, string thisKey, string parentKey, Type keyType)
         {
             if (fieldType == null) throw new ArgumentNullException(nameof(fieldType));
 
-            var builder = SqlBatchConfigBuilder.Create(thisKey, parentKey);
+            var builder = SqlBatchConfigBuilder.Create(thisKey, parentKey, keyType);
             fieldType.WithMetadata(nameof(SqlBatchConfig), builder.SqlBatchConfig);
             fieldType.Resolver ??= DictionaryFieldResolver.Instance;
 
