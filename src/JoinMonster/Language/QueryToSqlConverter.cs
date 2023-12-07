@@ -252,6 +252,8 @@ namespace JoinMonster.Language
                 var sortKey = sqlTable.SortKey ?? sqlTable.Junction?.SortKey;
                 if (sortKey == null) return;
 
+                sqlTable.Columns.Add(new SqlColumn(sqlTable, "$total", "$total", "$total"));
+
                 do
                 {
                     var newChild = new SqlColumn(sqlTable, sortKey.Column, sortKey.Column, sortKey.As);

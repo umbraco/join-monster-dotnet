@@ -166,7 +166,8 @@ namespace JoinMonster.Data
 
             if (joinCondition == null)
                 return $@"FROM (
-  SELECT {Quote(@as)}.*
+  SELECT {Quote(@as)}.*,
+  COUNT(1) OVER () AS {Quote("$total")}
   FROM {table} {Quote(@as)}
   WHERE {whereCondition}
   ORDER BY {order}
@@ -174,7 +175,8 @@ namespace JoinMonster.Data
 ) {Quote(@as)}";
 
             return $@"{joinType} JOIN LATERAL (
-  SELECT {Quote(@as)}.*
+  SELECT {Quote(@as)}.*,
+  COUNT(1) OVER () AS {Quote("$total")}
   FROM {Quote(table)} {Quote(@as)}
   WHERE {whereCondition}
   ORDER BY {order}

@@ -106,7 +106,8 @@ namespace JoinMonster.Tests.Unit.Data
 
             tables.Should()
                 .Contain(@"LEFT JOIN LATERAL (
-  SELECT ""variants"".*
+  SELECT ""variants"".*,
+  COUNT(1) OVER () AS ""$total""
   FROM ""variants"" ""variants""
   WHERE ""products"".""id"" = ""variants"".""productId"" AND ""variants"".""id"" <> @p0
   ORDER BY ""variants"".""id"" ASC
@@ -147,7 +148,8 @@ namespace JoinMonster.Tests.Unit.Data
             {
                 tables.Should()
                     .Contain(@"LEFT JOIN LATERAL (
-  SELECT ""variants"".*
+  SELECT ""variants"".*,
+  COUNT(1) OVER () AS ""$total""
   FROM ""variants"" ""variants""
   WHERE ""products"".""id"" = ""variants"".""productId"" AND ""variants"".""id"" <> @p0 AND ""variants"".""id"" < @p1
   ORDER BY ""variants"".""id"" DESC
@@ -194,7 +196,8 @@ namespace JoinMonster.Tests.Unit.Data
             {
                 tables.Should()
                     .Contain(@"LEFT JOIN LATERAL (
-  SELECT ""variants"".*
+  SELECT ""variants"".*,
+  COUNT(1) OVER () AS ""$total""
   FROM ""variants"" ""variants""
   WHERE ""products"".""id"" = ""variants"".""productId"" AND ""variants"".""id"" <> @p0 AND ""variants"".""id"" < @p1
   ORDER BY ""variants"".""id"" DESC
@@ -271,7 +274,8 @@ namespace JoinMonster.Tests.Unit.Data
             {
                 tables.Should()
                     .Contain(@"FROM (
-  SELECT ""variants"".*
+  SELECT ""variants"".*,
+  COUNT(1) OVER () AS ""$total""
   FROM variants ""variants""
   WHERE ""variants"".""id"" <> @p0
   ORDER BY ""variants"".""id"" ASC
@@ -312,7 +316,8 @@ namespace JoinMonster.Tests.Unit.Data
             {
                 tables.Should()
                     .Contain(@"FROM (
-  SELECT ""variants"".*
+  SELECT ""variants"".*,
+  COUNT(1) OVER () AS ""$total""
   FROM variants ""variants""
   WHERE ""variants"".""id"" < @p0 AND ""variants"".""id"" <> @p1
   ORDER BY ""variants"".""id"" DESC
@@ -357,7 +362,8 @@ namespace JoinMonster.Tests.Unit.Data
             {
                 tables.Should()
                     .Contain(@"FROM (
-  SELECT ""variants"".*
+  SELECT ""variants"".*,
+  COUNT(1) OVER () AS ""$total""
   FROM variants ""variants""
   WHERE (""variants"".""price"" < @p0 OR (""variants"".""price"" = @p1 AND ""variants"".""name"" > @p2)) AND ""variants"".""id"" <> @p3
   ORDER BY ""variants"".""price"" DESC, ""variants"".""name"" ASC
@@ -402,7 +408,8 @@ namespace JoinMonster.Tests.Unit.Data
             {
                 tables.Should()
                     .Contain(@"FROM (
-  SELECT ""variants"".*
+  SELECT ""variants"".*,
+  COUNT(1) OVER () AS ""$total""
   FROM variants ""variants""
   WHERE ""variants"".""id"" < @p0 AND ""variants"".""id"" <> @p1
   ORDER BY ""variants"".""id"" DESC
