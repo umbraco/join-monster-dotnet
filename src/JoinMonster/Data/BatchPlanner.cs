@@ -62,7 +62,7 @@ namespace JoinMonster.Data
             if (data is IEnumerable<IDictionary<string, object?>> entries && entries.Any() == false)
                 return;
 
-            foreach (var table in sqlAst.Tables)
+            foreach (var table in MergeTables(sqlAst.Tables))
             {
                 await NextBatchChild(table, data, databaseCall, context, cancellationToken).ConfigureAwait(false);
             }
@@ -468,6 +468,27 @@ namespace JoinMonster.Data
             }
 
             return data;
+        }
+
+        private IEnumerable<SqlTable> MergeTables(IEnumerable<SqlTable> tables)
+        {
+            var result = new Dictionary<string, SqlTable>();
+
+            foreach (var table in tables)
+            {
+                var name = $"{table.ParentGraphType}_{table.FieldName}";
+
+                if (result.TryGetValue(name, out var found))
+                {
+                    found.MergeWith(table);
+                }
+                else
+                {
+                    result[name] = table;
+                }
+            }
+
+            return result.Values;
         }
     }
 }

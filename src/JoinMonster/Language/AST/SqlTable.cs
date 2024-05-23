@@ -64,6 +64,14 @@ namespace JoinMonster.Language.AST
             return sqlTable;
         }
 
+        internal void MergeWith(SqlTable table)
+        {
+            foreach (var column in table.Columns)
+                Columns.Add(column);
+             foreach (var childTable in table.Tables)
+                Tables.Add(childTable);
+        }
+
         public override IEnumerable<Node> Children
         {
             get
