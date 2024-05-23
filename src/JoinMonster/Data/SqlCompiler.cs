@@ -113,7 +113,10 @@ namespace JoinMonster.Data
                         columnName = $"{_dialect.Quote(parentTable)}.{_dialect.Quote(sqlColumn.Name)}";
                     }
 
-                    selections.Add($"{columnName} AS {_dialect.Quote(JoinPrefix(prefix) + sqlColumn.As)}");
+                    var sql = $"{columnName} AS {_dialect.Quote(JoinPrefix(prefix) + sqlColumn.As)}";
+
+                    if (!selections.Contains(sql))
+                        selections.Add(sql);
                     break;
                 }
                 case SqlComposite sqlComposite:
@@ -122,7 +125,9 @@ namespace JoinMonster.Data
                         throw new ArgumentException($"'{nameof(parent)}' must be of type {typeof(SqlTable)}", nameof(parent));
 
                     var parentTable = table.As;
-                    selections.Add($"{_dialect.CompositeKey(parentTable, sqlComposite.Name)} AS {_dialect.Quote(JoinPrefix(prefix) + sqlComposite.As)}");
+                    var sql = $"{_dialect.CompositeKey(parentTable, sqlComposite.Name)} AS {_dialect.Quote(JoinPrefix(prefix) + sqlComposite.As)}";
+                    if (!selections.Contains(sql))
+                        selections.Add(sql);
                     break;
                 }
                 case SqlJunction _:
@@ -235,7 +240,9 @@ namespace JoinMonster.Data
                         ? node.Junction.Batch.ParentKey.Expression(_dialect.Quote(parentTable.As), node.Junction.Batch.ParentKey.Arguments, context, node)
                         : $"{_dialect.Quote(parentTable.As)}.{_dialect.Quote(node.Junction.Batch.ParentKey.Name)}";
 
-                    selections.Add($"{columnName} AS ${_dialect.Quote(JoinPrefix(prefix) + node.Junction.Batch.ParentKey.As)}");
+                    var sql = $"{columnName} AS ${_dialect.Quote(JoinPrefix(prefix) + node.Junction.Batch.ParentKey.As)}";
+                    if (!selections.Contains(sql))
+                      selections.Add(sql);
                 }
                 else
                 {
@@ -317,7 +324,9 @@ namespace JoinMonster.Data
                         ? node.Batch.ParentKey.Expression(_dialect.Quote(parentTable.As), node.Batch.ParentKey.Arguments, context, node)
                         : $"{_dialect.Quote(parentTable.As)}.{_dialect.Quote(node.Batch.ParentKey.Name)}";
 
-                    selections.Add($"{columnName} AS {_dialect.Quote(JoinPrefix(prefix) + node.Batch.ParentKey.As)}");
+                    var sql = $"{columnName} AS {_dialect.Quote(JoinPrefix(prefix) + node.Batch.ParentKey.As)}";
+                    if (!selections.Contains(sql))
+                        selections.Add(sql);
                 }
                 else if (node.Paginate)
                 {
