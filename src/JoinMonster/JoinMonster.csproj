@@ -22,7 +22,7 @@
     <ItemGroup>
       <PackageReference Include="GraphQL" Version="7.0.2" />
       <PackageReference Include="NestHydration" Version="0.2.0" />
-      <PackageReference Include="System.Text.Json" Version="6.0.5" />
+      <PackageReference Include="System.Text.Json" Version="8.0.4" />
     </ItemGroup>
 
     <ItemGroup>
