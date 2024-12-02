@@ -18,7 +18,7 @@ namespace JoinMonster
             if (sqlAst == null) throw new ArgumentNullException(nameof(sqlAst));
             if (context == null) throw new ArgumentNullException(nameof(context));
 
-            var converted = ConvertInternal(data, sqlAst, context);
+            var converted = ConvertInternal(data.ToList(), sqlAst, context);
             return converted switch
             {
                 IEnumerable<IDictionary<string, object?>> enumerable when sqlAst is SqlTable table && table.GrabMany => enumerable,
@@ -49,23 +49,35 @@ namespace JoinMonster
 
         private object? ConvertInternal(object? data, Node sqlAst, IResolveFieldContext context)
         {
-            foreach (var astChild in sqlAst.Children)
+            switch (data)
             {
-                switch (data)
+                case IEnumerable<IDictionary<string, object?>> array:
                 {
-                    case IEnumerable<IDictionary<string, object?>> array:
+                    var tables = GetPageableChildTables(sqlAst);
+                    if (tables.Count > 0)
                     {
                         foreach (var dataItem in array)
-                            RecurseOnObjInData(dataItem, astChild, context);
-
-                        break;
+                        {
+                            foreach (var astChild in tables)
+                            {
+                                RecurseOnObjInData(dataItem, astChild, context);
+                            }
+                        }
                     }
-                    case IDictionary<string, object?> dataItem:
-                        RecurseOnObjInData(dataItem, astChild, context);
-                        break;
-                    default:
-                        break;
-                }
+                } break;
+                case IDictionary<string, object?> dataItem:
+                {
+                    var tables = GetPageableChildTables(sqlAst);
+                    if (tables.Count > 0)
+                    {
+                        foreach (var astChild in tables)
+                        {
+                            RecurseOnObjInData(dataItem, astChild, context);
+                        }
+                     }
+                } break;
+                default:
+                    break;
             }
 
             if (!(sqlAst is SqlTable sqlTable) || sqlTable.Paginate == false)
@@ -236,6 +248,17 @@ namespace JoinMonster
 
             if (dataItem.TryGetValue(fieldName, out var value))
                 dataItem[fieldName] = ConvertInternal(value, astChild, context);
+        }
+
+        private List<SqlTable> GetPageableChildTables(Node sqlAst)
+        {
+            var result = new List<SqlTable>();
+            foreach (var child in sqlAst.Children.OfType<SqlTable>())
+            {
+                if (child.Paginate || GetPageableChildTables(child).Count > 0)
+                    result.Add(child);
+            }
+            return result;
         }
     }
 }
