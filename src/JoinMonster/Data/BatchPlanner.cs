@@ -135,6 +135,7 @@ namespace JoinMonster.Data
 
                     // generate the SQL, with the batch scope values incorporated in a WHERE IN clause
                     var sqlResult = _compiler.Compile(sqlTable, context, SqlDialect.CastArray(batchScope));
+
                     var objectShape = _objectShaper.DefineObjectShape(sqlTable);
 
                     // grab the data
@@ -144,11 +145,13 @@ namespace JoinMonster.Data
                     var newDataGrouped = newData.GroupBy(x => x["$$temp"])
                             .ToDictionary(x => x.Key, x => x.ToList());
 
-                    // if we they want many rows, give them an array
+                    // if they want many rows, give them an array
                     if (sqlTable.GrabMany)
                     {
                         foreach (var entry in entryList)
                         {
+                            cancellationToken.ThrowIfCancellationRequested();
+
                             var values = PrepareValues(context, sqlTable, entry, parentKey, keyType);
 
                             var res = new List<IDictionary<string, object?>>();
@@ -187,6 +190,8 @@ namespace JoinMonster.Data
                         var matchedData = new List<IDictionary<string, object?>>();
                         foreach (var entry in entryList)
                         {
+                            cancellationToken.ThrowIfCancellationRequested();
+
                             if (entry.TryGetValue(parentKey, out var key) is false) continue;
                             if (key is null || key is JsonElement { ValueKind: JsonValueKind.Null or JsonValueKind.Undefined or JsonValueKind.Object }) continue;
                             var convertedKey = SqlDialect.PrepareValue(key, null);
@@ -466,7 +471,6 @@ namespace JoinMonster.Data
 
                 data.Add(item);
             }
-
             return data;
         }
 
