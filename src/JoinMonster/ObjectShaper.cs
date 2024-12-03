@@ -62,7 +62,6 @@ namespace JoinMonster
                         }
                         break;
                     case SqlTable sqlTable:
-                        if (properties.ContainsKey(sqlTable.FieldName)) continue;
                         if (sqlTable.Batch == null)
                         {
                             var childProperties = DefineObjectShape(node, prefix, sqlTable);
@@ -76,7 +75,8 @@ namespace JoinMonster
                         }
                         else
                         {
-                            properties[sqlTable.FieldName] = new Property(sqlTable.Batch.ParentKey.FieldName, $"{prefix}{sqlTable.Batch.ParentKey.As}");;
+                            if (properties.ContainsKey(sqlTable.Batch.ParentKey.FieldName)) continue;
+                            properties[sqlTable.Batch.ParentKey.FieldName] = new Property(sqlTable.Batch.ParentKey.FieldName, $"{prefix}{sqlTable.Batch.ParentKey.As}");;
                         }
 
                         break;
