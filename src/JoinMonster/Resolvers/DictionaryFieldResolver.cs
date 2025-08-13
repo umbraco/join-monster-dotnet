@@ -25,7 +25,7 @@ namespace JoinMonster.Resolvers
         public ValueTask<object?> ResolveAsync(IResolveFieldContext context)
         {
             if (context.Source is IDictionary<string, object> dict
-                && dict.TryGetValue(context.FieldAst.Alias?.Name.StringValue ?? context.FieldDefinition.Name, out var value))
+                && dict.TryGetValue(context.FieldDefinition.Name, out var value))
             {
                 return new ValueTask<object?>(value);
             }

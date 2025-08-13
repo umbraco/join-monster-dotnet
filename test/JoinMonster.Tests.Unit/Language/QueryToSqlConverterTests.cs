@@ -109,7 +109,7 @@ namespace JoinMonster.Tests.Unit.Language
         }
 
         [Fact]
-        public void Convert_WithFieldAlias_SetsFieldNameToAlias()
+        public void Convert_WithFieldAlias_SetsFieldNameToName()
         {
             var schema = CreateSimpleSchema(builder => { builder.Types.For("Product").SqlTable("products", "id"); });
 
@@ -122,7 +122,7 @@ namespace JoinMonster.Tests.Unit.Language
             node.Should()
                 .BeOfType<SqlTable>()
                 .Which.Columns.Should()
-                .ContainEquivalentOf(new SqlColumn(node, "name", "productName", "productName"),
+                .ContainEquivalentOf(new SqlColumn(node, "name", "name", "name"),
                     config => config.Excluding(x => x.Location));
         }
 
