@@ -30,6 +30,7 @@ namespace JoinMonster.Tests.Unit.Stubs
                 Operation = document.OperationWithName(string.Empty)!,
                 Variables = variables ?? new Variables(),
                 Errors = new ExecutionErrors(),
+                ExecutionStrategy = this,
             };
 
             var rootType = GetOperationRootType(context);

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using GraphQL;
 using GraphQL.Resolvers;
+using JoinMonster.Language;
 
 namespace JoinMonster.Resolvers
 {
@@ -25,7 +26,7 @@ namespace JoinMonster.Resolvers
         public ValueTask<object?> ResolveAsync(IResolveFieldContext context)
         {
             if (context.Source is IDictionary<string, object> dict
-                && dict.TryGetValue(context.FieldDefinition.Name, out var value))
+                && dict.TryGetValue(context.FieldAlias(), out var value))
             {
                 return new ValueTask<object?>(value);
             }

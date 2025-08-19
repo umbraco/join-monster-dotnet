@@ -94,9 +94,10 @@ namespace JoinMonster.Language
             IGraphType parentGraphType, SqlTableConfig config, int depth, IResolveFieldContext context)
         {
             var arguments = HandleArguments(field, fieldAst, context);
+            var fieldName = context.FieldAlias();
 
             var tableName = config.Table(arguments, context);
-            var tableAs = _aliasGenerator.GenerateTableAlias(field.Name);
+            var tableAs = _aliasGenerator.GenerateTableAlias(fieldName);
 
             var grabMany = field.ResolvedType.IsListType();
             var where = field.GetSqlWhere();
@@ -113,7 +114,7 @@ namespace JoinMonster.Language
                 grabMany = true;
             }
 
-            var sqlTable = new SqlTable(parent, config, tableName, field.Name, tableAs, arguments, grabMany)
+            var sqlTable = new SqlTable(parent, config, tableName, fieldName, tableAs, arguments, grabMany)
                 {
                     ParentGraphType = parentGraphType,
                 }
@@ -208,7 +209,7 @@ namespace JoinMonster.Language
                             FromOtherTable = sqlTable.Junction.As,
                             Expression = batchConfig.ThisKeyExpression
                         },
-                        new SqlColumn(sqlTable, batchConfig.ParentKey, field.Name,
+                        new SqlColumn(sqlTable, batchConfig.ParentKey, fieldName,
                             _aliasGenerator.GenerateColumnAlias(batchConfig.ParentKey))
                         {
                             Expression = batchConfig.ParentKeyExpression
@@ -275,10 +276,11 @@ namespace JoinMonster.Language
         private Node HandleColumn(SqlTable sqlTable, GraphQLField fieldAst, FieldType field, IGraphType graphType,
             SqlColumnConfig? config, int depth, IResolveFieldContext context)
         {
+            var fieldName = context.FieldAlias();
             var columnName = config?.Column ?? field.Name;
-            var columnAs = _aliasGenerator.GenerateColumnAlias(field.Name);
+            var columnAs = _aliasGenerator.GenerateColumnAlias(fieldName);
 
-            var column = new SqlColumn(sqlTable, columnName, field.Name, columnAs).WithLocation(fieldAst.Location);
+            var column = new SqlColumn(sqlTable, columnName, fieldName, columnAs).WithLocation(fieldAst.Location);
 
             column.Arguments = HandleArguments(field, fieldAst, context);
             column.Expression = config?.Expression;
@@ -304,12 +306,18 @@ namespace JoinMonster.Language
                             continue;
 
                         var field = graphType.GetField(fieldAst.Name);
-                        var node = Convert(parent, fieldAst, field, graphType, ++depth, context);
+                        var newContext = new ResolveFieldContext(context)
+                        {
+                            FieldAst = fieldAst,
+                            FieldDefinition = field,
+                        };
+                        var node = Convert(parent, fieldAst, field, graphType, ++depth, newContext);
 
                         switch (node)
                         {
                             case SqlColumnBase sqlColumn:
-                                var existing = parent.Columns.Any(x => x.FieldName == field.Name);
+                                var fieldName = newContext.FieldAlias();
+                                var existing = parent.Columns.Any(x => x.FieldName == fieldName);
                                 if (existing)
                                     continue;
 
@@ -415,7 +423,7 @@ namespace JoinMonster.Language
             {
                 if (selection is GraphQLField field)
                 {
-                    var fieldName = field.Name.StringValue;
+                    var fieldName = field.FieldAlias(field.Name.StringValue);
                     if (fields.TryGetValue(fieldName, out var existing))
                     {
                         if (existing.SelectionSet != null && field.SelectionSet != null)
