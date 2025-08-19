@@ -122,7 +122,7 @@ namespace JoinMonster.Tests.Unit.Language
             node.Should()
                 .BeOfType<SqlTable>()
                 .Which.Columns.Should()
-                .ContainEquivalentOf(new SqlColumn(node, "name", "name", "name"),
+                .ContainEquivalentOf(new SqlColumn(node, "name", "productName#name", "productName#name"),
                     config => config.Excluding(x => x.Location));
         }
 

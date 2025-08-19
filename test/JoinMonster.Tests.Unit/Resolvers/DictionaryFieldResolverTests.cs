@@ -38,7 +38,7 @@ namespace JoinMonster.Tests.Unit.Resolvers
         {
             var source = new Dictionary<string, object>
             {
-                {"name", "Jacket"}
+                {"productName#name", "Jacket"}
             };
 
             var context = new ResolveFieldContext
